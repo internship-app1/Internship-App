@@ -192,7 +192,7 @@ All settings in `intelligent_resume_based_scoring()`:
 # Model
 model="gpt-4o"
 temperature=0.2
-max_tokens=400
+max_completion_tokens=400
 
 # Weights
 resume_complexity_weight = 0.40  # PRIMARY

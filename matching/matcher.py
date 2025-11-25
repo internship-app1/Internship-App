@@ -1,18 +1,215 @@
 import re
 import os
 import json
-from openai import OpenAI
+import anthropic
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Dict, Any
 
-def is_skill_match(job_skill, resume_skill):
+def extract_json_from_response(text: str) -> str:
     """
-    DEPRECATED: This function used hardcoded skill synonyms.
-    Now replaced with LLM-based dynamic skill matching in llm_skill_extractor.py
-    
-    This function is kept for backward compatibility but should not be used.
-    Use match_skills_dynamically() from llm_skill_extractor instead.
+    Extract JSON from Claude response, handling markdown code blocks.
+    Returns the cleaned JSON string ready for parsing.
     """
-    # Simple fallback for backward compatibility
-    return job_skill.lower().strip() == resume_skill.lower().strip()
+    # Remove markdown code blocks if present
+    if "```json" in text:
+        # Extract content between ```json and ```
+        start = text.find("```json") + 7
+        end = text.find("```", start)
+        if end == -1:
+            # No closing ```, likely truncated
+            return text[start:].strip()
+        return text[start:end].strip()
+    elif "```" in text:
+        # Extract content between ``` and ```
+        start = text.find("```") + 3
+        end = text.find("```", start)
+        if end == -1:
+            # No closing ```, likely truncated
+            return text[start:].strip()
+        return text[start:end].strip()
+    # Return as-is if no code blocks
+    return text.strip()
+
+
+def repair_truncated_json(json_str: str) -> str:
+    """
+    Attempt to repair truncated or malformed JSON.
+    Handles common issues like unterminated strings, missing brackets, etc.
+    """
+    if not json_str:
+        return "{}"
+
+    # Remove any trailing incomplete text after last complete structure
+    # Find the last valid closing brace
+    last_brace = json_str.rfind('}')
+    last_bracket = json_str.rfind(']')
+
+    # Determine which one comes last
+    last_valid = max(last_brace, last_bracket)
+
+    if last_valid == -1:
+        # No valid closing found, this is badly truncated
+        return "{}"
+
+    # Truncate to last valid closing
+    truncated = json_str[:last_valid + 1]
+
+    # Count opening and closing braces/brackets
+    open_braces = truncated.count('{')
+    close_braces = truncated.count('}')
+    open_brackets = truncated.count('[')
+    close_brackets = truncated.count(']')
+
+    # Add missing closing characters
+    if close_braces < open_braces:
+        truncated += '}' * (open_braces - close_braces)
+    if close_brackets < open_brackets:
+        truncated += ']' * (open_brackets - close_brackets)
+
+    return truncated
+
+
+def validate_job_score_structure(score_obj: Dict) -> bool:
+    """
+    Validate that a job score object has all required fields.
+    Returns True if valid, False otherwise.
+    """
+    required_fields = ['job_id', 'company', 'title', 'match_score', 'reasoning']
+
+    for field in required_fields:
+        if field not in score_obj:
+            return False
+
+    # Validate types
+    if not isinstance(score_obj['job_id'], int):
+        return False
+    if not isinstance(score_obj['match_score'], int):
+        return False
+    if not isinstance(score_obj['reasoning'], str):
+        return False
+
+    # Validate score range
+    if score_obj['match_score'] < 0 or score_obj['match_score'] > 100:
+        return False
+
+    return True
+
+
+def clean_and_validate_llm_response(response_text: str, expected_job_count: int) -> Dict:
+    """
+    Comprehensive JSON cleaning, repair, and validation.
+
+    Args:
+        response_text: Raw JSON string from LLM
+        expected_job_count: Number of jobs we expect to see scores for
+
+    Returns:
+        Parsed and validated JSON dict
+
+    Raises:
+        Exception: If JSON is irreparably malformed
+    """
+    # Step 1: Try to parse as-is
+    try:
+        result = json.loads(response_text)
+        print("✅ JSON parsed successfully on first attempt")
+    except json.JSONDecodeError as e:
+        print(f"⚠️  Initial JSON parse failed: {e}")
+        print(f"🔧 Attempting to repair JSON...")
+
+        # Step 2: Try to repair truncated JSON
+        repaired = repair_truncated_json(response_text)
+
+        try:
+            result = json.loads(repaired)
+            print("✅ JSON repaired and parsed successfully")
+        except json.JSONDecodeError as e2:
+            print(f"❌ JSON repair failed: {e2}")
+            print(f"📄 Original error at line {e.lineno}, col {e.colno}")
+            print(f"📄 Repair error at line {e2.lineno}, col {e2.colno}")
+
+            # Show diagnostic info
+            lines = response_text.split('\n')
+            start_line = max(0, e.lineno - 3)
+            end_line = min(len(lines), e.lineno + 2)
+            print("📄 Context around original error:")
+            for i in range(start_line, end_line):
+                marker = ">>> " if i == e.lineno - 1 else "    "
+                print(f"{marker}{i+1}: {lines[i][:100]}")
+
+            raise Exception(f"JSON is irreparably malformed: {e}")
+
+    # Step 3: Validate structure
+    if not isinstance(result, dict):
+        raise Exception(f"Expected JSON object (dict), got {type(result)}")
+
+    if "job_scores" not in result:
+        raise Exception("Missing required field 'job_scores' in response")
+
+    job_scores = result["job_scores"]
+
+    if not isinstance(job_scores, list):
+        raise Exception(f"'job_scores' should be a list, got {type(job_scores)}")
+
+    # Step 4: Validate and clean individual job scores
+    valid_scores = []
+    invalid_count = 0
+
+    for idx, score_obj in enumerate(job_scores):
+        if not isinstance(score_obj, dict):
+            print(f"⚠️  Job score #{idx+1} is not a dict, skipping")
+            invalid_count += 1
+            continue
+
+        if not validate_job_score_structure(score_obj):
+            print(f"⚠️  Job score #{idx+1} (job_id: {score_obj.get('job_id', '?')}) has invalid structure:")
+            print(f"     Keys present: {list(score_obj.keys())}")
+            invalid_count += 1
+            continue
+
+        # Ensure optional fields have defaults
+        if 'red_flags' not in score_obj:
+            score_obj['red_flags'] = []
+        if 'skill_matches' not in score_obj:
+            score_obj['skill_matches'] = []
+        if 'skill_gaps' not in score_obj:
+            score_obj['skill_gaps'] = []
+
+        # Ensure arrays are actually arrays
+        if not isinstance(score_obj['red_flags'], list):
+            score_obj['red_flags'] = []
+        if not isinstance(score_obj['skill_matches'], list):
+            score_obj['skill_matches'] = []
+        if not isinstance(score_obj['skill_gaps'], list):
+            score_obj['skill_gaps'] = []
+
+        valid_scores.append(score_obj)
+
+    # Step 5: Report validation results
+    print(f"📊 Validation results:")
+    print(f"   Expected: {expected_job_count} jobs")
+    print(f"   Received: {len(job_scores)} total job scores")
+    print(f"   Valid: {len(valid_scores)} job scores")
+    print(f"   Invalid: {invalid_count} job scores (skipped)")
+
+    # Update result with cleaned scores
+    result["job_scores"] = valid_scores
+
+    # Step 6: Warn if we're missing jobs
+    if len(valid_scores) < expected_job_count:
+        missing = expected_job_count - len(valid_scores)
+        print(f"⚠️  WARNING: Missing {missing} job scores (expected {expected_job_count}, got {len(valid_scores)} valid)")
+        print(f"⚠️  This may indicate truncation or LLM error")
+
+    # Step 7: Check for duplicate job_ids
+    job_ids = [score['job_id'] for score in valid_scores]
+    if len(job_ids) != len(set(job_ids)):
+        print(f"⚠️  WARNING: Duplicate job_ids detected!")
+        duplicates = [jid for jid in job_ids if job_ids.count(jid) > 1]
+        print(f"   Duplicate IDs: {set(duplicates)}")
+
+    return result
+
 
 def extract_user_experience_level(resume_skills, resume_text=""):
     """
@@ -115,162 +312,6 @@ def analyze_job_requirements(job_title, job_description, required_skills):
         "required_skills": required_skills
     }
 
-def match_job_to_resume(job, resume_skills, resume_text=""):
-    """
-    Match a job to resume skills with comprehensive analysis including metadata.
-    Returns: (score, description)
-    """
-    from .metadata_matcher import (
-        extract_resume_metadata, 
-        extract_job_metadata, 
-        calculate_metadata_match_score,
-        combine_match_scores
-    )
-    
-    job_skills = job.get("required_skills", [])
-    job_title = job.get("title", "").lower()
-    job_description = job.get("description", "").lower()
-    job_location = job.get("location", "").lower()
-    
-    # Extract metadata from resume and job
-    resume_metadata = extract_resume_metadata(resume_skills, resume_text)
-    job_metadata = extract_job_metadata(job)
-    
-    # Calculate metadata match score
-    metadata_score, metadata_description = calculate_metadata_match_score(resume_metadata, job_metadata)
-    
-    # Analyze user's experience level
-    user_experience = extract_user_experience_level(resume_skills, resume_text)
-    
-    # Analyze job requirements
-    requirements = analyze_job_requirements(job_title, job_description, job_skills)
-    
-    # Check for senior/experienced requirements that are not suitable for interns/students
-    senior_indicators = [
-        "senior", "lead", "principal", "staff", "architect", "manager", "director",
-        "10+ years", "12+ years", "15+ years", "20+ years", "extensive experience",
-        "expert", "advanced", "seasoned", "veteran", "senior level", "leadership",
-        "mentor", "coach", "supervise", "manage", "oversee", "strategic"
-    ]
-    
-    # Check if job title or description indicates senior/experienced role
-    for indicator in senior_indicators:
-        if indicator in job_title or indicator in job_description:
-            return 0, f"❌ This position requires senior-level experience ({indicator}). Not suitable for {user_experience} candidates."
-    
-    # Check for experience requirements that are too high
-    if requirements["required_years"] >= 5:
-        return 0, f"❌ This position requires {requirements['required_years']}+ years of experience. Too high for {user_experience} candidates."
-    
-    # If no skills data available, try to extract from title and description
-    if not job_skills:
-        # Extract skills from job title and description
-        all_text = f"{job_title} {job_description}"
-        job_skills = extract_skills_from_text(all_text)
-
-    if not job_skills:
-        return 0, "❌ Unable to determine required skills for this position."
-
-    # Use dynamic LLM-based skill matching instead of hardcoded logic
-    from matching.llm_skill_extractor import match_skills_dynamically
-    
-    print(f"🔍 Dynamic skill matching - Job skills: {job_skills}")
-    print(f"🔍 Dynamic skill matching - Resume skills: {resume_skills}")
-    
-    # Get dynamic matches with similarity scores
-    skill_matches = match_skills_dynamically(job_skills, resume_skills, threshold=0.7)
-    matched_skills = [match["job_skill"] for match in skill_matches]
-
-    if not matched_skills:
-        return 0, f"❌ No matching skills found. Required: {', '.join(job_skills[:5])}. Your skills: {', '.join(resume_skills[:5])}."
-
-    skill_score = round(100 * len(matched_skills) / len(job_skills))
-
-    # Bonus points for strong matches
-    bonus = 0
-    if len(matched_skills) >= 3:
-        bonus = 10
-    elif len(matched_skills) >= 2:
-        bonus = 5
-
-    skill_score = min(100, skill_score + bonus)
-    
-    # Add differentiation factors based on job-specific characteristics
-    # This prevents all jobs with identical skills from having identical scores
-    differentiation_bonus = 0
-    
-    # Bonus for specific job titles (more specific = better signal)
-    title_lower = job_title.lower()
-    if any(word in title_lower for word in ['frontend', 'backend', 'full stack', 'mobile', 'data', 'ml', 'ai', 'devops', 'cloud', 'security']):
-        differentiation_bonus += 3  # Specific role mentioned
-    
-    # Bonus for remote/hybrid positions (highly sought after)
-    if 'remote' in job_location:
-        differentiation_bonus += 3
-    elif 'hybrid' in job_location:
-        differentiation_bonus += 2
-    
-    # Bonus for detailed job descriptions (quality signal)
-    description_length = len(job_description)
-    if description_length > 500:
-        differentiation_bonus += 2
-    elif description_length > 200:
-        differentiation_bonus += 1
-    
-    # Bonus for number of specific tech keywords in job title
-    tech_keywords = ['react', 'python', 'java', 'aws', 'kubernetes', 'typescript', 'node', 'angular', 'vue']
-    tech_in_title = sum(1 for tech in tech_keywords if tech in title_lower)
-    differentiation_bonus += min(tech_in_title * 2, 4)  # Up to 4 points
-    
-    # Apply differentiation bonus to final score
-    skill_score = min(100, skill_score + differentiation_bonus)
-
-    # Combine skill score with metadata score
-    final_score = combine_match_scores(skill_score, metadata_score, skill_weight=0.7, metadata_weight=0.3)
-
-    # Generate UNIQUE, PERSONALIZED description for THIS SPECIFIC JOB
-    # Include company, title, and location to make each description unique
-    company_name = job.get('company', 'Unknown Company')
-    full_title = job.get('title', 'Unknown Position')
-    location = job.get('location', 'Location not specified')
-    
-    # Create opening line specific to this job
-    if skill_score >= 80:
-        opening = f"🎯 **{company_name}** - This {full_title} position is an excellent match for your profile!"
-    elif skill_score >= 60:
-        opening = f"✅ **{company_name}** - This {full_title} role aligns well with your skills."
-    elif skill_score >= 40:
-        opening = f"⚠️ **{company_name}** - This {full_title} position is a moderate match."
-    else:
-        opening = f"📊 **{company_name}** - This {full_title} role has some matching elements."
-    
-    # Build skill match details
-    skill_match_detail = f"\n\n**Your Skill Match:** {len(matched_skills)} out of {len(job_skills)} required skills"
-    
-    if matched_skills:
-        skill_match_detail += f"\n- ✅ **Your matching skills:** {', '.join(matched_skills[:5])}"
-        if len(matched_skills) > 5:
-            skill_match_detail += f" (+{len(matched_skills) - 5} more)"
-    
-    missing_skills = [skill for skill in job_skills if skill not in matched_skills]
-    if missing_skills:
-        skill_match_detail += f"\n- 📚 **Skills to develop:** {', '.join(missing_skills[:3])}"
-        if len(missing_skills) > 3:
-            skill_match_detail += f" (+{len(missing_skills) - 3} more)"
-    
-    # Add location info
-    location_info = f"\n\n**📍 Location:** {location}"
-    
-    # Add metadata insights
-    metadata_info = f"\n\n**📊 Additional Insights:**\n{metadata_description}"
-    
-    # Add final score breakdown
-    score_breakdown = f"\n\n**🎯 Match Score: {final_score}/100**\n- Skill Match: {skill_score}/100\n- Profile Compatibility: {metadata_score}/100"
-    
-    # Combine everything into a unique description
-    combined_description = opening + skill_match_detail + location_info + metadata_info + score_breakdown
-
-    return final_score, combined_description
 
 def extract_skills_from_text(text):
     """Extract skills from text using LLM-based analysis instead of hardcoded keywords."""
@@ -347,22 +388,21 @@ def intelligent_resume_based_scoring(job, resume_skills, resume_text=""):
     Returns: score (0-100)
     """
     if not resume_text or not resume_text.strip():
-        print("⚠️ No resume text provided for intelligent scoring, using fallback")
-        return fast_job_score_fallback(job, resume_skills)
+        print("❌ No resume text provided for intelligent scoring")
+        raise Exception("Resume text is required for intelligent scoring")
     
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        
+        client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+
         # Prepare job information
         job_title = job.get("title", "Unknown Position")
         job_company = job.get("company", "Unknown Company")
         job_description = job.get("description", "No description available")
         job_location = job.get("location", "Location not specified")
         job_skills = job.get("required_skills", [])
-        
+
         # Create comprehensive prompt for intelligent matching
-        prompt = f"""
-You are an expert **career advisor and technical resume analyst**. Your task is to evaluate how well a candidate’s resume matches a specific job opportunity.
+        prompt = f"""You are an expert **career advisor and technical resume analyst**. Your task is to evaluate how well a candidate's resume matches a specific job opportunity.
 
 You must output a structured JSON assessment that is **precise, consistent, and parsable**.
 
@@ -388,7 +428,7 @@ You must output a structured JSON assessment that is **precise, consistent, and 
 You will assign a **final score (0–100)** using the following weighted components:
 
 ### 1. RESUME COMPLEXITY (40% weight — MOST IMPORTANT)
-Evaluate the candidate’s technical and experiential sophistication.
+Evaluate the candidate's technical and experiential sophistication.
 
 **Advanced Resume (80–100 range):**
 - Multiple technically complex projects (e.g., AI agents, distributed systems, production-grade apps)
@@ -396,7 +436,7 @@ Evaluate the candidate’s technical and experiential sophistication.
 - Leadership, mentorship, or technical ownership experience
 - Published research or open-source contributions
 - Awards, hackathon wins, or recognized achievements
-- Demonstrated depth (e.g., “Implemented Flask API with caching + CI/CD pipeline,” not just “used Flask”)
+- Demonstrated depth (e.g., "Implemented Flask API with caching + CI/CD pipeline," not just "used Flask")
 
 **Intermediate Resume (50–79 range):**
 - Some real-world experience or strong personal projects
@@ -407,19 +447,19 @@ Evaluate the candidate’s technical and experiential sophistication.
 - Only academic projects or class assignments
 - Minimal or no professional experience
 - Vague skill descriptions without technical detail
-- Generic language: “Used JavaScript for websites” with no measurable output
+- Generic language: "Used JavaScript for websites" with no measurable output
 
 ---
 
 ### 2. EXPERIENCE LEVEL MATCHING (30% weight)
-Determine if the job level matches the candidate’s level.
+Determine if the job level matches the candidate's level.
 
 **Rules:**
-- If job includes “senior”, “lead”, “principal”, “architect”, “manager”, “5+ years”, or “10+ years”
+- If job includes "senior", "lead", "principal", "architect", "manager", "5+ years", or "10+ years"
   AND candidate is BEGINNER or INTERMEDIATE → **Immediate disqualification (score 0)**
 - Entry-level candidates → good match for intern/entry roles
 - Advanced candidates → poor match for entry-level roles
-- Aim for “calibrated fit”: the job should challenge but not exceed or undershoot the resume’s demonstrated level.
+- Aim for "calibrated fit": the job should challenge but not exceed or undershoot the resume's demonstrated level.
 
 ---
 
@@ -431,12 +471,12 @@ Compare required job skills with resume skills.
 - 0–1 overlapping skills → score 0
 - 2–3 overlapping skills → acceptable (50–70)
 - 4+ well-demonstrated skills → strong alignment (80–100)
-- Consider relevance (e.g., “React” matches “ReactJS” but not “Vue”)
+- Consider relevance (e.g., "React" matches "ReactJS" but not "Vue")
 
 ---
 
 ### 4. CAREER FIT (10% weight)
-Assess whether the role aligns with the candidate’s next logical step:
+Assess whether the role aligns with the candidate's next logical step:
 - Does this job advance their current trajectory?
 - Is it in the same or a natural evolution of their domain?
 - Would this role reasonably leverage and expand their current skills?
@@ -459,7 +499,7 @@ Assess whether the role aligns with the candidate’s next logical step:
 
 ## OUTPUT FORMAT (STRICT JSON ONLY)
 
-Return exactly this structure:
+Return ONLY valid JSON (no markdown, no code blocks):
 
 {{
   "score": <integer 0–100>,
@@ -536,27 +576,22 @@ Return exactly this structure:
 ## NOTES
 - Keep reasoning concise and factual (avoid opinions or restating data).
 - Use conservative scoring — reward clear depth, penalize vagueness.
-- Never include non-JSON text in output.
-"""
+- Never include non-JSON text in output."""
 
-        response = client.chat.completions.create(
-            model="gpt-5",
+        response = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=400,
+            system="You are an expert career advisor who analyzes resume complexity and job fit. You heavily weight resume sophistication when determining if a job is appropriate for a candidate. You prevent mismatches by filtering out senior roles for beginners and entry roles for advanced candidates. Always return valid JSON only.",
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert career advisor who analyzes resume complexity and job fit. You heavily weight resume sophistication when determining if a job is appropriate for a candidate. You prevent mismatches by filtering out senior roles for beginners and entry roles for advanced candidates."
-                },
                 {
                     "role": "user",
                     "content": prompt
                 }
-            ],
-            temperature=0.2,  # Low for consistency
-            max_tokens=400,
-            response_format={"type": "json_object"}
+            ]
         )
-        
-        result = json.loads(response.choices[0].message.content)
+
+        response_text = extract_json_from_response(response.content[0].text)
+        result = json.loads(response_text)
         score = result.get("score", 0)
         complexity = result.get("resume_complexity", "UNKNOWN")
         reasoning = result.get("reasoning", "No reasoning provided")
@@ -578,113 +613,103 @@ Return exactly this structure:
         
     except Exception as e:
         print(f"❌ Error in intelligent scoring for {job.get('title', 'Unknown')}: {e}")
-        # Fallback to rule-based scoring if LLM fails
-        fallback_score = fast_job_score_fallback(job, resume_skills)
-        return {
-            "score": fallback_score,
-            "resume_complexity": "UNKNOWN",
-            "complexity_score": fallback_score,
-            "experience_match": "fallback",
-            "skill_match_count": 0,
-            "reasoning": "LLM analysis failed, using fallback scoring",
-            "red_flags": []
-        }
+        raise Exception(f"Intelligent scoring failed: {str(e)}")
 
-def fast_job_score_fallback(job, resume_skills):
-    """
-    Fallback rule-based scoring when LLM is unavailable.
-    This is the original fast_job_score logic.
-    """
-    from matching.llm_skill_extractor import match_skills_dynamically, extract_job_skills_with_llm
-    
-    # CRITICAL: Filter out senior/experienced roles
-    job_title = job.get("title", "").lower()
-    job_description = job.get("description", "").lower()
-    
-    # Check for senior/experienced indicators
-    senior_indicators = [
-        "senior", "lead", "principal", "staff", "architect", "manager", "director",
-        "10+ years", "12+ years", "15+ years", "20+ years", "extensive experience",
-        "expert", "advanced", "seasoned", "veteran", "senior level", "leadership"
-    ]
-    
-    for indicator in senior_indicators:
-        if indicator in job_title or indicator in job_description:
-            return 0
-    
-    # Check for high experience requirements
-    experience_patterns = [
-        r'(\d+)\+?\s*years?\s*(?:of\s+)?experience',
-        r'(\d+)\+?\s*years?\s*(?:of\s+)?(?:software|development|programming)'
-    ]
-    
-    for pattern in experience_patterns:
-        matches = re.findall(pattern, f"{job_title} {job_description}")
-        for match in matches:
-            try:
-                years = int(match)
-                if years >= 5:
-                    return 0
-            except ValueError:
-                continue
-    
-    # Get job skills
-    job_skills = job.get("required_skills", [])
-    if not job_skills:
-        job_skills = extract_job_skills_with_llm(
-            job.get("title", ""), 
-            job.get("description", ""), 
-            job.get("company", "")
-        )
-        job["required_skills"] = job_skills
-    
-    if not job_skills or not resume_skills:
-        return 0
-    
-    # Fast skill matching
-    matches = match_skills_dynamically(job_skills, resume_skills, threshold=0.7)
-    matched_skills = [match["job_skill"] for match in matches]
-    
-    if len(matched_skills) < 2:
-        return 0
-    
-    # Simple ratio-based scoring
-    skill_score = round(100 * len(matched_skills) / len(job_skills))
-    
-    if len(matched_skills) >= 3:
-        skill_score += 10
-    elif len(matched_skills) >= 2:
-        skill_score += 5
-    
-    return min(100, skill_score)
 
-def intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_count=50):
+def calculate_optimal_batch_size(jobs: List[Dict], resume_text: str, min_size: int = 5, max_size: int = 30) -> int:
+    """
+    Dynamically calculate optimal batch size based on content length.
+    Prevents truncation while maximizing throughput.
+
+    Args:
+        jobs: List of job dictionaries
+        resume_text: Candidate's resume text
+        min_size: Minimum jobs per batch (default: 5)
+        max_size: Maximum jobs per batch (default: 30)
+
+    Returns:
+        Optimal number of jobs to process in a single batch
+    """
+    if not jobs:
+        return min_size
+
+    # Calculate average job description length (we truncate to 500 chars in prompt)
+    total_desc_length = sum(min(len(job.get('description', '')), 500) for job in jobs)
+    avg_desc_length = total_desc_length / len(jobs) if jobs else 0
+
+    # Resume context length (we truncate to 1500 chars in prompt)
+    resume_context_length = min(len(resume_text), 1500)
+
+    # Estimate tokens per job in the response (comprehensive analysis)
+    # Each job analysis includes: reasoning, skill_matches, skill_gaps, red_flags
+    estimated_response_tokens_per_job = 250
+
+    # Estimate tokens per job in the prompt based on ACTUAL average description length
+    # Includes: job_id, company, title, location, description
+    # Convert chars to tokens (roughly 4 chars = 1 token)
+    job_metadata_chars = 100  # company, title, location, job_id
+    estimated_prompt_tokens_per_job = (avg_desc_length + job_metadata_chars) // 4
+
+    # Fixed prompt overhead (instructions, examples, formatting)
+    fixed_prompt_overhead = 2500  # Base prompt tokens
+
+    # Resume overhead
+    resume_overhead = resume_context_length // 4  # chars to tokens
+
+    # Model's max output tokens (we can request up to 16000)
+    max_output_tokens = 16000
+
+    # Calculate how many jobs we can fit
+    # We need to ensure: (fixed + resume + jobs*prompt_size) + (jobs*response_size) < total_budget
+    total_budget = max_output_tokens
+    available_for_jobs = total_budget - fixed_prompt_overhead - resume_overhead
+
+    # Each job uses: prompt tokens + response tokens
+    tokens_per_job = estimated_prompt_tokens_per_job + estimated_response_tokens_per_job
+
+    # Ensure we don't divide by zero
+    if tokens_per_job <= 0:
+        tokens_per_job = 300  # Safe default
+
+    optimal_size = int(available_for_jobs / tokens_per_job)
+
+    # Clamp to min/max bounds
+    optimal_size = max(min_size, min(optimal_size, max_size))
+
+    # Dynamic batch sizing calculated silently
+
+    return optimal_size
+
+
+def intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_count=30, progress_callback=None):
     """
     Sophisticated multi-layer pre-filtering to select the best job candidates
     from the full cache for LLM analysis. Preserves accuracy while being efficient.
+    Reduced to 30 jobs max to prevent LLM token limit issues.
     """
+    # Send progress: Starting pre-filtering
+    if progress_callback:
+        progress_callback("Pre-filtering top candidates for you...")
+
     if len(jobs) <= target_count:
-        print(f"⚡ Only {len(jobs)} jobs available, returning all for analysis")
         return jobs
-    
-    print(f"🔍 Pre-filtering {len(jobs)} jobs to top {target_count} candidates...")
-    
+
     # Stage 1A: Hard requirement filtering
     experience_level = resume_metadata.get('experience_level', 'student')
     years_experience = resume_metadata.get('years_of_experience', 0)
     is_student = resume_metadata.get('is_student', True)
-    
+
     filtered_jobs = []
     for job in jobs:
         job_title = job.get('title', '').lower()
         job_description = job.get('description', '').lower()
-        
+
         # Filter out senior/inappropriate roles
         senior_indicators = ['senior', 'lead', 'principal', 'staff', 'architect', 'manager', 'director']
         if any(indicator in job_title for indicator in senior_indicators):
             if experience_level in ['student', 'recent_graduate'] or years_experience < 3:
                 continue  # Skip senior roles for junior candidates
-        
+
         # Filter out high experience requirements
         import re
         exp_patterns = [r'(\d+)\+?\s*years?\s*(?:of\s+)?experience', r'(\d+)\+?\s*years?\s*(?:of\s+)?(?:software|development|programming)']
@@ -701,145 +726,276 @@ def intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_coun
                     continue
             if skip_job:
                 break
-        
+
         if skip_job:
             continue
-            
+
         filtered_jobs.append(job)
-    
-    print(f"   After requirement filtering: {len(filtered_jobs)} jobs remain")
-    
-    # Stage 1B: Smart skill-based scoring
-    scored_jobs = []
-    for job in filtered_jobs:
-        score = calculate_prefilter_score(job, resume_skills, resume_metadata)
-        scored_jobs.append((job, score))
-    
-    # Sort by score and take top candidates
-    scored_jobs.sort(key=lambda x: x[1], reverse=True)
-    top_jobs = [job for job, score in scored_jobs[:target_count]]
-    
-    print(f"   After intelligent filtering: {len(top_jobs)} jobs selected for LLM analysis")
-    return top_jobs
 
-def calculate_prefilter_score(job, resume_skills, resume_metadata):
-    """
-    Calculate a preliminary score for job filtering based on multiple factors.
-    """
-    job_title = job.get('title', '').lower()
-    job_description = job.get('description', '').lower()
-    company = job.get('company', '').lower()
-    location = job.get('location', '').lower()
-    
-    score = 0
-    
-    # Factor 1: Direct skill matches in job title (highest weight)
-    title_skills = 0
-    for skill in resume_skills:
-        skill_lower = skill.lower()
-        if skill_lower in job_title:
-            title_skills += 15  # High bonus for skill in title
-        elif any(variant in job_title for variant in [skill_lower.replace('.', ''), skill_lower.replace('js', 'javascript')]):
-            title_skills += 10  # Bonus for skill variants
-    
-    score += min(title_skills, 45)  # Cap at 45 points
-    
-    # Factor 2: Skill matches in description
-    description_skills = 0
-    for skill in resume_skills:
-        skill_lower = skill.lower()
-        if skill_lower in job_description:
-            description_skills += 5
-        elif any(variant in job_description for variant in [skill_lower.replace('.', ''), skill_lower.replace('js', 'javascript')]):
-            description_skills += 3
-    
-    score += min(description_skills, 25)  # Cap at 25 points
-    
-    # Factor 3: Domain alignment
-    domain_keywords = {
-        'frontend': ['frontend', 'front-end', 'react', 'angular', 'vue', 'javascript', 'html', 'css'],
-        'backend': ['backend', 'back-end', 'server', 'api', 'node', 'python', 'java', 'database'],
-        'fullstack': ['fullstack', 'full-stack', 'full stack'],
-        'mobile': ['mobile', 'ios', 'android', 'react native', 'flutter', 'swift', 'kotlin'],
-        'data': ['data', 'analytics', 'machine learning', 'ai', 'python', 'sql', 'pandas'],
-        'devops': ['devops', 'cloud', 'aws', 'azure', 'docker', 'kubernetes', 'infrastructure']
-    }
-    
-    user_domains = set()
-    for domain, keywords in domain_keywords.items():
-        if any(keyword.lower() in [skill.lower() for skill in resume_skills] for keyword in keywords):
-            user_domains.add(domain)
-    
-    job_domains = set()
-    job_text = f"{job_title} {job_description}"
-    for domain, keywords in domain_keywords.items():
-        if any(keyword in job_text for keyword in keywords):
-            job_domains.add(domain)
-    
-    domain_overlap = len(user_domains.intersection(job_domains))
-    score += domain_overlap * 8  # 8 points per domain match
-    
-    # Factor 4: Company quality indicators
-    quality_indicators = ['google', 'microsoft', 'amazon', 'apple', 'meta', 'netflix', 'uber', 'airbnb', 'stripe', 'spotify']
-    if any(indicator in company for indicator in quality_indicators):
-        score += 10  # Bonus for top-tier companies
-    
-    # Factor 5: Remote/location preferences
-    if 'remote' in location:
-        score += 5  # Bonus for remote positions
-    elif 'hybrid' in location:
-        score += 3
-    
-    # Factor 6: Internship indicators
-    internship_indicators = ['intern', 'internship', 'summer', 'co-op', 'new grad', 'entry level']
-    if any(indicator in job_title for indicator in internship_indicators):
-        score += 8  # Bonus for clearly marked internships
-    
-    return score
+    # Return all filtered jobs (no hardcoded scoring)
+    return filtered_jobs[:target_count]
 
-def batch_analyze_jobs_with_llm(filtered_jobs, resume_skills, resume_text, resume_metadata):
+
+def batch_analyze_jobs_with_llm(filtered_jobs, resume_skills, resume_text, resume_metadata, max_jobs_per_batch=None, use_parallel=True, model="claude-sonnet-4-5-20250929", enable_caching=True, progress_callback=None):
     """
     Comprehensive batch LLM analysis of pre-filtered jobs.
-    Single LLM call to analyze all jobs with detailed scoring and reasoning.
+    Uses dynamic batch sizing and parallel processing for maximum speed.
+    Automatically retries with smaller batches if truncation detected.
+
+    Args:
+        filtered_jobs: List of jobs to analyze
+        resume_skills: List of candidate skills
+        resume_text: Full resume text
+        resume_metadata: Candidate metadata
+        max_jobs_per_batch: Override automatic batch sizing (optional)
+        use_parallel: Enable parallel processing (default: True)
+        model: Claude model to use - "claude-sonnet-4-5-20250929" (default, slower but better) or "claude-haiku-3-5-20241022" (10x faster)
+        enable_caching: Enable prompt caching for 40-60% speed improvement (default: True)
+        progress_callback: Optional callback function to report progress (takes message string)
     """
     if not filtered_jobs:
         return []
-    
-    print(f"🤖 Starting batch LLM analysis of {len(filtered_jobs)} jobs...")
-    
+
+    # Calculate optimal batch size if not provided
+    if max_jobs_per_batch is None:
+        max_jobs_per_batch = calculate_optimal_batch_size(filtered_jobs, resume_text)
+
+    # If we have more jobs than max_jobs_per_batch, split into chunks
+    if len(filtered_jobs) > max_jobs_per_batch:
+        # Create chunks
+        chunks = []
+        for i in range(0, len(filtered_jobs), max_jobs_per_batch):
+            chunk = filtered_jobs[i:i + max_jobs_per_batch]
+            chunks.append((chunk, i + 1))  # (chunk_jobs, start_id)
+
+        total_chunks = len(chunks)
+
+        # Send progress: Starting batch analysis
+        if progress_callback:
+            progress_callback(f"Running AI career analysis (batch 1 of {total_chunks})...")
+
+        # Process chunks in parallel or sequentially
+        if use_parallel and total_chunks > 1:
+            all_scores = _process_chunks_parallel(chunks, resume_skills, resume_text, resume_metadata, model, enable_caching, progress_callback=progress_callback)
+        else:
+            all_scores = _process_chunks_sequential(chunks, resume_skills, resume_text, resume_metadata, model, enable_caching, progress_callback=progress_callback)
+
+        return all_scores
+
+    # Single batch processing (no chunking needed)
+    # Send progress for single batch
+    if progress_callback:
+        progress_callback("Running AI career analysis...")
+
+    return _analyze_single_batch(filtered_jobs, resume_skills, resume_text, resume_metadata, start_id=1, model=model, enable_caching=enable_caching)
+
+
+def _process_chunks_parallel(chunks: List[tuple], resume_skills, resume_text, resume_metadata, model, enable_caching, max_workers: int = 3, progress_callback=None) -> List[Dict]:
+    """
+    Process multiple chunks in parallel using ThreadPoolExecutor.
+
+    Args:
+        chunks: List of (chunk_jobs, start_id) tuples
+        resume_skills: Candidate skills
+        resume_text: Resume text
+        resume_metadata: Metadata
+        model: Claude model to use
+        enable_caching: Whether to enable prompt caching
+        max_workers: Maximum concurrent API calls (default: 3 to respect rate limits)
+        progress_callback: Optional callback function to report progress
+
+    Returns:
+        Combined list of all job scores from all chunks
+    """
+    all_scores = []
+    total_chunks = len(chunks)
+    completed_chunks = 0
+
+    # Use ThreadPoolExecutor for parallel API calls
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all chunks for processing
+        future_to_chunk = {}
+        for chunk_idx, (chunk_jobs, start_id) in enumerate(chunks):
+            chunk_num = chunk_idx + 1
+            future = executor.submit(
+                _analyze_single_batch_with_retry,
+                chunk_jobs,
+                resume_skills,
+                resume_text,
+                resume_metadata,
+                start_id,
+                chunk_num,
+                len(chunks),
+                model,
+                enable_caching
+            )
+            future_to_chunk[future] = (chunk_num, len(chunk_jobs))
+
+        # Collect results as they complete
+        for future in as_completed(future_to_chunk):
+            chunk_num, chunk_size = future_to_chunk[future]
+            try:
+                chunk_scores = future.result()
+                all_scores.extend(chunk_scores)
+                completed_chunks += 1
+
+                # Send progress after each batch completes (skip batch 1 since it was already reported)
+                if progress_callback and completed_chunks < total_chunks:
+                    next_batch = completed_chunks + 1
+                    progress_callback(f"Running AI career analysis (batch {next_batch} of {total_chunks})...")
+
+            except Exception:
+                # Continue processing other chunks silently
+                continue
+
+    return all_scores
+
+
+def _process_chunks_sequential(chunks: List[tuple], resume_skills, resume_text, resume_metadata, model, enable_caching, progress_callback=None) -> List[Dict]:
+    """
+    Process chunks one at a time (fallback for when parallel fails or is disabled).
+
+    Args:
+        chunks: List of (chunk_jobs, start_id) tuples
+        resume_skills: Candidate skills
+        resume_text: Resume text
+        resume_metadata: Metadata
+        model: Claude model to use
+        enable_caching: Whether to enable prompt caching
+        progress_callback: Optional callback function to report progress
+
+    Returns:
+        Combined list of all job scores from all chunks
+    """
+    all_scores = []
+
+    for chunk_idx, (chunk_jobs, start_id) in enumerate(chunks):
+        chunk_num = chunk_idx + 1
+        total_chunks = len(chunks)
+
+        # Send progress for each batch (skip batch 1 since it was already reported)
+        if progress_callback and chunk_num > 1:
+            progress_callback(f"Running AI career analysis (batch {chunk_num} of {total_chunks})...")
+
+        try:
+            chunk_scores = _analyze_single_batch_with_retry(
+                chunk_jobs,
+                resume_skills,
+                resume_text,
+                resume_metadata,
+                start_id,
+                chunk_num,
+                total_chunks,
+                model,
+                enable_caching
+            )
+            all_scores.extend(chunk_scores)
+        except Exception:
+            continue
+
+    return all_scores
+
+
+def _analyze_single_batch_with_retry(chunk_jobs, resume_skills, resume_text, resume_metadata, start_id, chunk_num, total_chunks, model, enable_caching, max_retries: int = 2):
+    """
+    Analyze a single batch with automatic retry on failure.
+
+    Args:
+        chunk_jobs: Jobs in this chunk
+        resume_skills: Candidate skills
+        resume_text: Resume text
+        resume_metadata: Metadata
+        start_id: Starting job ID for this chunk
+        chunk_num: Chunk number (for logging)
+        total_chunks: Total number of chunks (for logging)
+        model: Claude model to use
+        enable_caching: Whether to enable prompt caching
+        max_retries: Maximum retry attempts
+
+    Returns:
+        List of job scores for this chunk
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            chunk_scores = _analyze_single_batch(
+                chunk_jobs,
+                resume_skills,
+                resume_text,
+                resume_metadata,
+                start_id,
+                model,
+                enable_caching
+            )
+            return chunk_scores
+        except Exception as e:
+            if attempt < max_retries:
+                # Retry with smaller batch if we have retries left
+                if len(chunk_jobs) > 5:
+                    smaller_batch_size = max(5, len(chunk_jobs) // 2)
+
+                    # Split and retry recursively
+                    return batch_analyze_jobs_with_llm(
+                        chunk_jobs,
+                        resume_skills,
+                        resume_text,
+                        resume_metadata,
+                        max_jobs_per_batch=smaller_batch_size,
+                        use_parallel=False,  # Don't use parallel for retries
+                        model=model,
+                        enable_caching=enable_caching
+                    )
+                else:
+                    raise
+            else:
+                raise
+
+
+def _analyze_single_batch(filtered_jobs, resume_skills, resume_text, resume_metadata, start_id=1, model="claude-sonnet-4-5-20250929", enable_caching=True):
+    """
+    Internal function to analyze a single batch of jobs.
+    Separated for reusability in chunking logic.
+
+    Args:
+        filtered_jobs: Jobs to analyze in this batch
+        resume_skills: Candidate's skills
+        resume_text: Full resume text
+        resume_metadata: Candidate metadata
+        start_id: Starting job ID for this batch
+        model: Claude model to use (sonnet or haiku)
+        enable_caching: Enable prompt caching for speed (default: True)
+    """
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        
+        client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+
         # Create candidate profile summary
         experience_level = resume_metadata.get('experience_level', 'student')
         years_experience = resume_metadata.get('years_of_experience', 0)
-        
+
         # Format jobs for batch analysis
         jobs_summary = []
         for i, job in enumerate(filtered_jobs):
             job_summary = {
-                "job_id": i + 1,
+                "job_id": start_id + i,
                 "company": job.get('company', 'Unknown'),
                 "title": job.get('title', 'Unknown'),
                 "location": job.get('location', 'Unknown'),
                 "description": job.get('description', '')[:500]  # Limit description length
             }
             jobs_summary.append(job_summary)
-        
+
         # Create comprehensive batch analysis prompt
-        prompt = f"""You are an expert technical recruiter and career advisor who values REAL-WORLD IMPACT and PROJECT DEPTH over keyword matching.
+        # Use json.dumps to safely escape all strings
+        candidate_profile = {
+            "resume_skills": resume_skills,
+            "experience_level": experience_level,
+            "years_experience": years_experience,
+            "resume_context": resume_text[:1500]
+        }
 
-CANDIDATE PROFILE:
-Resume Skills: {resume_skills}
-Experience Level: {experience_level} ({years_experience} years)
-Full Resume Context: {resume_text[:1500]}
+        # Split prompt into cacheable and non-cacheable parts for prompt caching optimization
 
-JOBS TO ANALYZE ({len(filtered_jobs)} positions):
-{json.dumps(jobs_summary, indent=2)}
-
-YOUR TASK - COMPREHENSIVE BATCH ANALYSIS:
-
-For EACH job, provide detailed analysis using this WEIGHTED SCORING SYSTEM:
+        # CACHEABLE PART 1: Static scoring instructions (same for all batches in all sessions)
+        static_instructions = """For EACH job, provide detailed analysis using this WEIGHTED SCORING SYSTEM:
 
 🏆 SCORING WEIGHTS (Total = 100 points):
 
@@ -851,7 +1007,7 @@ For EACH job, provide detailed analysis using this WEIGHTED SCORING SYSTEM:
    - ✅ PROBLEM-SOLVING DEPTH: Specific technical challenges solved (not just "built a website")
    - ✅ PROJECT SCALE: Team size, codebase size, duration, iterations
    - ✅ TANGIBLE RESULTS: Revenue generated, users acquired, performance improvements (e.g., "reduced load time by 40%")
-   
+
    🚫 IGNORE KEYWORD RESUMES: If resume just lists technologies without depth ("Built app using React, Node.js") = LOW SCORE
    ⭐ REWARD DEPTH: "Deployed React app to AWS with 500+ daily users, implemented Redis caching reducing API latency by 60%" = HIGH SCORE
 
@@ -912,7 +1068,19 @@ LOW SCORE (20-40):
 - Look for metrics, users, performance improvements, business impact
 - Consider: "Would I hire this person based on proven results, not buzzwords?"
 
-Return ONLY valid JSON:
+⚠️ JSON FORMAT REQUIREMENTS (CRITICAL):
+- Return ONLY valid, parsable JSON
+- NO markdown code blocks (no ```)
+- NO extra text before or after JSON
+- MUST include ALL required fields for EVERY job
+- Required fields: job_id, company, title, match_score, reasoning
+- Optional fields: red_flags, skill_matches, skill_gaps (provide empty arrays if none)
+- Ensure proper JSON syntax: matching quotes, braces, brackets, commas
+- Use double quotes (") for strings, NOT single quotes (')
+- Escape special characters in strings (quotes, backslashes, newlines)
+- ANALYZE ALL {len(filtered_jobs)} JOBS - do not skip any
+
+Return ONLY this JSON structure:
 {{
   "analysis_summary": "Overall assessment of candidate's market fit",
   "job_scores": [
@@ -927,53 +1095,110 @@ Return ONLY valid JSON:
       "skill_gaps": ["TypeScript", "GraphQL"]
     }}
   ]
-}}"""
+}}
 
-        response = client.chat.completions.create(
-            model="gpt-5",
-            messages=[
+IMPORTANT: Return complete JSON for all jobs. Do not truncate or abbreviate."""
+
+        # CACHEABLE PART 2: Candidate profile (same for all batches in this session)
+        candidate_context = f"""CANDIDATE PROFILE:
+{json.dumps(candidate_profile, indent=2)}
+
+You will analyze multiple job opportunities for this candidate using the scoring system provided."""
+
+        # NON-CACHEABLE PART: Job-specific data (changes every batch)
+        jobs_prompt = f"""JOBS TO ANALYZE ({len(filtered_jobs)} positions):
+{json.dumps(jobs_summary, indent=2)}
+
+Analyze each job and return complete JSON for all {len(filtered_jobs)} jobs."""
+
+        # Removed debug logging for cleaner output
+
+        # Calculate max tokens with content-aware sizing
+        # Account for actual content length, not just job count
+        total_job_content_length = sum(len(job.get('description', '')[:500]) for job in filtered_jobs)
+        avg_job_content_length = total_job_content_length / len(filtered_jobs) if filtered_jobs else 0
+
+        # Estimate response tokens per job (comprehensive analysis with all fields)
+        estimated_response_tokens_per_job = 250
+
+        # Estimate prompt overhead
+        base_prompt_tokens = 2500  # Fixed instructions
+        resume_tokens = len(resume_text[:1500]) // 4  # Resume context
+        job_content_tokens = total_job_content_length // 4  # Job descriptions
+
+        # Total estimated tokens needed
+        estimated_prompt_tokens = base_prompt_tokens + resume_tokens + job_content_tokens
+        estimated_response_tokens = len(filtered_jobs) * estimated_response_tokens_per_job
+        estimated_total = estimated_prompt_tokens + estimated_response_tokens
+
+        # Add 20% buffer for safety
+        max_tokens = min(16000, int(estimated_response_tokens * 1.2))
+
+        # Removed verbose token allocation logging
+
+        # Build system message with prompt caching
+        if enable_caching:
+            # Use structured system message with cache control for better performance
+            system_message = [
                 {
-                    "role": "system",
-                    "content": "You are an expert technical recruiter who values DEMONSTRATED IMPACT over buzzwords. You heavily weight: production deployments, real users, measurable results, technical depth, and proven problem-solving. You penalize keyword-stuffed resumes without substance. You ensure scoring diversity by carefully weighing each candidate's real-world accomplishments."
+                    "type": "text",
+                    "text": "You are an expert technical recruiter who values DEMONSTRATED IMPACT over buzzwords. You heavily weight: production deployments, real users, measurable results, technical depth, and proven problem-solving. You penalize keyword-stuffed resumes without substance. You ensure scoring diversity by carefully weighing each candidate's real-world accomplishments. CRITICAL: Always return ONLY valid, complete, parsable JSON with no markdown formatting, no code blocks, and no extra text. Include ALL required fields for EVERY job analyzed. Never truncate or abbreviate your response.",
+                    "cache_control": {"type": "ephemeral"}  # Cache system instructions
                 },
                 {
-                    "role": "user",
-                    "content": prompt
+                    "type": "text",
+                    "text": static_instructions,
+                    "cache_control": {"type": "ephemeral"}  # Cache scoring criteria
+                },
+                {
+                    "type": "text",
+                    "text": candidate_context,
+                    "cache_control": {"type": "ephemeral"}  # Cache candidate profile
                 }
-            ],
-            temperature=0.3,  # Some creativity for diverse scoring
-            max_tokens=4000,   # Large response for comprehensive analysis
-            response_format={"type": "json_object"}
+            ]
+            pass  # Caching enabled silently
+        else:
+            # Fallback to simple string system message (no caching)
+            system_message = f"You are an expert technical recruiter who values DEMONSTRATED IMPACT over buzzwords. You heavily weight: production deployments, real users, measurable results, technical depth, and proven problem-solving. You penalize keyword-stuffed resumes without substance. You ensure scoring diversity by carefully weighing each candidate's real-world accomplishments. CRITICAL: Always return ONLY valid, complete, parsable JSON with no markdown formatting, no code blocks, and no extra text. Include ALL required fields for EVERY job analyzed. Never truncate or abbreviate your response.\n\n{static_instructions}\n\n{candidate_context}"
+
+        response = client.messages.create(
+            model=model,
+            max_tokens=max_tokens,
+            system=system_message,
+            messages=[
+                {
+                    "role": "user",
+                    "content": jobs_prompt  # Only job-specific data in user message
+                }
+            ]
         )
-        
-        result = json.loads(response.choices[0].message.content)
+
+        # Process LLM response
+        raw_response = response.content[0].text
+
+        # Check if response was truncated
+        if response.stop_reason == "max_tokens":
+            raise Exception(f"Response truncated - reduce batch size from {len(filtered_jobs)} jobs")
+
+        # Extract JSON from response
+        response_text = extract_json_from_response(raw_response)
+
+        # Clean, repair, and validate JSON
+        try:
+            result = clean_and_validate_llm_response(response_text, len(filtered_jobs))
+        except Exception as validation_error:
+            # This is likely truncation or malformed JSON - raise for retry
+            raise Exception(f"Response validation failed - reduce batch size from {len(filtered_jobs)} jobs")
+
         job_scores = result.get("job_scores", [])
-        
-        print(f"✅ Batch LLM analysis complete: {len(job_scores)} jobs analyzed")
-        print(f"📊 Score range: {min([j['match_score'] for j in job_scores])}-{max([j['match_score'] for j in job_scores])}")
-        
+
         return job_scores
-        
+
     except Exception as e:
         print(f"❌ Error in batch LLM analysis: {e}")
-        
-        # Fallback: use enhanced rule-based scoring
-        print("🔄 Using enhanced fallback scoring...")
-        fallback_scores = []
-        for i, job in enumerate(filtered_jobs):
-            fallback_score = fast_job_score_fallback(job, resume_skills)
-            fallback_scores.append({
-                "job_id": i + 1,
-                "company": job.get('company', 'Unknown'),
-                "title": job.get('title', 'Unknown'),
-                "match_score": fallback_score,
-                "reasoning": f"Fallback analysis - {fallback_score}% skill match",
-                "red_flags": [],
-                "skill_matches": [],
-                "skill_gaps": []
-            })
-        
-        return fallback_scores
+
+        # Re-raise to allow caller to handle retries
+        raise Exception(f"Batch LLM analysis failed: {str(e)}")
 
 def enhance_batch_results(llm_scores, original_jobs, resume_skills=None):
     """
@@ -1148,177 +1373,304 @@ def create_rich_match_description(job, score_data, ai_reasoning):
     
     return opening + ai_section + skill_section + red_flag_section + location_section + score_section
 
-def match_resume_to_jobs(resume_skills, jobs, resume_text=""):
+def fuzzy_skill_match(resume_skill, job_skill):
     """
-    Ultra-efficient 3-stage job matching with single LLM call.
-    Stage 1: Pre-filter jobs (free, fast)
-    Stage 2: Batch LLM analysis (single call)
-    Stage 3: Enhanced results
-    """
-    if not jobs:
-        return []
-    
-    print(f"🎯 Starting efficient 3-stage matching with {len(jobs)} jobs and {len(resume_skills)} resume skills")
-    
-    # Extract resume metadata for filtering (should already be available from parse_resume)
-    resume_metadata = {
-        'experience_level': extract_user_experience_level(resume_skills, resume_text),
-        'years_of_experience': 0,  # Default for now, could be extracted
-        'is_student': True  # Default assumption for internships
-    }
-    
-    # STAGE 1: Intelligent Pre-filtering (FREE, <1 second)
-    print("🔍 Stage 1: Pre-filtering jobs with intelligent criteria...")
-    filtered_jobs = intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_count=50)
-    
-    if not filtered_jobs:
-        print("❌ No jobs passed pre-filtering criteria")
-        return []
-    
-    # STAGE 2: Batch LLM Analysis (Single LLM call, ~$0.08-0.15)
-    print("🤖 Stage 2: Comprehensive batch LLM analysis...")
-    llm_scores = batch_analyze_jobs_with_llm(filtered_jobs, resume_skills, resume_text, resume_metadata)
-    
-    if not llm_scores:
-        print("❌ LLM analysis failed, using fallback")
-        # Fallback to legacy approach
-        return match_resume_to_jobs_legacy(resume_skills, filtered_jobs[:20], resume_text)
-    
-    # STAGE 3: Enhanced Results Processing
-    print("✨ Stage 3: Enhancing results with rich descriptions...")
-    enhanced_jobs = enhance_batch_results(llm_scores, filtered_jobs, resume_skills)
-    
-    # Quality assurance
-    unique_scores = len(set([job['match_score'] for job in enhanced_jobs]))
-    total_jobs = len(enhanced_jobs)
-    diversity_ratio = unique_scores / total_jobs if total_jobs > 0 else 0
-    
-    print(f"✅ Efficient matching complete: {len(enhanced_jobs)} jobs analyzed")
-    print(f"📊 Score diversity: {unique_scores} unique scores out of {total_jobs} jobs ({diversity_ratio:.1%})")
-    print(f"💰 Cost: Single LLM call (~$0.08-0.15) vs {len(jobs)} individual calls (~${len(jobs) * 0.02:.2f})")
-    
-    return enhanced_jobs
+    Intelligent fuzzy matching for skills to handle variations.
 
-def match_resume_to_jobs_legacy_fallback(resume_skills, jobs, resume_text=""):
+    Examples:
+    - "React" matches "ReactJS", "React.js"
+    - "Node.js" matches "Node", "NodeJS"
+    - "JavaScript" matches "JS"
+    - "Python" matches "Python3"
+
+    Returns: True if skills match, False otherwise
     """
-    Ultra-efficient 3-stage job matching with single LLM call - LEGACY VERSION.
-    This is the old expensive approach kept for fallback.
-    Uses intelligent prefiltering before LLM analysis.
+    resume_lower = resume_skill.lower().strip()
+    job_lower = job_skill.lower().strip()
+
+    # Exact match
+    if resume_lower == job_lower:
+        return True
+
+    # Direct substring match (bidirectional)
+    if resume_lower in job_lower or job_lower in resume_lower:
+        return True
+
+    # Common skill variations (normalized matching)
+    skill_variations = {
+        'javascript': ['js', 'javascript', 'ecmascript'],
+        'typescript': ['ts', 'typescript'],
+        'react': ['react', 'reactjs', 'react.js'],
+        'node.js': ['node', 'nodejs', 'node.js'],
+        'vue': ['vue', 'vuejs', 'vue.js'],
+        'angular': ['angular', 'angularjs', 'angular.js'],
+        'python': ['python', 'python3', 'py'],
+        'c++': ['c++', 'cpp', 'cplusplus'],
+        'c#': ['c#', 'csharp'],
+        'sql': ['sql', 'mysql', 'postgresql', 'postgres'],
+        'aws': ['aws', 'amazon web services'],
+        'gcp': ['gcp', 'google cloud'],
+        'azure': ['azure', 'microsoft azure'],
+        'docker': ['docker', 'containerization'],
+        'kubernetes': ['kubernetes', 'k8s'],
+    }
+
+    # Check if either skill is in a variation group
+    for canonical, variations in skill_variations.items():
+        if resume_lower in variations and job_lower in variations:
+            return True
+
+    return False
+
+
+def simple_keyword_scoring(job, resume_skills, resume_text=""):
+    """
+    Improved keyword-based scoring with fuzzy matching and stricter filtering.
+
+    Scoring breakdown:
+    - 85% from required_skills matches (primary signal)
+    - 10% from bonus skills in title
+    - 5% from role type alignment
+
+    Key improvements:
+    - Uses fuzzy matching for skill variations
+    - Only scores based on required_skills (not random description mentions)
+    - Returns 0 if no required skills match
+    - Better handles skill variations (React vs ReactJS)
+    """
+    import re
+
+    score = 0
+    matched_skills = []
+    skill_match_count = 0
+
+    # Get job details
+    job_skills = job.get('required_skills', [])
+    job_title = job.get('title', '').lower()
+    job_description = job.get('description', '').lower()
+
+    # 1. Required Skills Matching (85 points max) - PRIMARY SIGNAL
+    if job_skills and resume_skills:
+        for job_skill in job_skills:
+            for resume_skill in resume_skills:
+                if fuzzy_skill_match(resume_skill, job_skill):
+                    skill_match_count += 1
+                    matched_skills.append(job_skill)
+                    break
+
+        # Calculate percentage of required skills matched
+        if len(job_skills) > 0:
+            skill_coverage = skill_match_count / len(job_skills)
+
+            # Progressive scoring with diminishing returns
+            if skill_coverage >= 0.8:  # 80%+ coverage
+                score += 85
+            elif skill_coverage >= 0.6:  # 60-79% coverage
+                score += int(skill_coverage * 85)
+            elif skill_coverage >= 0.4:  # 40-59% coverage
+                score += int(skill_coverage * 70)
+            elif skill_coverage >= 0.2:  # 20-39% coverage
+                score += int(skill_coverage * 50)
+            else:  # < 20% coverage
+                score += int(skill_coverage * 30)
+
+    # CRITICAL: If zero required skills matched, return 0 immediately
+    # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers)
+    if skill_match_count == 0 and job_skills:
+        return 0
+
+    # 2. Title bonus (10 points max) - Only if we have skill matches
+    # Rewards when matched skills appear prominently in the title
+    title_bonus = 0
+    for matched_skill in matched_skills:
+        pattern = r'\b' + re.escape(matched_skill.lower()) + r'\b'
+        if re.search(pattern, job_title):
+            title_bonus += 3
+    score += min(title_bonus, 10)
+
+    # 3. Role type alignment (5 points) - Contextual bonus
+    # Check if resume skills align with common role patterns
+    role_patterns = {
+        'frontend': ['react', 'vue', 'angular', 'javascript', 'typescript', 'html', 'css'],
+        'backend': ['node.js', 'python', 'java', 'spring', 'django', 'flask', 'sql'],
+        'fullstack': ['react', 'node.js', 'javascript', 'typescript', 'sql'],
+        'data': ['python', 'pandas', 'numpy', 'tensorflow', 'pytorch', 'sql'],
+        'mobile': ['react native', 'flutter', 'swift', 'kotlin', 'ios', 'android'],
+        'devops': ['docker', 'kubernetes', 'aws', 'azure', 'gcp', 'ci/cd'],
+    }
+
+    resume_skills_lower = [s.lower() for s in resume_skills]
+    for role_type, role_skills in role_patterns.items():
+        if role_type in job_title:
+            # Check if candidate has relevant skills for this role type
+            role_skill_matches = sum(1 for rs in resume_skills_lower if any(fuzzy_skill_match(rs, role_skill) for role_skill in role_skills))
+            if role_skill_matches >= 2:
+                score += 5
+                break
+
+    # Cap at 100
+    return min(int(score), 100)
+
+
+def create_keyword_match_description(job, score, matched_skills_count, total_required_skills):
+    """
+    Generate helpful match descriptions for keyword-based matches.
+    """
+    company = job.get('company', 'Unknown Company')
+    title = job.get('title', 'Unknown Position')
+    location = job.get('location', 'Location not specified')
+
+    # Create opening based on score
+    if score >= 80:
+        opening = f"🎯 **{company}** - Strong keyword match! This {title} position aligns well with your skills."
+    elif score >= 60:
+        opening = f"✅ **{company}** - Good match. This {title} role shows solid alignment."
+    elif score >= 40:
+        opening = f"⚠️ **{company}** - Moderate match. This {title} position has some alignment."
+    else:
+        opening = f"📊 **{company}** - Partial match. This {title} role has limited alignment."
+
+    # Add skill coverage info
+    if total_required_skills > 0:
+        coverage_pct = int((matched_skills_count / total_required_skills) * 100)
+        skill_info = f"\n\n**📋 Skill Coverage:** You match {matched_skills_count} of {total_required_skills} required skills ({coverage_pct}%)"
+    else:
+        skill_info = "\n\n**📋 Skill Coverage:** Job requirements not specified"
+
+    # Add location
+    location_section = f"\n\n**📍 Location:** {location}"
+
+    # Add score with recommendation
+    score_section = f"\n\n**🎯 Match Score: {score}/100**"
+    if score >= 70:
+        score_section += " - **Recommended**"
+    elif score >= 40:
+        score_section += " - **Consider Applying**"
+    else:
+        score_section += " - **May Be a Stretch**"
+
+    # Add note about quick mode
+    note = "\n\n*Quick Match Mode - For deeper analysis, enable 'Think Deeper'*"
+
+    return opening + skill_info + location_section + score_section + note
+
+
+def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=None):
+    """
+    Improved fast keyword-based matching with better descriptions.
+    Used when LLM is disabled or unavailable.
+
+    Key improvements:
+    - Analyzes ALL jobs (no pre-filtering) since regex is fast
+    - Uses fuzzy skill matching for accuracy
+    - Generates helpful match descriptions
+    - Returns top 100 results (increased from 50)
+
+    Returns jobs with keyword match scores and descriptions.
+    """
+    matched_jobs = []
+
+    # Send progress: Starting keyword matching
+    if progress_callback:
+        progress_callback("Matching jobs with keyword analysis...")
+
+    print(f"🔍 Quick Mode: Analyzing {len(jobs)} jobs with keyword matching...")
+
+    for job in jobs:
+        score = simple_keyword_scoring(job, resume_skills, resume_text)
+
+        # Only include jobs with some relevance (score > 0)
+        if score > 0:
+            job_copy = job.copy()
+            job_copy['match_score'] = score
+
+            # Count matched skills for description
+            job_skills = job.get('required_skills', [])
+            matched_count = 0
+            if job_skills and resume_skills:
+                for job_skill in job_skills:
+                    for resume_skill in resume_skills:
+                        if fuzzy_skill_match(resume_skill, job_skill):
+                            matched_count += 1
+                            break
+
+            # Generate rich description
+            job_copy['match_description'] = create_keyword_match_description(
+                job, score, matched_count, len(job_skills)
+            )
+
+            job_copy['ai_reasoning'] = None  # No AI analysis in keyword mode
+            matched_jobs.append(job_copy)
+
+    # Sort by score descending
+    matched_jobs.sort(key=lambda x: x['match_score'], reverse=True)
+
+    print(f"✅ Quick Mode: Found {len(matched_jobs)} matching jobs")
+
+    # Return top 100 results (analyze more jobs since it's fast)
+    return matched_jobs[:100]
+
+
+def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, progress_callback=None):
+    """
+    Intelligent job matching system with optional LLM analysis.
+
+    Args:
+        resume_skills: List of candidate skills
+        jobs: List of job postings to match against
+        resume_text: Full resume text for context
+        use_llm: If True, uses AI analysis. If False, uses keyword matching.
+        progress_callback: Optional callback function to report progress (takes message string)
+
+    Returns:
+        List of matched jobs with scores and descriptions
+
+    Modes:
+        - LLM Mode (use_llm=True): 3-stage intelligent matching with AI career analysis
+        - Keyword Mode (use_llm=False): Fast keyword-based scoring
+        - Fallback: Automatically falls back to keyword if LLM fails
     """
     if not jobs:
         return []
-    
-    print(f"⚠️ Using legacy expensive matching with {len(jobs)} jobs and {len(resume_skills)} resume skills")
-    
+
+    # If LLM disabled, use keyword matching directly
+    if not use_llm:
+        return simple_keyword_match(resume_skills, jobs, resume_text, progress_callback=progress_callback)
+
     # Extract resume metadata for filtering
     resume_metadata = {
         'experience_level': extract_user_experience_level(resume_skills, resume_text),
         'years_of_experience': 0,
         'is_student': True
     }
-    
-    # STAGE 0: Intelligent Pre-filtering (to reduce LLM costs)
-    print("🔍 Stage 0: Pre-filtering jobs with intelligent criteria...")
-    filtered_jobs = intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_count=50)
-    
-    if not filtered_jobs:
-        print("❌ No jobs passed pre-filtering criteria")
-        return []
-    
-    print(f"✅ Pre-filtered to {len(filtered_jobs)} jobs from {len(jobs)} total")
-    
-    # Stage 1: Analyze candidate profile once (cached)
-    from matching.llm_skill_extractor import analyze_candidate_profile_with_llm
-    
-    print("🧠 Stage 1: Analyzing candidate profile...")
+
+    # Try LLM matching with automatic fallback
     try:
-        candidate_profile = analyze_candidate_profile_with_llm(resume_skills, resume_text)
-    except:
-        print("❌ Candidate profile analysis failed, continuing without it")
-        candidate_profile = None
-    
-    # Stage 2: Intelligent LLM-based scoring with resume complexity analysis
-    print("🤖 Stage 2: Intelligent resume-based scoring (analyzing complexity)...")
-    matched_jobs = []
-    
-    for i, job in enumerate(filtered_jobs):
-        if i % 10 == 0:  # Progress indicator (every 10 jobs since we're using LLM)
-            print(f"   Processing job {i+1}/{len(filtered_jobs)}")
-        
-        # Use intelligent LLM-based scoring that heavily weights resume complexity
-        llm_analysis = intelligent_resume_based_scoring(job, resume_skills, resume_text)
-        score = llm_analysis["score"]
-        
-        # Generate rich description from LLM analysis data instead of calling legacy matcher
-        detailed_description = generate_llm_based_description(job, llm_analysis, resume_skills)
-        
-        # Include ALL jobs with their scores and enhanced data
-        job_with_score = job.copy()
-        job_with_score['match_score'] = score
-        job_with_score['ai_reasoning'] = llm_analysis
-        job_with_score['match_description'] = detailed_description  # Rich LLM-based description
-        matched_jobs.append(job_with_score)
-    
-    # Sort by match score (highest first)
-    matched_jobs.sort(key=lambda x: x['match_score'], reverse=True)
-    
-    print(f"✅ Legacy matching complete: Returning all {len(matched_jobs)} jobs with scores")
-    print(f"📊 Score distribution: {len([j for j in matched_jobs if j['match_score'] > 0])} jobs with score > 0")
-    
-    return matched_jobs
+        # STAGE 1: Intelligent Pre-filtering
+        filtered_jobs = intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_count=30, progress_callback=progress_callback)
 
-def match_resume_to_jobs_legacy(resume_skills, jobs, resume_text=""):
-    """
-    LEGACY: Original one-stage matching for comparison/fallback.
-    Uses intelligent prefiltering before matching.
-    Returns a list of jobs sorted by match score.
-    """
-    if not jobs:
-        return []
-    
-    print(f"🎯 Starting legacy matching process with {len(jobs)} jobs and {len(resume_skills)} resume skills")
-    
-    # Extract resume metadata for filtering
-    resume_metadata = {
-        'experience_level': extract_user_experience_level(resume_skills, resume_text),
-        'years_of_experience': 0,
-        'is_student': True
-    }
-    
-    # STAGE 1: Intelligent Pre-filtering (even for legacy mode)
-    print("🔍 Stage 1: Pre-filtering jobs with intelligent criteria...")
-    filtered_jobs = intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_count=50)
-    
-    if not filtered_jobs:
-        print("❌ No jobs passed pre-filtering criteria")
-        return []
-    
-    print(f"✅ Pre-filtered to {len(filtered_jobs)} jobs from {len(jobs)} total")
-    
-    # STAGE 2: Match each prefiltered job
-    matched_jobs = []
-    
-    for i, job in enumerate(filtered_jobs):
-        print(f"🔍 Matching job {i+1}/{len(filtered_jobs)}: {job.get('company', 'Unknown')} - {job.get('title', 'Unknown')}")
-        
-        score, description = match_job_to_resume(job, resume_skills, resume_text)
-        
-        print(f"   Score: {score}, Skills: {job.get('required_skills', [])}")
-        
-        # Include ALL jobs with scores (even 0) for debugging
-        job_with_score = job.copy()
-        job_with_score['match_score'] = score
-        job_with_score['match_description'] = description
-        matched_jobs.append(job_with_score)
-    
-    # Sort by match score in descending order
-    matched_jobs.sort(key=lambda x: x['match_score'], reverse=True)
-    
-    print(f"🎯 Legacy matching complete: {len(matched_jobs)} total jobs, {len([j for j in matched_jobs if j['match_score'] > 0])} with score > 0")
-    
-    # Return all jobs with scores for pagination and filtering
-    return matched_jobs
+        if not filtered_jobs:
+            # No jobs passed pre-filtering, fall back to keyword on all jobs
+            return simple_keyword_match(resume_skills, jobs, resume_text, progress_callback=progress_callback)
 
-# resume for user ready to pass to LLM
-#  get profile for user
-# get scraped jobs data and pass to LLM 
+        # STAGE 2: Batch LLM Analysis
+        llm_scores = batch_analyze_jobs_with_llm(filtered_jobs, resume_skills, resume_text, resume_metadata, progress_callback=progress_callback)
+
+        if not llm_scores:
+            # LLM returned no scores, fall back to keyword
+            return simple_keyword_match(resume_skills, jobs, resume_text, progress_callback=progress_callback)
+
+        # STAGE 3: Enhanced Results Processing
+        if progress_callback:
+            progress_callback("Enhancing results with career insights...")
+
+        enhanced_jobs = enhance_batch_results(llm_scores, filtered_jobs, resume_skills)
+
+        return enhanced_jobs
+
+    except Exception:
+        # LLM matching failed, automatically fall back to keyword matching
+        return simple_keyword_match(resume_skills, jobs, resume_text, progress_callback=progress_callback)
+
+
+ 

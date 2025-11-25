@@ -88,7 +88,7 @@ The system uses GPT-4o with:
 ```python
 model="gpt-4o"
 temperature=0.2  # Low for consistent scoring
-max_tokens=400   # Efficient token usage
+max_completion_tokens=400   # Efficient token usage
 ```
 
 **Key Prompt Features:**

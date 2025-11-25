@@ -1,4 +1,4 @@
-#!/bin/bash
+a#!/bin/bash
 
 # Deployment Script for Internship Matcher
 # This script automates the deployment process on EC2
@@ -64,42 +64,32 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # =====================================
-# 3. Build Frontend
+# 3. Check Frontend Build
 # =====================================
-echo -e "${YELLOW}📋 Step 3: Building React frontend...${NC}"
+echo -e "${YELLOW}📋 Step 3: Checking frontend build...${NC}"
 
-cd frontend
-
-# Check if frontend .env exists
-if [ ! -f .env ]; then
-    echo -e "${YELLOW}⚠️  Frontend .env not found, creating from template...${NC}"
-    echo "REACT_APP_API_URL=https://your-domain.com" > .env
-    echo "REACT_APP_STACK_AUTH_PROJECT_ID=your-project-id" >> .env
-    echo "REACT_APP_STACK_AUTH_PUBLISHABLE_CLIENT_KEY=your-key" >> .env
-    echo -e "${RED}Please edit frontend/.env with your actual values!${NC}"
+if [ ! -d "frontend/build" ]; then
+    echo -e "${RED}❌ Error: frontend/build directory not found!${NC}"
+    echo ""
+    echo "Frontend must be built locally and uploaded via SCP."
+    echo ""
+    echo "To build and upload from your local machine:"
+    echo "  1. cd frontend"
+    echo "  2. npm run build"
+    echo "  3. scp -r build/ user@your-ec2-ip:~/Internship-App/frontend/"
+    echo ""
     exit 1
 fi
 
-echo "Installing frontend dependencies..."
-npm ci --silent
-
-echo "Building frontend for production..."
-npm run build
-
-echo -e "${GREEN}✅ Frontend built successfully${NC}"
-
-cd ..
+echo -e "${GREEN}✅ Frontend build directory found${NC}"
 
 # =====================================
 # 4. Stop Existing Containers
 # =====================================
 echo -e "${YELLOW}📋 Step 4: Stopping existing containers...${NC}"
 
-if docker-compose ps &> /dev/null; then
-    docker-compose down
-elif docker compose ps &> /dev/null; then
-    docker compose down
-fi
+# Always prefer classic docker-compose (installed by setup-ec2.sh)
+docker-compose down || true
 
 echo -e "${GREEN}✅ Existing containers stopped${NC}"
 
@@ -108,11 +98,7 @@ echo -e "${GREEN}✅ Existing containers stopped${NC}"
 # =====================================
 echo -e "${YELLOW}📋 Step 5: Building Docker images...${NC}"
 
-if command -v docker-compose &> /dev/null; then
-    docker-compose build --no-cache
-else
-    docker compose build --no-cache
-fi
+docker-compose build --no-cache
 
 echo -e "${GREEN}✅ Docker images built${NC}"
 
@@ -144,11 +130,7 @@ echo -e "${GREEN}✅ SSL directory ready${NC}"
 # =====================================
 echo -e "${YELLOW}📋 Step 8: Starting services...${NC}"
 
-if command -v docker-compose &> /dev/null; then
-    docker-compose up -d
-else
-    docker compose up -d
-fi
+docker-compose up -d
 
 echo -e "${GREEN}✅ Services started${NC}"
 
@@ -196,11 +178,7 @@ echo -e "${GREEN}🎉 Deployment Complete!${NC}"
 echo "========================================"
 echo ""
 
-if command -v docker-compose &> /dev/null; then
-    docker-compose ps
-else
-    docker compose ps
-fi
+docker-compose ps
 
 echo ""
 echo "📊 Service URLs:"
