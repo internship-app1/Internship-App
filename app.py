@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from sse_starlette.sse import EventSourceResponse
 import uvicorn
 from dotenv import load_dotenv
 import io
@@ -36,14 +37,21 @@ app = FastAPI(title="Internship Matcher", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://internshipmatcher.com",
+        "http://www.internshipmatcher.com",
+        "https://internshipmatcher.com",
+        "https://www.internshipmatcher.com",
+        "http://3.149.255.34",
+        "http://localhost:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3000",
-        # add your Vercel frontend here if needed, e.g.:
-        # "https://your-frontend.vercel.app",
-    ],
+        "http://127.0.0.1:3001",
+    ],  # Domain, EC2, and local dev
+
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],  # Important for SSE streaming
 )
 
 # Add session middleware for basic session support
@@ -157,36 +165,56 @@ async def daily_cache_refresh_task():
     """
     Background task that automatically refreshes the cache every 24 hours.
     This ensures jobs stay fresh without manual intervention.
+
+    IMPROVED: Better error handling, logging, and recovery
     """
+    refresh_count = 0
+
     while True:
         try:
             # Wait 24 hours before first refresh (cache was just initialized on startup)
+            print(f"⏰ [Scheduled] Next cache refresh in 24 hours...")
             await asyncio.sleep(24 * 60 * 60)  # 24 hours in seconds
 
-            print(f"🔄 [Scheduled] Starting daily cache refresh at {datetime.utcnow().isoformat()}")
+            refresh_count += 1
+            print(f"🔄 [Scheduled #{refresh_count}] Starting daily cache refresh at {datetime.utcnow().isoformat()}")
 
             # Perform smart scraping with 30-day filter
-            jobs = await scrape_jobs(max_days_old=30)
+            try:
+                jobs = await scrape_jobs(max_days_old=30)
+            except Exception as scrape_error:
+                print(f"❌ [Scheduled] Scraping failed: {scrape_error}")
+                import traceback
+                traceback.print_exc()
+                continue  # Don't stop the task, try again in 24h
 
             if jobs:
                 # Store in hybrid cache system
-                cache_result = job_cache.set_cached_jobs(jobs, cache_type='daily_scheduled')
-                new_jobs = cache_result.get('new_jobs', 0)
-                total_jobs = cache_result.get('total_jobs', len(jobs))
+                try:
+                    cache_result = job_cache.set_cached_jobs(jobs, cache_type='daily_scheduled')
+                    new_jobs = cache_result.get('new_jobs', 0)
+                    total_jobs = cache_result.get('total_jobs', len(jobs))
 
-                if cache_result.get('database_success') or cache_result.get('redis_success'):
-                    print(f"✅ [Scheduled] Daily refresh complete: {new_jobs} new jobs, {total_jobs} total active jobs")
-                else:
-                    print(f"⚠️ [Scheduled] Cache refresh failed")
+                    if cache_result.get('database_success') or cache_result.get('redis_success'):
+                        print(f"✅ [Scheduled #{refresh_count}] Daily refresh complete: {new_jobs} new jobs, {total_jobs} total active jobs")
+                    else:
+                        print(f"⚠️ [Scheduled #{refresh_count}] Cache refresh failed - no storage backend succeeded")
+                except Exception as cache_error:
+                    print(f"❌ [Scheduled #{refresh_count}] Cache storage failed: {cache_error}")
+                    import traceback
+                    traceback.print_exc()
             else:
-                print("📝 [Scheduled] No new jobs found in daily refresh")
+                print(f"📝 [Scheduled #{refresh_count}] No new jobs found in daily refresh")
 
         except asyncio.CancelledError:
-            print("🛑 Daily cache refresh task cancelled")
+            print(f"🛑 Daily cache refresh task cancelled after {refresh_count} refreshes")
             break
         except Exception as e:
-            print(f"❌ [Scheduled] Error in daily cache refresh: {e}")
+            print(f"❌ [Scheduled #{refresh_count}] Unexpected error in daily cache refresh: {e}")
+            import traceback
+            traceback.print_exc()
             # Continue running even if one refresh fails
+            print(f"🔄 [Scheduled] Will retry in 24 hours...")
             continue
 
 
@@ -488,7 +516,7 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
             
             # Pass ALL jobs - intelligent_prefilter_jobs will filter from 1000s → 50 based on THIS resume's skills
             print("🎯 Step 4/4: Matching your skills to job requirements...")
-            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text)
+            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm)
             
             print(f"✅ Matching complete: Found {len(matched_jobs)} relevant opportunities")
             
@@ -509,7 +537,8 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
                     "skills_found": resume_skills,
                     "debug_info": {
                         "total_jobs_scraped": len(jobs),
-                        "jobs_processed": len(jobs),  # jobs_to_process not defined earlier; using len(jobs)
+                        "jobs_processed": len(matched_jobs),
+
                         "skills_extracted": len(resume_skills),
                         "all_job_scores": [{"company": job.get('company'), "title": job.get('title'), "score": job.get('match_score', 0)} for job in matched_jobs[:5]]
                     }
@@ -575,32 +604,16 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
         # Validate file
         if not resume:
             async def error_response():
-                yield f"data: {json.dumps({'error': 'No file was uploaded'})}\n\n"
-            return StreamingResponse(
-                error_response(),
-                media_type="text/plain",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "Content-Type": "text/event-stream",
-                }
-            )
+                yield {"data": json.dumps({'error': 'No file was uploaded'})}
+            return EventSourceResponse(error_response())
 
         file_extension = resume.filename.split('.')[-1].lower() if resume.filename else ''
         allowed_extensions = ['pdf', 'png', 'jpg', 'jpeg']
         
         if file_extension not in allowed_extensions:
             async def error_response():
-                yield f"data: {json.dumps({'error': f'Invalid file type: {file_extension}'})}\n\n"
-            return StreamingResponse(
-                error_response(),
-                media_type="text/plain",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "Content-Type": "text/event-stream",
-                }
-            )
+                yield {"data": json.dumps({'error': f'Invalid file type: {file_extension}'})}
+            return EventSourceResponse(error_response())
 
         # Read file content ONCE, before the generator
         file_content = await resume.read()
@@ -609,78 +622,151 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
         
         if not file_content:
             async def error_response():
-                yield f"data: {json.dumps({'error': 'Empty file uploaded'})}\n\n"
-            return StreamingResponse(
-                error_response(),
-                media_type="text/plain",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "Content-Type": "text/event-stream",
-                }
-            )
+                yield {"data": json.dumps({'error': 'Empty file uploaded'})}
+            return EventSourceResponse(error_response())
 
         # Upload file to S3 ONCE, before the generator
         try:
+            print(f"📤 Stream: Starting S3 upload for {filename}...")
             s3_key = upload_resume_to_s3(file_content, filename)
             print(f"✅ Stream: Resume uploaded to S3: {s3_key}")
+            print(f"🚀 Stream: About to start SSE generator...")
         except Exception as e:
             print(f"❌ Stream: S3 upload failed: {e}")
             async def error_response():
-                yield f"data: {json.dumps({'error': f'S3 upload failed: {str(e)}'})}\n\n"
-            return StreamingResponse(
-                error_response(),
-                media_type="text/plain",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "Content-Type": "text/event-stream",
-                }
-            )
+                yield {"data": json.dumps({'error': f'S3 upload failed: {str(e)}'})}
+            return EventSourceResponse(error_response())
     except Exception as e:
         async def error_response():
-            yield f"data: {json.dumps({'error': f'File upload error: {str(e)}'})}\n\n"
-        return StreamingResponse(
-            error_response(),
-            media_type="text/plain",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Content-Type": "text/event-stream",
-            }
-        )
+            yield {"data": json.dumps({'error': f'File upload error: {str(e)}'})}
+        return EventSourceResponse(error_response())
     
     async def generate_progress():
         try:
+            print("🔄 SSE Generator started - sending initial connection event...")
+            
+            # Send immediate "connected" event to establish the stream
+            # This ensures the client knows the connection is active
+            yield f"data: {json.dumps({'step': 0, 'message': 'Connection established, starting analysis...', 'progress': 5})}\n\n"
+            await asyncio.sleep(0.01)  # Tiny delay to flush
+            print("✅ Initial SSE connection event sent")
+            
             # Convert think_deeper parameter to boolean
             use_llm = think_deeper.lower() == "true"
-            
-            yield f"data: {json.dumps({'step': 1, 'message': 'File uploaded to S3 successfully', 'progress': 10})}\n\n"
+
+            # Track current step and progress for dynamic updates
+            current_step = [0]  # Use list to allow modification in nested function
+            progress_queue = asyncio.Queue()  # Async queue for real-time progress messages
+            loop = asyncio.get_running_loop()  # Get RUNNING event loop for thread-safe operations (critical for async generators)
+            print(f"🔄 Event loop obtained: {loop}")
+
+            def progress_callback(message):
+                """Thread-safe callback function to queue progress messages"""
+                current_step[0] += 1
+                # Calculate progress percentage based on step and mode
+                if use_llm:
+                    # Deep Thinking Mode: More granular steps (up to 10+ steps)
+                    progress_map = {
+                        "Extracting text from resume...": 20,
+                        "Analyzing resume with AI...": 30,
+                        "Pre-filtering top candidates for you...": 60,
+                        "Running AI career analysis": 70,  # Batch messages start here
+                        "Enhancing results with career insights...": 90,
+                    }
+                else:
+                    # Quick Mode: Fewer steps (7 total)
+                    progress_map = {
+                        "Extracting text from resume...": 20,
+                        "Analyzing resume with AI...": 30,
+                        "Matching jobs with keyword analysis...": 70,
+                    }
+
+                # Find matching progress or default
+                progress = 50  # Default
+                for key, value in progress_map.items():
+                    if key in message:
+                        progress = value
+                        # For batch messages, calculate incremental progress
+                        if "batch" in message and "of" in message:
+                            try:
+                                # Extract "batch X of Y" and calculate progress
+                                parts = message.split("batch")[-1].strip()
+                                batch_info = parts.split("of")
+                                current_batch = int(batch_info[0].strip().split()[0])
+                                total_batches = int(batch_info[1].strip().split()[0])
+                                # Progress from 70% to 85% across batches
+                                batch_progress = 70 + int((current_batch / total_batches) * 15)
+                                progress = batch_progress
+                            except:
+                                pass
+                        break
+
+                # Thread-safe queue put (works from worker threads)
+                asyncio.run_coroutine_threadsafe(
+                    progress_queue.put({'step': current_step[0], 'message': message, 'progress': progress}),
+                    loop
+                )
+
+            print("🔄 Yielding first SSE message (10% - Uploading resume)...")
+            yield f"data: {json.dumps({'step': 1, 'message': 'Uploading resume to secure storage...', 'progress': 10})}\n\n"
+            await asyncio.sleep(0.05)  # Small delay to ensure SSE flushes to client
+            print("✅ First SSE message yielded successfully")
 
             # Download file from S3 for processing
             try:
-                yield f"data: {json.dumps({'step': 2, 'message': 'Downloading resume from S3...', 'progress': 15})}\n\n"
                 downloaded_content, original_filename = download_resume_from_s3(s3_key)
-                yield f"data: {json.dumps({'step': 3, 'message': 'Resume downloaded successfully', 'progress': 20})}\n\n"
             except Exception as e:
                 yield f"data: {json.dumps({'error': f'S3 download failed: {str(e)}'})}\n\n"
                 return
 
-            # Step 3: Parse resume using selected method
-            if use_llm:
-                yield f"data: {json.dumps({'step': 4, 'message': 'Analyzing your resume with AI (GPT-5)...', 'progress': 25})}\n\n"
-            else:
-                yield f"data: {json.dumps({'step': 4, 'message': 'Analyzing your resume with text-based parsing...', 'progress': 25})}\n\n"
-            
+            # Step 2: Parse resume with progress callbacks (in background thread)
+            current_step[0] = 1  # Reset step counter for parse phase
+
             try:
-                resume_skills, resume_text, resume_metadata = parse_resume(downloaded_content, original_filename, use_llm)
+                # Run parse_resume in background thread to avoid blocking event loop
+                parse_task = asyncio.create_task(
+                    asyncio.to_thread(
+                        parse_resume,
+                        downloaded_content,
+                        original_filename,
+                        use_llm,
+                        progress_callback
+                    )
+                )
+
+                # Yield progress messages in real-time as they arrive
+                while not parse_task.done():
+                    try:
+                        # Wait for progress message with short timeout
+                        progress_msg = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
+                        yield f"data: {json.dumps(progress_msg)}\n\n"
+                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
+                    except asyncio.TimeoutError:
+                        # No message yet, continue waiting for task
+                        await asyncio.sleep(0)  # Yield control to event loop
+                        continue
+
+                # Get the result after task completes
+                resume_skills, resume_text, resume_metadata = await parse_task
+
+                # Drain any remaining messages in queue
+                while not progress_queue.empty():
+                    try:
+                        progress_msg = progress_queue.get_nowait()
+                        yield f"data: {json.dumps(progress_msg)}\n\n"
+                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
+                    except asyncio.QueueEmpty:
+                        break
+
                 if not resume_skills:
                     yield f"data: {json.dumps({'error': 'No skills detected in resume'})}\n\n"
                     return
-                
+
                 exp_level = resume_metadata.get('experience_level', 'unknown')
-                yield f"data: {json.dumps({'step': 5, 'message': f'Found {len(resume_skills)} skills - {exp_level} level', 'skills': resume_skills, 'progress': 40})}\n\n"
-                
+                current_step[0] += 1
+                yield f"data: {json.dumps({'step': current_step[0], 'message': f'Found {len(resume_skills)} skills in your resume', 'skills': resume_skills, 'progress': 45})}\n\n"
+                await asyncio.sleep(0.05)  # Small delay to ensure SSE flushes to client
+
             except Exception as e:
                 yield f"data: {json.dumps({'error': f'Resume parsing failed: {str(e)}'})}\n\n"
                 # Clean up S3 file on error
@@ -690,9 +776,11 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
                     pass
                 return
 
-            # Step 6: Get jobs from cache or scrape
-            yield f"data: {json.dumps({'step': 6, 'message': 'Loading internship opportunities...', 'progress': 50})}\n\n"
-            
+            # Step 3: Get jobs from cache or scrape
+            current_step[0] += 1
+            yield f"data: {json.dumps({'step': current_step[0], 'message': 'Loading internship opportunities...', 'progress': 55})}\n\n"
+            await asyncio.sleep(0.05)  # Small delay to ensure SSE flushes to client
+
             try:
                 jobs = await get_jobs_with_cache()
                 if not jobs:
@@ -703,9 +791,7 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
                     except:
                         pass
                     return
-                    
-                yield f"data: {json.dumps({'step': 7, 'message': f'Found {len(jobs)} internship opportunities', 'progress': 60})}\n\n"
-                
+
             except Exception as e:
                 yield f"data: {json.dumps({'error': f'Job loading failed: {str(e)}'})}\n\n"
                 # Clean up S3 file on error
@@ -715,14 +801,43 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
                     pass
                 return
 
-            # Step 8: Use intelligent prefiltering + batch LLM matching
-            yield f"data: {json.dumps({'step': 8, 'message': f'Intelligently filtering from {len(jobs)} jobs based on your skills...', 'progress': 70})}\n\n"
-            
+            # Step 4: Match jobs with progress callbacks (in background thread)
             try:
-                # Pass ALL jobs - intelligent prefiltering will select top 50 for THIS resume
-                matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text)
-                
-                yield f"data: {json.dumps({'step': 9, 'message': 'Deep career fit analysis in progress...', 'progress': 85})}\n\n"
+                # Run match_resume_to_jobs in background thread to avoid blocking event loop
+                match_task = asyncio.create_task(
+                    asyncio.to_thread(
+                        match_resume_to_jobs,
+                        resume_skills,
+                        jobs,
+                        resume_text,
+                        use_llm,
+                        progress_callback
+                    )
+                )
+
+                # Yield progress messages in real-time as they arrive
+                while not match_task.done():
+                    try:
+                        # Wait for progress message with short timeout
+                        progress_msg = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
+                        yield f"data: {json.dumps(progress_msg)}\n\n"
+                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
+                    except asyncio.TimeoutError:
+                        # No message yet, continue waiting for task
+                        await asyncio.sleep(0)  # Yield control to event loop
+                        continue
+
+                # Get the result after task completes
+                matched_jobs = await match_task
+
+                # Drain any remaining messages in queue
+                while not progress_queue.empty():
+                    try:
+                        progress_msg = progress_queue.get_nowait()
+                        yield f"data: {json.dumps(progress_msg)}\n\n"
+                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
+                    except asyncio.QueueEmpty:
+                        break
                 
                 # Convert to the format expected by frontend
                 formatted_jobs = []
@@ -757,13 +872,13 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
                     formatted_jobs.append(job_result)
                 
                 jobs_with_matches = [job for job in formatted_jobs if job['match_score'] > 0]
-                
+
                 # For think deeper mode: return all results since LLM processed all jobs
-                # For regular mode: limit to 10 results for speed
+                # For quick mode: return up to 50 results (fast keyword matching can handle more)
                 if use_llm:
                     final_results = formatted_jobs  # Return all LLM-analyzed jobs
                 else:
-                    final_results = formatted_jobs[:10] if len(formatted_jobs) >= 10 else formatted_jobs
+                    final_results = formatted_jobs[:50] if len(formatted_jobs) >= 50 else formatted_jobs
                 
                 # Debug logging
                 print(f"🔍 Streaming final results: {len(final_results)} jobs")
@@ -774,8 +889,8 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
                 if use_llm:
                     completion_message = f'Think Deeper analysis complete! Found {len(jobs_with_matches)} matches out of {len(final_results)} jobs analyzed.'
                 else:
-                    completion_message = f'Quick matching complete! Showing top {len(final_results)} results.'
-                
+                    completion_message = f'Quick matching complete! Found {len(jobs_with_matches)} matching jobs.'
+
                 # Clean up S3 file after successful processing
                 try:
                     delete_resume_from_s3(s3_key)
@@ -783,16 +898,15 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
                 except Exception as cleanup_error:
                     print(f"⚠️ Stream: Failed to clean up S3 file {s3_key}: {cleanup_error}")
 
-                yield f"data: {json.dumps({'step': 10, 'message': completion_message, 'final_results': final_results, 'matches_found': len(jobs_with_matches), 'total_results': len(final_results), 'progress': 100, 'complete': True})}\n\n"
+                current_step[0] += 1
+                yield f"data: {json.dumps({'step': current_step[0], 'message': completion_message, 'final_results': final_results, 'matches_found': len(jobs_with_matches), 'total_results': len(final_results), 'progress': 100, 'complete': True})}\n\n"
+                await asyncio.sleep(0.05)  # Small delay to ensure final SSE flushes to client
                 
             except Exception as e:
                 print(f"❌ Error in intelligent matching: {e}")
-                # Fallback to legacy approach if new system fails
-                yield f"data: {json.dumps({'step': 9, 'message': 'Using fallback matching system...', 'progress': 85})}\n\n"
-                
-                from matching.matcher import match_resume_to_jobs_legacy
-                # Even in fallback, use intelligent prefiltering - pass all jobs
-                matched_jobs = match_resume_to_jobs_legacy(resume_skills, jobs, resume_text)
+                # The match_resume_to_jobs function already has automatic keyword fallback
+                # So if we reach here, it means even the fallback failed
+                yield f"data: {json.dumps({'error': f'Job matching failed: {str(e)}'})}\n\n"
                 
                 # Format results
                 formatted_jobs = []
@@ -850,14 +964,26 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
             
             yield f"data: {json.dumps({'error': f'Unexpected error: {str(e)}'})}\n\n"
 
-    return StreamingResponse(
-        generate_progress(),
-        media_type="text/plain",
+    async def sse_generator():
+        """Wrapper generator that converts string yields to proper SSE format for EventSourceResponse"""
+        async for event in generate_progress():
+            # EventSourceResponse expects dicts with 'data' key, not raw strings
+            # Extract the JSON from "data: {...}\n\n" format
+            if event.startswith("data: "):
+                json_str = event[6:].strip()  # Remove "data: " prefix and trailing newlines
+                if json_str:
+                    yield {"data": json_str}
+    
+    return EventSourceResponse(
+        sse_generator(),
         headers={
-            "Cache-Control": "no-cache",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
             "Connection": "keep-alive",
-            "Content-Type": "text/event-stream",
-        }
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+        ping=5,  # Send ping every 5 seconds to keep connection alive
     )
 
 
@@ -1037,7 +1163,7 @@ async def database_stats():
     try:
         from job_database import get_database_stats
         stats = get_database_stats()
-        
+
         return JSONResponse({
             "success": True,
             "database_stats": stats,
@@ -1045,6 +1171,121 @@ async def database_stats():
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get database stats: {str(e)}")
+
+
+@app.get("/api/refresh-health")
+async def refresh_health():
+    """Check the health of the cache refresh system"""
+    try:
+        from job_database import get_db, CacheMetadata, Job
+        from datetime import datetime, timedelta
+        import json
+
+        db = get_db()
+        try:
+            # Get most recent cache operation
+            latest_op = db.query(CacheMetadata).order_by(CacheMetadata.last_updated.desc()).first()
+
+            # Get stats
+            active_count = db.query(Job).filter(Job.is_active == True).count()
+            now = datetime.utcnow()
+
+            health_status = {
+                "status": "healthy",
+                "warnings": [],
+                "info": {}
+            }
+
+            if latest_op:
+                time_since_update = now - latest_op.last_updated
+                hours_since = time_since_update.total_seconds() / 3600
+
+                health_status["info"]["last_refresh"] = {
+                    "time": latest_op.last_updated.isoformat(),
+                    "hours_ago": round(hours_since, 1),
+                    "type": latest_op.cache_type,
+                    "status": latest_op.status,
+                    "new_jobs": latest_op.new_jobs_added,
+                    "total_jobs": latest_op.job_count
+                }
+
+                # Check if refresh is overdue (>26 hours = daily refresh likely failed)
+                if hours_since > 26:
+                    health_status["status"] = "unhealthy"
+                    health_status["warnings"].append(f"No refresh in {round(hours_since, 1)}h - daily refresh may not be running")
+                elif hours_since > 24:
+                    health_status["status"] = "warning"
+                    health_status["warnings"].append(f"Refresh slightly overdue ({round(hours_since, 1)}h)")
+            else:
+                health_status["status"] = "unknown"
+                health_status["warnings"].append("No cache operations recorded in database")
+
+            # Check active job count
+            health_status["info"]["active_jobs"] = active_count
+
+            if active_count == 0:
+                health_status["status"] = "critical"
+                health_status["warnings"].append("No active jobs in database")
+            elif active_count < 50:
+                if health_status["status"] == "healthy":
+                    health_status["status"] = "warning"
+                health_status["warnings"].append(f"Low active job count: {active_count}")
+
+            # Check job age distribution
+            active_jobs = db.query(Job).filter(Job.is_active == True).all()
+
+            if active_jobs:
+                old_jobs = 0
+                recent_jobs = 0
+
+                for job in active_jobs:
+                    try:
+                        metadata = json.loads(job.job_metadata) if job.job_metadata else {}
+                        days_since = metadata.get('days_since_posted')
+
+                        if days_since is not None:
+                            if days_since > 21:  # More than 3 weeks
+                                old_jobs += 1
+                            elif days_since <= 7:  # Last week
+                                recent_jobs += 1
+                    except:
+                        pass
+
+                health_status["info"]["job_age_distribution"] = {
+                    "recent_jobs_0_7d": recent_jobs,
+                    "old_jobs_21plus_d": old_jobs,
+                    "recent_percentage": round(recent_jobs / len(active_jobs) * 100, 1) if active_jobs else 0
+                }
+
+                if recent_jobs < len(active_jobs) * 0.15:  # Less than 15% recent
+                    if health_status["status"] == "healthy":
+                        health_status["status"] = "warning"
+                    health_status["warnings"].append("Less than 15% of jobs are from last 7 days - may need refresh")
+
+            return JSONResponse({
+                "success": True,
+                "health": health_status,
+                "recommendation": (
+                    "Run manual refresh with: curl -X POST /api/refresh-cache?max_days_old=30"
+                    if health_status["status"] in ["unhealthy", "warning"]
+                    else "System is healthy"
+                )
+            })
+
+        finally:
+            db.close()
+
+    except Exception as e:
+        print(f"❌ Error checking refresh health: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "health": {
+                "status": "error",
+                "warnings": [f"Health check failed: {str(e)}"]
+            }
+        }, status_code=500)
+
 
 
 if __name__ == "__main__":

@@ -10,6 +10,43 @@ import { Progress } from '../components/ui/progress';
 import { Upload, FileCheck, AlertCircle, Sparkles, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+// For SSE streaming, we need to bypass the CRA proxy in development
+// because it buffers responses. In production, use relative URLs.
+// Priority:
+// 1. On localhost (dev): use REACT_APP_API_URL if set, otherwise http://localhost:8000
+// 2. On any non-localhost host (prod/staging): ALWAYS use relative URLs (empty string),
+//    even if REACT_APP_API_URL was accidentally baked into the bundle.
+// 3. In non-browser environments: fall back to localhost in development only.
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    const envUrl = process.env.REACT_APP_API_URL?.trim();
+
+    if (isLocalhost) {
+      if (envUrl) {
+        // Normalize to avoid trailing slashes like "https://api.example.com/"
+        return envUrl.replace(/\/+$/, '');
+      }
+      return 'http://localhost:8000';
+    }
+
+    // In production (or any non-localhost host), use same-origin relative URLs
+    // so Nginx / reverse proxy can route /api to the backend.
+    return '';
+  }
+
+  // Fallback for non-browser environments (tests, SSR, etc.)
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8000';
+  }
+
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
 const FindPage: React.FC = () => {
   const user = useUser();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -50,10 +87,13 @@ const FindPage: React.FC = () => {
       formData.append('resume', file);
       formData.append('think_deeper', thinkDeeper.toString());
 
-      const response = await fetch('/api/match-stream', {
+      // Use direct backend URL to bypass CRA proxy buffering for SSE
+      const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
         method: 'POST',
         body: formData,
       });
+      
+      console.log('📡 SSE Response received, starting stream processing...');
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -66,18 +106,30 @@ const FindPage: React.FC = () => {
 
       const decoder = new TextDecoder();
       const processedJobs: Job[] = [];
+      let buffer = ''; // Buffer for incomplete lines
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          console.log('📭 Stream ended');
+          break;
+        }
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        const chunk = decoder.decode(value, { stream: true });
+        console.log('📨 Received chunk:', chunk.substring(0, 100) + '...');
+        buffer += chunk;
+        const lines = buffer.split('\n');
+
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.trim().startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const jsonStr = line.trim().slice(6); // Remove 'data: ' prefix
+              const data = JSON.parse(jsonStr);
+              
+              console.log('🔄 SSE Event:', { progress: data.progress, message: data.message, step: data.step });
 
               if (data.error) {
                 setError(data.error);
@@ -85,7 +137,8 @@ const FindPage: React.FC = () => {
                 return;
               }
 
-              if (data.progress) {
+              if (data.progress !== undefined) {
+                console.log(`📊 Updating progress: ${data.progress}%`);
                 setProgress(data.progress);
               }
 
@@ -283,20 +336,103 @@ const FindPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Progress Section */}
+        {/* Enhanced Progress Section */}
         {isLoading && (
-          <Card className="max-w-2xl mx-auto">
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{currentStep}</span>
-                  <span className="text-muted-foreground">{progress}%</span>
+          <Card className="max-w-2xl mx-auto border-2 border-primary/20 shadow-lg">
+            <CardContent className="pt-6 pb-6">
+              <div className="space-y-5">
+                {/* Progress Header */}
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-white animate-pulse" />
+                    </div>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 animate-ping opacity-20"></div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-lg font-semibold text-foreground leading-tight">
+                      {currentStep || 'Processing...'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Please wait while we analyze your resume
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      {progress}%
+                    </div>
+                    <p className="text-xs text-muted-foreground">Complete</p>
+                  </div>
                 </div>
-                <Progress value={progress} className="h-2" />
+
+                {/* Enhanced Progress Bar */}
+                <div className="relative">
+                  <div className="w-full bg-gradient-to-r from-blue-100 to-purple-100 rounded-full h-3 overflow-hidden shadow-inner">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden",
+                        "bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500",
+                        "shadow-lg"
+                      )}
+                      style={{
+                        width: `${progress}%`,
+                        backgroundSize: '200% 100%',
+                        animation: 'gradient-shift 2s ease-in-out infinite'
+                      }}
+                    >
+                      {/* Shimmer effect */}
+                      <div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                        style={{
+                          animation: 'shimmer 1.5s ease-in-out infinite'
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                  {/* Progress milestones */}
+                  <div className="flex justify-between mt-2 px-1">
+                    <span className={cn(
+                      "text-xs font-medium transition-colors duration-300",
+                      progress >= 25 ? "text-blue-600" : "text-muted-foreground"
+                    )}>
+                      {progress >= 25 ? "✓" : "○"} Started
+                    </span>
+                    <span className={cn(
+                      "text-xs font-medium transition-colors duration-300",
+                      progress >= 50 ? "text-purple-600" : "text-muted-foreground"
+                    )}>
+                      {progress >= 50 ? "✓" : "○"} Analyzing
+                    </span>
+                    <span className={cn(
+                      "text-xs font-medium transition-colors duration-300",
+                      progress >= 75 ? "text-blue-600" : "text-muted-foreground"
+                    )}>
+                      {progress >= 75 ? "✓" : "○"} Matching
+                    </span>
+                    <span className={cn(
+                      "text-xs font-medium transition-colors duration-300",
+                      progress >= 100 ? "text-green-600" : "text-muted-foreground"
+                    )}>
+                      {progress >= 100 ? "✓" : "○"} Complete
+                    </span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Add keyframe animations */}
+        <style>{`
+          @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+        `}</style>
 
         {/* Error Message */}
         {error && (
