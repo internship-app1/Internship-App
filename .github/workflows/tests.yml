@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: sqlite:///:memory:
+      DATABASE_URL: "sqlite:///:memory:"
       CLAUDE_API_KEY: test-key
       AWS_ACCESS_KEY_ID: test-key-id
       AWS_SECRET_ACCESS_KEY: test-secret
