@@ -5,16 +5,18 @@ from datetime import datetime
 from typing import Optional, Tuple
 from botocore.exceptions import ClientError, NoCredentialsError
 import io
+from dotenv import load_dotenv
 
 class S3Service:
     def __init__(self):
         """Initialize S3 client with credentials from environment variables"""
+        load_dotenv()
         try:
             self.s3_client = boto3.client(
                 's3',
                 aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
                 aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-                region_name=os.getenv('AWS_REGION', 'us-east-1')
+                region_name=os.getenv('AWS_REGION') or 'us-east-1'
             )
             self.bucket_name = os.getenv('AWS_BUCKET_NAME')
             

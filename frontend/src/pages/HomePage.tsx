@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@stackframe/react';
+import { useUser } from '@clerk/react';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';

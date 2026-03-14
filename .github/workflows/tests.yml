@@ -1,0 +1,78 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Backend — Python / pytest
+  # -------------------------------------------------------------------------
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: sqlite:///:memory:
+      CLAUDE_API_KEY: test-key
+      AWS_ACCESS_KEY_ID: test-key-id
+      AWS_SECRET_ACCESS_KEY: test-secret
+      AWS_BUCKET_NAME: test-bucket
+      AWS_REGION: us-east-1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # System deps needed by pdfplumber / pytesseract
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-eng
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt pytest pytest-cov
+
+      - name: Run backend tests
+        run: pytest tests/ -v --tb=short --cov=. --cov-report=term-missing
+
+  # -------------------------------------------------------------------------
+  # Frontend — TypeScript compile check + Jest
+  # -------------------------------------------------------------------------
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Run frontend tests
+        run: npm test -- --watchAll=false --passWithNoTests
+        env:
+          CI: true
+          # Clerk key not needed in tests (provider is mocked)
+          REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY: pk_test_placeholder

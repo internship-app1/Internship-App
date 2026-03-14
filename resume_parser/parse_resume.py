@@ -78,7 +78,7 @@ def extract_skills_with_llm(resume_text: str) -> List[str]:
     try:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
+            model="claude-haiku-4-5-20251001",
             max_tokens=800,
             system=RESUME_ANALYSIS_SYSTEM_PROMPT + " Always return valid JSON only.",
             messages=[
@@ -178,7 +178,7 @@ def extract_skills_with_llm_full(resume_text: str) -> Dict[str, Any]:
     try:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
+            model="claude-haiku-4-5-20251001",
             max_tokens=800,
             system=RESUME_ANALYSIS_SYSTEM_PROMPT + " Always return valid JSON only.",
             messages=[

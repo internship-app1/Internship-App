@@ -10,6 +10,7 @@ venv/
 
 # Sensitive/resume files
 data/resume.pdf
+*.pdf
 
 .env
 .env.production
