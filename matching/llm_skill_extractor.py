@@ -3,6 +3,7 @@ LLM-based skill extraction for job descriptions.
 This replaces all hardcoded skill lists with dynamic, AI-powered extraction.
 """
 
+import difflib
 import os
 import json
 import hashlib
@@ -12,6 +13,45 @@ from typing import List, Dict, Any
 
 # Load environment variables from .env file
 load_dotenv()
+
+# ---------------------------------------------------------------------------
+# Known skill synonyms (normalized → canonical). Score 1.0 on match.
+# ---------------------------------------------------------------------------
+_SYNONYMS: Dict[str, str] = {
+    "js": "javascript",
+    "ts": "typescript",
+    "node": "node.js",
+    "nodejs": "node.js",
+    "postgres": "postgresql",
+    "psql": "postgresql",
+    "mongo": "mongodb",
+    "k8s": "kubernetes",
+    "py": "python",
+    "python3": "python",
+    "tf": "tensorflow",
+    "torch": "pytorch",
+    "sklearn": "scikit-learn",
+    "scikit learn": "scikit-learn",
+    "ml": "machine learning",
+    "ai": "artificial intelligence",
+    "dl": "deep learning",
+    "gcp": "google cloud platform",
+    "aws": "amazon web services",
+    "azure": "microsoft azure",
+    "reactjs": "react",
+    "react.js": "react",
+    "vuejs": "vue",
+    "vue.js": "vue",
+    "angularjs": "angular",
+    "expressjs": "express",
+    "express.js": "express",
+    "cpp": "c++",
+    "c sharp": "c#",
+    "golang": "go",
+    "rb": "ruby",
+    "ror": "ruby on rails",
+    "mysql": "mysql",
+}
 
 def extract_json_from_response(text: str) -> str:
     """Extract JSON from Claude response, handling markdown code blocks."""
@@ -32,6 +72,51 @@ def extract_json_from_response(text: str) -> str:
 # Simple in-memory cache for job skills to avoid re-processing
 _job_skills_cache = {}
 
+def _db_get_job_skills(cache_key: str):
+    """Check DB for previously persisted LLM job-skill extraction."""
+    try:
+        from job_database import get_db, close_db, CacheMetadata
+        db = get_db()
+        try:
+            entry = db.query(CacheMetadata).filter(
+                CacheMetadata.cache_type == f"job_skills_{cache_key}"
+            ).first()
+            if entry and entry.cache_metadata:
+                data = json.loads(entry.cache_metadata)
+                return data.get("skills")
+        finally:
+            close_db(db)
+    except Exception as e:
+        print(f"⚠️ DB job-skills cache read failed: {e}")
+    return None
+
+def _db_set_job_skills(cache_key: str, skills: List[str]) -> None:
+    """Persist LLM job-skill extraction to DB."""
+    try:
+        from job_database import get_db, close_db, CacheMetadata
+        from datetime import datetime
+        db = get_db()
+        try:
+            db.query(CacheMetadata).filter(
+                CacheMetadata.cache_type == f"job_skills_{cache_key}"
+            ).delete()
+            entry = CacheMetadata(
+                cache_type=f"job_skills_{cache_key}",
+                job_count=0,
+                new_jobs_added=0,
+                status="success",
+                cache_metadata=json.dumps({"skills": skills}),
+            )
+            db.add(entry)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            close_db(db)
+    except Exception as e:
+        print(f"⚠️ DB job-skills cache write failed: {e}")
+
 def extract_job_skills_with_llm(job_title: str, job_description: str, company: str = "") -> List[str]:
     """
     Use GPT-5 to dynamically extract required skills from job postings.
@@ -40,17 +125,24 @@ def extract_job_skills_with_llm(job_title: str, job_description: str, company: s
     """
     # Create cache key from job content
     cache_key = hashlib.md5(f"{job_title}{job_description}{company}".encode()).hexdigest()
-    
-    # Check cache first
+
+    # Check in-memory cache first
     if cache_key in _job_skills_cache:
         print(f"🔄 Using cached skills for job: {job_title}")
         return _job_skills_cache[cache_key]
-    
+
+    # Check DB cache before calling LLM
+    db_skills = _db_get_job_skills(cache_key)
+    if db_skills is not None:
+        print(f"🔄 Using DB-cached skills for job: {job_title}")
+        _job_skills_cache[cache_key] = db_skills
+        return db_skills
+
     # If job description is too short, raise error
     if len(job_description.strip()) < 50:
         print(f"❌ Job description too short for LLM extraction: {job_title}")
         raise Exception(f"Job description too short (<50 chars) for: {job_title}")
-    
+
     try:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
 
@@ -86,7 +178,7 @@ Title: {job_title}
 Description: {job_description}"""
 
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
+            model="claude-haiku-4-5-20251001",
             max_tokens=800,
             system="You are a technical recruiter who understands what skills are needed for different software engineering roles. You infer specific technical requirements from job titles and descriptions. Always return valid JSON only.",
             messages=[
@@ -99,17 +191,18 @@ Description: {job_description}"""
 
         response_text = extract_json_from_response(response.content[0].text)
         result = json.loads(response_text)
-        
+
         # Get required skills
         all_skills = result.get("required_skills", [])
 
         print(f"🤖 LLM extracted {len(all_skills)} skills from job: {job_title}")
         print(f"🤖 Skills: {all_skills}")
         print(f"🤖 Role: {result.get('role_type', 'unknown')}, Confidence: {result.get('confidence', 'unknown')}")
-        
-        # Cache the result
+
+        # Cache the result in memory and DB
         _job_skills_cache[cache_key] = all_skills
-        
+        _db_set_job_skills(cache_key, all_skills)
+
         return all_skills
         
     except Exception as e:
@@ -120,153 +213,28 @@ Description: {job_description}"""
 
 def calculate_skill_similarity(skill1: str, skill2: str) -> float:
     """
-    Calculate similarity between two skills using LLM.
-    This replaces hardcoded synonym matching with intelligent comparison.
+    Calculate similarity between two skills using pure Python — no LLM calls.
+    Hierarchy: exact match → synonym dict → substring containment → difflib ratio.
     """
-    try:
-        client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+    s1 = skill1.lower().strip()
+    s2 = skill2.lower().strip()
 
-        prompt = f"""You are an expert skill-matching system that compares two technical skills and determines how closely related they are.
+    # 1. Exact match
+    if s1 == s2:
+        return 1.0
 
-Your goal: evaluate whether these skills represent the *same*, *similar*, or *different* capabilities in a technical or professional context.
+    # 2. Synonym normalisation — if both resolve to the same canonical name
+    c1 = _SYNONYMS.get(s1, s1)
+    c2 = _SYNONYMS.get(s2, s2)
+    if c1 == c2:
+        return 1.0
 
----
+    # 3. Substring containment
+    if s1 in s2 or s2 in s1:
+        return 0.85
 
-### Input
-Skill 1: "{skill1}"
-Skill 2: "{skill2}"
-
----
-
-### Step-by-step reasoning guidelines
-1. **Direct Synonyms / Aliases**
-   - Example: "JS" vs "JavaScript" → identical
-   - Example: "Node" vs "Node.js" → identical
-   - Example: "PostgreSQL" vs "Postgres" → identical
-
-2. **Closely Related Variants (within same technology)**
-   - Example: "React" vs "ReactJS" → same framework
-   - Example: "TensorFlow" vs "TensorFlow 2" → different versions
-   - Example: "Python" vs "Python3" → version update
-   - Example: "C++" vs "C" → not equivalent, but related language lineage
-
-3. **Ecosystem Relationships**
-   - Example: "MySQL" vs "SQL" → related (SQL is the language, MySQL is an implementation)
-   - Example: "AWS Lambda" vs "Amazon Web Services" → part of same ecosystem, not equivalent
-   - Example: "Pandas" vs "NumPy" → complementary but distinct libraries in Python
-
-4. **Different / Unrelated Technologies**
-   - Example: "Java" vs "JavaScript" → completely different
-   - Example: "React" vs "Vue" → both frontend frameworks, but different technologies
-   - Example: "Excel" vs "Python" → unrelated tools
-   - Example: "Kubernetes" vs "Docker" → often used together, but distinct functions
-
-5. **Domain Context**
-   - If both are from the same *domain* (e.g., cloud, frontend, data science), reflect that in reasoning even if they aren't equivalent.
-
----
-
-### Output Format
-Return ONLY valid JSON (no markdown, no code blocks):
-{{
-  "similarity_score": <float between 0.0 and 1.0>,
-  "are_equivalent": <true|false>,
-  "category": "<'identical' | 'similar' | 'related' | 'different'>",
-  "reasoning": "<brief but precise explanation of relationship>"
-}}
-
-### Examples
-
-**Example 1**
-Skill 1: "JS"
-Skill 2: "JavaScript"
-Output:
-{{
-  "similarity_score": 1.0,
-  "are_equivalent": true,
-  "category": "identical",
-  "reasoning": "JS is a common abbreviation for JavaScript; they are the same language."
-}}
-
-**Example 2**
-Skill 1: "Python"
-Skill 2: "Python3"
-Output:
-{{
-  "similarity_score": 0.95,
-  "are_equivalent": true,
-  "category": "identical",
-  "reasoning": "Python3 is a version of Python; both indicate the same core skill."
-}}
-
-**Example 3**
-Skill 1: "MySQL"
-Skill 2: "SQL"
-Output:
-{{
-  "similarity_score": 0.7,
-  "are_equivalent": false,
-  "category": "related",
-  "reasoning": "SQL is the language; MySQL is a database that uses it."
-}}
-
-**Example 4**
-Skill 1: "Java"
-Skill 2: "JavaScript"
-Output:
-{{
-  "similarity_score": 0.1,
-  "are_equivalent": false,
-  "category": "different",
-  "reasoning": "Despite similar names, they are unrelated languages."
-}}
-
-**Example 5**
-Skill 1: "AWS Lambda"
-Skill 2: "Amazon Web Services"
-Output:
-{{
-  "similarity_score": 0.6,
-  "are_equivalent": false,
-  "category": "related",
-  "reasoning": "AWS Lambda is a compute service within the AWS ecosystem."
-}}
-
----
-
-### Evaluation Criteria
-- Focus on *functional similarity* — whether someone with one skill likely possesses the other.
-- Give conservative equivalence: only mark `are_equivalent=true` if they clearly represent the same capability.
-- Prefer short, factual reasoning (≤ 25 words)."""
-
-        response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
-            max_tokens=200,
-            system="You are a technical skill comparison expert. You understand technology relationships and can identify when different terms refer to the same or equivalent skills. Always return valid JSON only.",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-
-        response_text = extract_json_from_response(response.content[0].text)
-        result = json.loads(response_text)
-        return result.get("similarity_score", 0.0)
-        
-    except Exception as e:
-        print(f"❌ Error calculating skill similarity: {e}")
-        # Fallback to simple string comparison
-        skill1_lower = skill1.lower().strip()
-        skill2_lower = skill2.lower().strip()
-        
-        if skill1_lower == skill2_lower:
-            return 1.0
-        elif skill1_lower in skill2_lower or skill2_lower in skill1_lower:
-            return 0.8
-        else:
-            return 0.0
+    # 4. difflib ratio as fallback
+    return difflib.SequenceMatcher(None, s1, s2).ratio()
 
 def match_skills_dynamically(job_skills: List[str], resume_skills: List[str], threshold: float = 0.7) -> List[Dict[str, Any]]:
     """
@@ -331,7 +299,7 @@ Title: {job_title}
 Description: {job_description}"""
 
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
+            model="claude-haiku-4-5-20251001",
             max_tokens=500,
             system="You are a job posting analyzer that extracts metadata for matching purposes. Always return valid JSON only.",
             messages=[
@@ -359,6 +327,56 @@ Description: {job_description}"""
 # Simple in-memory cache for candidate profiles
 _candidate_profile_cache = {}
 
+def _db_get_candidate_profile(cache_key: str):
+    """Check DB for a persisted candidate profile analysis (stored in ResumeCache.skills JSON)."""
+    try:
+        from job_database import get_db, close_db, ResumeCache
+        from datetime import datetime
+        db = get_db()
+        try:
+            entry = db.query(ResumeCache).filter(
+                ResumeCache.user_id == "__profile__",
+                ResumeCache.resume_hash == cache_key,
+                ResumeCache.expires_at > datetime.utcnow(),
+            ).first()
+            if entry and entry.skills:
+                data = json.loads(entry.skills)
+                profile = data.get("__profile__")
+                return profile
+        finally:
+            close_db(db)
+    except Exception as e:
+        print(f"⚠️ DB candidate-profile cache read failed: {e}")
+    return None
+
+def _db_set_candidate_profile(cache_key: str, profile: Dict[str, Any]) -> None:
+    """Persist candidate profile analysis to DB via ResumeCache."""
+    try:
+        from job_database import get_db, close_db, ResumeCache
+        from datetime import datetime, timedelta
+        db = get_db()
+        try:
+            db.query(ResumeCache).filter(
+                ResumeCache.user_id == "__profile__",
+                ResumeCache.resume_hash == cache_key,
+            ).delete()
+            entry = ResumeCache(
+                user_id="__profile__",
+                resume_hash=cache_key,
+                results=json.dumps([]),
+                skills=json.dumps({"__profile__": profile}),
+                expires_at=datetime.utcnow() + timedelta(hours=24),
+            )
+            db.add(entry)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            close_db(db)
+    except Exception as e:
+        print(f"⚠️ DB candidate-profile cache write failed: {e}")
+
 def analyze_candidate_profile_with_llm(resume_skills: List[str], resume_text: str = "") -> Dict[str, Any]:
     """
     Analyze candidate profile once and cache the result for the session.
@@ -366,12 +384,19 @@ def analyze_candidate_profile_with_llm(resume_skills: List[str], resume_text: st
     """
     # Create cache key from resume content
     cache_key = hashlib.md5(f"{str(resume_skills)}{resume_text}".encode()).hexdigest()
-    
-    # Check cache first
+
+    # Check in-memory cache first
     if cache_key in _candidate_profile_cache:
         print("🔄 Using cached candidate profile analysis")
         return _candidate_profile_cache[cache_key]
-    
+
+    # Check DB cache before calling LLM
+    db_profile = _db_get_candidate_profile(cache_key)
+    if db_profile is not None:
+        print("🔄 Using DB-cached candidate profile analysis")
+        _candidate_profile_cache[cache_key] = db_profile
+        return db_profile
+
     try:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
 
@@ -423,10 +448,11 @@ Return ONLY valid JSON (no markdown, no code blocks):
         
         print(f"🤖 Analyzed candidate profile: {result.get('experience_level')} {result.get('career_direction')} developer")
         print(f"🤖 Top skills: {result.get('top_skills', [])}")
-        
-        # Cache the result
+
+        # Cache in memory and DB
         _candidate_profile_cache[cache_key] = result
-        
+        _db_set_candidate_profile(cache_key, result)
+
         return result
         
     except Exception as e:

@@ -14,7 +14,13 @@ from sqlalchemy.sql import func
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./jobs.db")
-engine = create_engine(DATABASE_URL, echo=False)
+is_postgres = DATABASE_URL.startswith("postgresql")
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+    **({ "pool_size": 5, "max_overflow": 10 } if is_postgres else {})
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -53,7 +59,7 @@ class Job(Base):
 class CacheMetadata(Base):
     """Metadata for tracking cache operations"""
     __tablename__ = "cache_metadata"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     cache_type = Column(String(100), nullable=False, index=True)  # 'daily', 'weekly', 'full'
     last_updated = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -61,6 +67,18 @@ class CacheMetadata(Base):
     new_jobs_added = Column(Integer, default=0)
     status = Column(String(50), default='success')  # 'success', 'partial', 'failed'
     cache_metadata = Column(Text)  # JSON string for additional info
+
+class ResumeCache(Base):
+    """Cache for resume matching results, keyed by user + resume hash"""
+    __tablename__ = "resume_cache"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    resume_hash = Column(String(64), nullable=False, index=True)
+    results = Column(Text, nullable=False)
+    skills = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    __table_args__ = (Index('idx_user_hash', 'user_id', 'resume_hash'),)
 
 # Database initialization
 def init_database():
@@ -483,6 +501,44 @@ def cleanup_old_metadata(days: int = 30):
         print(f"❌ Error cleaning up metadata: {e}")
     finally:
         close_db(db)
+
+def get_resume_cache(user_id: str, resume_hash: str) -> Optional[Dict]:
+    """Returns cached {results, skills} or None if miss/expired."""
+    db = get_db()
+    try:
+        entry = db.query(ResumeCache).filter(
+            ResumeCache.user_id == user_id,
+            ResumeCache.resume_hash == resume_hash,
+            ResumeCache.expires_at > datetime.utcnow()
+        ).first()
+        if entry:
+            return {"results": json.loads(entry.results), "skills": json.loads(entry.skills)}
+        return None
+    finally:
+        db.close()
+
+def set_resume_cache(user_id: str, resume_hash: str, results: list, skills: list) -> None:
+    """Upsert cache entry with 24h TTL."""
+    db = get_db()
+    try:
+        db.query(ResumeCache).filter(
+            ResumeCache.user_id == user_id,
+            ResumeCache.resume_hash == resume_hash
+        ).delete()
+        entry = ResumeCache(
+            user_id=user_id,
+            resume_hash=resume_hash,
+            results=json.dumps(results),
+            skills=json.dumps(skills),
+            expires_at=datetime.utcnow() + timedelta(hours=24)
+        )
+        db.add(entry)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"⚠️ Failed to save resume cache: {e}")
+    finally:
+        db.close()
 
 # Initialize database on import
 if __name__ == "__main__":

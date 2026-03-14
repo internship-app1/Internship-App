@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@clerk/react';
+import { useUser, useAuth } from '@clerk/react';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
@@ -49,6 +49,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 const FindPage: React.FC = () => {
   const user = useUser();
+  const { userId } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -59,6 +60,7 @@ const FindPage: React.FC = () => {
   const [useStreaming, setUseStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fromCache, setFromCache] = useState(false);
 
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,8 +74,38 @@ const FindPage: React.FC = () => {
     }
   };
 
+  const hashFile = async (file: File): Promise<string> => {
+    if (crypto?.subtle?.digest) {
+      const buffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    // Fallback for insecure contexts (HTTP on non-localhost) — crypto.subtle unavailable
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  };
+
   const handleFileUploadStreaming = async (file: File) => {
     console.log('🚀 Starting file upload:', file.name);
+    setFromCache(false);
+    const resumeHash = await hashFile(file);
+
+    if (userId) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?user_id=${userId}`);
+        const data = await res.json();
+        if (data.hit) {
+          setJobs(data.results);
+          setSkillsFound(data.skills);
+          setHasResults(true);
+          setFromCache(true);
+          return; // skip full pipeline
+        }
+      } catch (e) {
+        // cache check failed silently — fall through to full pipeline
+      }
+    }
+
     setIsLoading(true);
     setError('');
     setHasResults(false);
@@ -86,6 +118,8 @@ const FindPage: React.FC = () => {
       const formData = new FormData();
       formData.append('resume', file);
       formData.append('think_deeper', thinkDeeper.toString());
+      formData.append('user_id', userId || '');
+      formData.append('resume_hash', resumeHash);
 
       // Use direct backend URL to bypass CRA proxy buffering for SSE
       const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
@@ -565,6 +599,11 @@ const FindPage: React.FC = () => {
                   <Badge variant="outline" className="px-3 py-1">
                     All {jobs.length} Results
                   </Badge>
+                  {fromCache && (
+                    <Badge variant="secondary" className="px-3 py-1">
+                      ⚡ Loaded from cache
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>

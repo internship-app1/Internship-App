@@ -1,8 +1,11 @@
 import os
+import re
 import secrets
+import subprocess
 from pathlib import Path
 
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +26,8 @@ from matching.matcher import match_resume_to_jobs
 from matching.metadata_matcher import extract_resume_metadata
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
+from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
+from job_database import get_resume_cache, set_resume_cache
 
 # Base directory of this file (used for templates/static/uploads paths)
 BASE_DIR = Path(__file__).resolve().parent
@@ -30,8 +35,94 @@ BASE_DIR = Path(__file__).resolve().parent
 # Load environment variables
 load_dotenv()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown with a proper lifespan context."""
+    # ---- startup ----
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    print(f"🚀 Starting up Internship Matcher [{environment.upper()}] with Hybrid Cache System...")
+
+    cache_available = job_cache.init_redis()
+
+    if cache_available:
+        cache_info = job_cache.get_cache_info()
+        cached_jobs = job_cache.get_cached_jobs()
+        should_refresh = False
+
+        if environment == "development":
+            if cached_jobs:
+                db_info = cache_info.get('database', {})
+                last_update = db_info.get('last_update')
+                if last_update:
+                    from datetime import datetime, timedelta
+                    try:
+                        last_update_time = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
+                        time_since_update = datetime.now(last_update_time.tzinfo) - last_update_time
+                        if time_since_update > timedelta(hours=6):
+                            print(f"🔄 Cache is {time_since_update.total_seconds() / 3600:.1f} hours old - refreshing...")
+                            should_refresh = True
+                        else:
+                            print(f"📦 Using existing cache: {len(cached_jobs)} jobs (updated {time_since_update.total_seconds() / 3600:.1f} hours ago)")
+                    except Exception as e:
+                        print(f"⚠️ Error parsing cache timestamp: {e}")
+                else:
+                    print(f"📦 Using existing cache: {len(cached_jobs)} jobs available")
+            else:
+                should_refresh = True
+                print("📥 No cached jobs found - initializing cache...")
+        else:
+            if cached_jobs:
+                print(f"📦 Using existing cache: {len(cached_jobs)} jobs available")
+                print(f"🔍 Cache status: {cache_info.get('hybrid', {}).get('message', 'Unknown')}")
+            else:
+                should_refresh = True
+                print("📥 No cached jobs found - initializing cache...")
+
+        if should_refresh:
+            try:
+                jobs = await scrape_jobs(max_days_old=30)
+                if jobs:
+                    cache_result = job_cache.set_cached_jobs(jobs, cache_type='startup')
+                    if cache_result.get('database_success') or cache_result.get('redis_success'):
+                        print(f"✅ Startup cache initialized: {cache_result.get('new_jobs', 0)} new jobs, {len(jobs)} total")
+                    else:
+                        print("⚠️ Cache initialization failed")
+                else:
+                    print("⚠️ No jobs scraped on startup")
+            except Exception as e:
+                print(f"❌ Error during startup scraping: {e}")
+    else:
+        print("❌ Hybrid cache system unavailable - jobs will be scraped per request")
+
+    try:
+        final_info = job_cache.get_cache_info()
+        if final_info.get('database', {}).get('status') == 'active':
+            db_info = final_info['database']
+            print(f"📊 Database: {db_info.get('active_jobs', 0)} active jobs")
+        if final_info.get('redis', {}).get('status') == 'active':
+            redis_info = final_info['redis']
+            print(f"⚡ Redis: {redis_info.get('job_count', 0)} jobs cached")
+    except Exception as e:
+        print(f"⚠️ Error getting final cache status: {e}")
+
+    print("✅ Startup complete!")
+
+    # Start background refresh task and track it for clean cancellation
+    refresh_task = asyncio.create_task(daily_cache_refresh_task())
+    print("🕒 Daily cache refresh scheduler started")
+
+    yield  # server is running
+
+    # ---- shutdown ----
+    refresh_task.cancel()
+    try:
+        await refresh_task
+    except asyncio.CancelledError:
+        pass
+
+
 # Create FastAPI app
-app = FastAPI(title="Internship Matcher", version="1.0.0")
+app = FastAPI(title="Internship Matcher", version="1.0.0", lifespan=lifespan)
 
 # Add CORS middleware for React frontend
 app.add_middleware(
@@ -65,100 +156,6 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 UPLOAD_FOLDER = BASE_DIR / "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Startup event to initialize hybrid cache system
-@app.on_event("startup")
-async def startup_event():
-    """Initialize hybrid Redis + Database cache system on server startup"""
-    environment = os.getenv("ENVIRONMENT", "development").lower()
-    print(f"🚀 Starting up Internship Matcher [{environment.upper()}] with Hybrid Cache System...")
-
-    # Initialize hybrid cache (Redis + Database)
-    cache_available = job_cache.init_redis()
-
-    if cache_available:
-        # Check cache status
-        cache_info = job_cache.get_cache_info()
-
-        # Try to get cached jobs
-        cached_jobs = job_cache.get_cached_jobs()
-
-        # Determine if we should refresh cache on startup
-        should_refresh = False
-
-        if environment == "development":
-            # In development: check if cache needs refresh (older than 6 hours)
-            if cached_jobs:
-                db_info = cache_info.get('database', {})
-                last_update = db_info.get('last_update')
-
-                if last_update:
-                    # Parse last update time and check if it's stale
-                    from datetime import datetime, timedelta
-                    try:
-                        last_update_time = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
-                        time_since_update = datetime.now(last_update_time.tzinfo) - last_update_time
-
-                        # Refresh if cache is older than 6 hours in dev
-                        if time_since_update > timedelta(hours=6):
-                            print(f"🔄 Cache is {time_since_update.total_seconds() / 3600:.1f} hours old - refreshing...")
-                            should_refresh = True
-                        else:
-                            print(f"📦 Using existing cache: {len(cached_jobs)} jobs (updated {time_since_update.total_seconds() / 3600:.1f} hours ago)")
-                    except Exception as e:
-                        print(f"⚠️ Error parsing cache timestamp: {e}")
-                        should_refresh = False
-                else:
-                    print(f"📦 Using existing cache: {len(cached_jobs)} jobs available")
-            else:
-                # No cache - always refresh
-                should_refresh = True
-                print("📥 No cached jobs found - initializing cache...")
-        else:
-            # Production: only initialize if cache is empty
-            if cached_jobs:
-                print(f"📦 Using existing cache: {len(cached_jobs)} jobs available")
-                print(f"🔍 Cache status: {cache_info.get('hybrid', {}).get('message', 'Unknown')}")
-            else:
-                should_refresh = True
-                print("📥 No cached jobs found - initializing cache...")
-
-        # Perform cache refresh if needed
-        if should_refresh:
-            try:
-                # Use smart scraping (auto-detects incremental vs full)
-                # Default to 30-day filter to only get recent jobs
-                jobs = await scrape_jobs(max_days_old=30)
-                if jobs:
-                    # Store in hybrid cache system
-                    cache_result = job_cache.set_cached_jobs(jobs, cache_type='startup')
-                    if cache_result.get('database_success') or cache_result.get('redis_success'):
-                        print(f"✅ Startup cache initialized: {cache_result.get('new_jobs', 0)} new jobs, {len(jobs)} total")
-                    else:
-                        print("⚠️ Cache initialization failed")
-                else:
-                    print("⚠️ No jobs scraped on startup")
-            except Exception as e:
-                print(f"❌ Error during startup scraping: {e}")
-    else:
-        print("❌ Hybrid cache system unavailable - jobs will be scraped per request")
-    
-    # Print final cache status
-    try:
-        final_info = job_cache.get_cache_info()
-        if final_info.get('database', {}).get('status') == 'active':
-            db_info = final_info['database']
-            print(f"📊 Database: {db_info.get('active_jobs', 0)} active jobs")
-        if final_info.get('redis', {}).get('status') == 'active':
-            redis_info = final_info['redis']
-            print(f"⚡ Redis: {redis_info.get('job_count', 0)} jobs cached")
-    except Exception as e:
-        print(f"⚠️ Error getting final cache status: {e}")
-    
-    print("✅ Startup complete!")
-
-    # Start background task for daily cache refresh
-    asyncio.create_task(daily_cache_refresh_task())
-    print("🕒 Daily cache refresh scheduler started")
 
 
 async def daily_cache_refresh_task():
@@ -594,8 +591,21 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
         )
 
 
+@app.get("/api/resume-cache/{resume_hash}")
+async def check_resume_cache(resume_hash: str, user_id: str = Query(...)):
+    cached = get_resume_cache(user_id, resume_hash)
+    if cached:
+        return JSONResponse({"hit": True, "results": cached["results"], "skills": cached["skills"]})
+    return JSONResponse({"hit": False})
+
+
 @app.post("/api/match-stream")
-async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str = Form("true")):
+async def stream_match_resume(
+    resume: UploadFile = File(...),
+    think_deeper: str = Form("true"),
+    user_id: str = Form(default=""),
+    resume_hash: str = Form(default=""),
+):
     """Streaming endpoint that provides real-time progress updates"""
     
     # IMPORTANT: Read all file data BEFORE the generator function
@@ -633,12 +643,14 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
             print(f"🚀 Stream: About to start SSE generator...")
         except Exception as e:
             print(f"❌ Stream: S3 upload failed: {e}")
+            error_msg = str(e)
             async def error_response():
-                yield {"data": json.dumps({'error': f'S3 upload failed: {str(e)}'})}
+                yield {"data": json.dumps({'error': f'S3 upload failed: {error_msg}'})}
             return EventSourceResponse(error_response())
     except Exception as e:
+        error_msg = str(e)
         async def error_response():
-            yield {"data": json.dumps({'error': f'File upload error: {str(e)}'})}
+            yield {"data": json.dumps({'error': f'File upload error: {error_msg}'})}
         return EventSourceResponse(error_response())
     
     async def generate_progress():
@@ -898,10 +910,18 @@ async def stream_match_resume(resume: UploadFile = File(...), think_deeper: str 
                 except Exception as cleanup_error:
                     print(f"⚠️ Stream: Failed to clean up S3 file {s3_key}: {cleanup_error}")
 
+                # Save to resume cache if user is authenticated
+                if user_id and resume_hash:
+                    try:
+                        set_resume_cache(user_id, resume_hash, final_results, resume_skills)
+                        print(f"💾 Saved results to resume cache for user {user_id}")
+                    except Exception as cache_err:
+                        print(f"⚠️ Failed to save resume cache: {cache_err}")
+
                 current_step[0] += 1
                 yield f"data: {json.dumps({'step': current_step[0], 'message': completion_message, 'final_results': final_results, 'matches_found': len(jobs_with_matches), 'total_results': len(final_results), 'progress': 100, 'complete': True})}\n\n"
                 await asyncio.sleep(0.05)  # Small delay to ensure final SSE flushes to client
-                
+
             except Exception as e:
                 print(f"❌ Error in intelligent matching: {e}")
                 # The match_resume_to_jobs function already has automatic keyword fallback
@@ -1288,5 +1308,90 @@ async def refresh_health():
 
 
 
+def _sanitize_filename(value: str) -> str:
+    """Replace non-alphanumeric characters with underscores for safe filenames."""
+    return re.sub(r"[^\w\-]", "_", value)
+
+
+@app.post("/api/tailor-resume")
+async def tailor_resume_endpoint(
+    request: Request,
+    resume: UploadFile = File(...),
+    job_title: str = Form(...),
+    company: str = Form(...),
+    job_description: str = Form(default=""),
+    user_id: str = Form(default="anonymous"),
+):
+    # Extract client IP for additional context
+    client_ip = request.client.host if request.client else "unknown"
+    
+    print(f"\n[{datetime.utcnow().isoformat()}] 👔 TAILOR RESUME REQUEST START")
+    print(f"👤 User ID: {user_id} | 🌐 IP: {client_ip}")
+    print(f"🎯 Target Job: '{job_title}' at '{company}'")
+    print(f"📄 Original Resume: {resume.filename}")
+    print(f"📝 Description provided: {'Yes' if job_description.strip() else 'No'} ({len(job_description)} chars)")
+
+    if not resume.filename or not resume.filename.lower().endswith(".pdf"):
+        print(f"❌ Tailor error (User: {user_id}): Unsupported file format - {resume.filename}")
+        raise HTTPException(status_code=400, detail="Only PDF resumes are supported")
+
+    file_content = await resume.read()
+    if not file_content:
+        print(f"❌ Tailor error (User: {user_id}): Uploaded file is empty")
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    import time
+    start_time = time.time()
+
+    try:
+        pdf_bytes = _tailor_resume(file_content, job_title, company, job_description)
+    except ValueError as e:
+        print(f"❌ Tailor error (User: {user_id}): {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError:
+        print(f"❌ Tailor error (User: {user_id}): pdflatex not found")
+        raise HTTPException(status_code=500, detail="LaTeX compiler unavailable — pdflatex not found")
+    except subprocess.TimeoutExpired:
+        print(f"❌ Tailor error (User: {user_id}): pdflatex timed out")
+        raise HTTPException(status_code=500, detail="LaTeX compilation timed out")
+    except RuntimeError as e:
+        print(f"❌ Tailor error (User: {user_id}): Runtime error - {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        print(f"❌ Tailor error (User: {user_id}): Unexpected error - {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Resume tailoring failed: {e}")
+
+    execution_time = round(time.time() - start_time, 2)
+    safe_company = _sanitize_filename(company)
+    safe_title = _sanitize_filename(job_title)
+    filename = f"resume_tailored_{safe_company}_{safe_title}.pdf"
+    
+    print(f"✅ Tailoring Complete for User: {user_id}")
+    print(f"⏱️ Generation time: {execution_time} seconds | Result size: {len(pdf_bytes)} bytes")
+    print(f"[{datetime.utcnow().isoformat()}] 👔 TAILOR RESUME REQUEST END\n")
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        "app:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        reload_dirs=[
+            ".",
+            "resume_parser",
+            "resume_tailor",
+            "matching",
+            "job_scrapers",
+            "email_sender",
+        ],
+        reload_excludes=["frontend", "venv", ".git", "__pycache__"],
+    )

@@ -260,7 +260,7 @@ if [ "$START_BACKEND" = true ]; then
         else
             print_info "Starting backend in foreground (Ctrl+C to stop)"
             echo ""
-            python "$PROJECT_DIR/app.py"
+            python "$PROJECT_DIR/app.py" 2>&1
             exit 0
         fi
     fi
