@@ -9,10 +9,51 @@ import { cn } from '../lib/utils';
 interface JobCardProps {
   job: Job;
   isNewResult?: boolean;
+  resumeFile?: File | null;
+  apiBaseUrl?: string;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile, apiBaseUrl = '' }) => {
   const [showAIReasoning, setShowAIReasoning] = useState(false);
+  const [isTailoring, setIsTailoring] = useState(false);
+  const [tailorError, setTailorError] = useState('');
+
+  const handleTailorResume = async () => {
+    if (!resumeFile) return;
+    setIsTailoring(true);
+    setTailorError('');
+    try {
+      const formData = new FormData();
+      formData.append('resume', resumeFile);
+      formData.append('job_title', job.title || '');
+      formData.append('company', job.company || '');
+      formData.append('job_description', job.description || '');
+
+      const response = await fetch(`${apiBaseUrl}/api/tailor-resume`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || `Server error ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `resume_tailored_${job.company}_${job.title}.pdf`.replace(/[^\w\-_.]/g, '_');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setTailorError(err.message || 'Failed to tailor resume. Please try again.');
+    } finally {
+      setIsTailoring(false);
+    }
+  };
 
   const getMatchScoreBadgeVariant = (score: number): 'default' | 'secondary' | 'destructive' | 'outline' => {
     if (score >= 70) return 'default';
@@ -297,15 +338,28 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false }) => {
         </div>
       </CardContent>
 
-      {(job.apply_link || job.url) && (
-        <CardFooter className="border-t">
-          <Button 
-            className="w-full"
-            onClick={() => window.open(job.apply_link || job.url, '_blank', 'noopener,noreferrer')}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Apply Now
-          </Button>
+      {((job.apply_link || job.url) || resumeFile) && (
+        <CardFooter className="border-t flex flex-col gap-2">
+          {(job.apply_link || job.url) && (
+            <Button
+              className="w-full"
+              onClick={() => window.open(job.apply_link || job.url, '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Apply Now
+            </Button>
+          )}
+          {resumeFile && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleTailorResume}
+              disabled={isTailoring}
+            >
+              {isTailoring ? 'Tailoring Resume...' : 'Tailor Resume for This Job'}
+            </Button>
+          )}
+          {tailorError && <p className="text-xs text-destructive">{tailorError}</p>}
         </CardFooter>
       )}
     </Card>

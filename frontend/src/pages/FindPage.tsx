@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@stackframe/react';
+import { useUser } from '@clerk/react';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
@@ -576,6 +576,8 @@ const FindPage: React.FC = () => {
                     key={`${job.company}-${job.title}-${(currentPage - 1) * itemsPerPage + index}`}
                     job={job}
                     isNewResult={isLoading && useStreaming}
+                    resumeFile={selectedFile}
+                    apiBaseUrl={API_BASE_URL}
                   />
                 ))
               ) : (

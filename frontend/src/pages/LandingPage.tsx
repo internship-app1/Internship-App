@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '@stackframe/react';
+import { useUser } from '@clerk/react';
 import Header from '../components/Header';
 import { Hero } from '../components/ui/animated-hero';
 import { Button } from '../components/ui/button';
