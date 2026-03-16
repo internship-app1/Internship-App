@@ -163,20 +163,13 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
 
           {/* Match score badge */}
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50/60 px-3 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-full border border-violet-100 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-900/40 px-3 py-1.5">
               <TrendingUp className="h-4 w-4 text-violet-500" />
               <span
-                className="text-base font-bold font-mono"
-                style={
-                  isHighScore
-                    ? {
-                        background: 'linear-gradient(135deg,#7C3AED,#22D3EE)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                      }
-                    : { color: 'hsl(var(--muted-foreground))' }
-                }
+                className={cn(
+                  "text-base font-bold font-mono",
+                  isHighScore ? "text-violet-700 dark:text-violet-300" : "text-muted-foreground"
+                )}
               >
                 {score}%
               </span>
@@ -337,7 +330,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                           <Badge
                             key={index}
                             variant="outline"
-                            className="text-xs font-mono border-orange-300 text-orange-800"
+                            className="text-xs font-mono border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300"
                           >
                             {skill}
                           </Badge>
@@ -345,7 +338,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                         {job.ai_reasoning.skill_gaps.length > 5 && (
                           <Badge
                             variant="outline"
-                            className="text-xs font-mono border-orange-300 text-orange-800"
+                            className="text-xs font-mono border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300"
                           >
                             +{job.ai_reasoning.skill_gaps.length - 5} more
                           </Badge>
