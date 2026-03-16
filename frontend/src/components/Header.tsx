@@ -19,7 +19,7 @@ const Header: React.FC = () => {
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         scrolled
-          ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-neutral-200/60'
+          ? 'bg-white/90 dark:bg-neutral-950/90 backdrop-blur-md shadow-sm border-b border-neutral-200/60 dark:border-neutral-800/60'
           : 'bg-transparent'
       }`}
     >
@@ -30,7 +30,7 @@ const Header: React.FC = () => {
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <span
-            className="text-xl font-bold text-neutral-950"
+            className="text-xl font-bold text-neutral-950 dark:text-neutral-50"
             style={{ fontFamily: 'Sora, sans-serif' }}
           >
             InternMatch
@@ -48,7 +48,7 @@ const Header: React.FC = () => {
               e.preventDefault();
               document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="text-sm font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
+            className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors"
           >
             How It Works
           </a>
@@ -58,7 +58,7 @@ const Header: React.FC = () => {
               e.preventDefault();
               document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="text-sm font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
+            className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors"
           >
             Features
           </a>

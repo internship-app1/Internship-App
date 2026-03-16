@@ -74,7 +74,7 @@ function StatCounter({ target, label }: StatCounterProps) {
       >
         {target}
       </span>
-      <p className="text-sm text-neutral-500 mt-1">{label}</p>
+      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{label}</p>
     </div>
   );
 }
@@ -108,7 +108,7 @@ const LandingPage: React.FC = () => {
         <Hero />
 
         {/* ── Section 2: Stats Bar ────────────────────────────────── */}
-        <section className="border-y border-neutral-200 bg-neutral-50/80 py-10 px-4">
+        <section className="border-y border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-neutral-900/80 py-10 px-4">
           <FadeUp>
             <div className="container max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
               <StatCounter target="10,000+" label="Internships indexed" />
@@ -122,7 +122,7 @@ const LandingPage: React.FC = () => {
                 >
                   &lt; 30s
                 </span>
-                <p className="text-sm text-neutral-500 mt-1">Time to first match</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Time to first match</p>
               </div>
             </div>
           </FadeUp>
@@ -136,7 +136,7 @@ const LandingPage: React.FC = () => {
                 What we do
               </p>
               <h2
-                className="text-4xl md:text-5xl font-bold text-neutral-950"
+                className="text-4xl md:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Everything you need to{' '}
@@ -189,18 +189,18 @@ const LandingPage: React.FC = () => {
               {/* Card 2 */}
               <motion.div
                 variants={itemVariants}
-                className="col-span-6 md:col-span-3 rounded-3xl bg-gradient-to-br from-cyan-50 to-white border border-cyan-100 p-6"
+                className="col-span-6 md:col-span-3 rounded-3xl bg-gradient-to-br from-cyan-50 to-white dark:from-cyan-950/30 dark:to-neutral-900 border border-cyan-100 dark:border-cyan-900/50 p-6"
               >
                 <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center mb-4 shadow-lg shadow-cyan-400/25">
                   <Target className="h-5 w-5 text-white" />
                 </div>
                 <h3
-                  className="text-lg font-bold text-neutral-900 mb-2"
+                  className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-2"
                   style={{ fontFamily: 'Sora, sans-serif' }}
                 >
                   Smart Skill Detection
                 </h3>
-                <p className="text-neutral-500 text-sm leading-relaxed">
+                <p className="text-neutral-500 dark:text-neutral-400 text-sm leading-relaxed">
                   We read your resume the way a recruiter does — pulling out real skills,
                   frameworks, and experience levels, not just raw text.
                 </p>
@@ -209,18 +209,18 @@ const LandingPage: React.FC = () => {
               {/* Card 3 */}
               <motion.div
                 variants={itemVariants}
-                className="col-span-6 md:col-span-3 rounded-3xl bg-gradient-to-br from-violet-50 to-white border border-violet-100 p-6"
+                className="col-span-6 md:col-span-3 rounded-3xl bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/30 dark:to-neutral-900 border border-violet-100 dark:border-violet-900/50 p-6"
               >
                 <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center mb-4 shadow-lg shadow-violet-500/25">
                   <TrendingUp className="h-5 w-5 text-white" />
                 </div>
                 <h3
-                  className="text-lg font-bold text-neutral-900 mb-2"
+                  className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-2"
                   style={{ fontFamily: 'Sora, sans-serif' }}
                 >
                   Compatibility Scoring
                 </h3>
-                <p className="text-neutral-500 text-sm leading-relaxed">
+                <p className="text-neutral-500 dark:text-neutral-400 text-sm leading-relaxed">
                   Every result comes with a match score and an explanation — so you know exactly
                   why a role is a fit before you apply.
                 </p>
@@ -230,14 +230,14 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ── Section 4: How It Works ──────────────────────────────── */}
-        <section id="how-it-works" className="py-24 px-4 bg-neutral-50/60">
+        <section id="how-it-works" className="py-24 px-4 bg-neutral-50/60 dark:bg-neutral-900/40">
           <div className="container max-w-5xl mx-auto">
             <FadeUp className="text-center mb-16">
               <p className="text-xs font-semibold tracking-widest uppercase text-violet-500 mb-3">
                 The Process
               </p>
               <h2
-                className="text-4xl md:text-5xl font-bold text-neutral-950"
+                className="text-4xl md:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Three steps to your{' '}
@@ -279,7 +279,7 @@ const LandingPage: React.FC = () => {
                   <div className="relative flex flex-col items-center text-center px-4">
                     {/* Watermark number */}
                     <span
-                      className="absolute -top-4 left-1/2 -translate-x-1/2 text-[96px] font-black text-neutral-100 leading-none select-none pointer-events-none z-0"
+                      className="absolute -top-4 left-1/2 -translate-x-1/2 text-[96px] font-black text-neutral-100 dark:text-neutral-800 leading-none select-none pointer-events-none z-0"
                       style={{ fontFamily: 'Sora, sans-serif' }}
                     >
                       {num}
@@ -291,12 +291,12 @@ const LandingPage: React.FC = () => {
                     </div>
 
                     <h3
-                      className="text-xl font-semibold text-neutral-900 mb-2 relative z-10"
+                      className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2 relative z-10"
                       style={{ fontFamily: 'Sora, sans-serif' }}
                     >
                       {title}
                     </h3>
-                    <p className="text-sm text-neutral-500 leading-relaxed relative z-10">
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed relative z-10">
                       {desc}
                     </p>
                   </div>
@@ -403,7 +403,7 @@ const LandingPage: React.FC = () => {
                 Why InternMatch AI
               </p>
               <h2
-                className="text-4xl md:text-5xl font-bold text-neutral-950"
+                className="text-4xl md:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Built for students,
@@ -452,7 +452,7 @@ const LandingPage: React.FC = () => {
                 <motion.div
                   key={i}
                   variants={itemVariants}
-                  className="group rounded-2xl border border-neutral-200 p-8 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-300 bg-white"
+                  className="group rounded-2xl border border-neutral-200 dark:border-neutral-800 p-8 hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-300 bg-white dark:bg-neutral-900"
                 >
                   <div
                     className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg ${shadow}`}
@@ -460,12 +460,12 @@ const LandingPage: React.FC = () => {
                     <Icon className="h-6 w-6 text-white" />
                   </div>
                   <h3
-                    className="text-lg font-bold text-neutral-900 mb-2"
+                    className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-2"
                     style={{ fontFamily: 'Sora, sans-serif' }}
                   >
                     {title}
                   </h3>
-                  <p className="text-neutral-500 text-sm leading-relaxed">{desc}</p>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm leading-relaxed">{desc}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -525,14 +525,14 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
-        <footer className="border-t border-neutral-200 py-8 px-4">
-          <div className="container max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-neutral-500">
+        <footer className="border-t border-neutral-200 dark:border-neutral-800 py-8 px-4">
+          <div className="container max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-neutral-500 dark:text-neutral-400">
             <div className="flex items-center gap-2">
               <div className="h-6 w-6 rounded-md bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
                 <Sparkles className="h-3 w-3 text-white" />
               </div>
               <span
-                className="font-medium text-neutral-700"
+                className="font-medium text-neutral-700 dark:text-neutral-200"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 InternMatch
@@ -541,13 +541,13 @@ const LandingPage: React.FC = () => {
             </div>
             <p className="text-neutral-400">© 2025 InternMatch AI. Free to use, always.</p>
             <div className="flex items-center gap-5">
-              <a href="#" className="hover:text-neutral-800 transition-colors">
+              <a href="#" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
                 Privacy
               </a>
-              <a href="#" className="hover:text-neutral-800 transition-colors">
+              <a href="#" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
                 Terms
               </a>
-              <a href="#" className="hover:text-neutral-800 transition-colors">
+              <a href="#" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
                 Contact
               </a>
             </div>

@@ -92,6 +92,14 @@
     hsl(240 6% 98%);
 }
 
+.dark .hero-bg {
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 55%, hsl(263 70% 58% / 0.20) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 85% 15%, hsl(187 85% 53% / 0.14) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 35% at 55% 85%, hsl(263 40% 42% / 0.12) 0%, transparent 55%),
+    hsl(240 10% 4%);
+}
+
 /* Floating orb animation */
 @keyframes float-orb {
   0%, 100% { transform: translate(0, 0) scale(1); }

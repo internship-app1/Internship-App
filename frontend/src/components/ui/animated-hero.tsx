@@ -46,7 +46,7 @@ function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-sm font-medium text-violet-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/50 px-4 py-1.5 text-sm font-medium text-violet-700 dark:text-violet-300">
                 <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" />
                 AI-Powered Internship Matching
               </div>
@@ -62,7 +62,7 @@ function Hero() {
                 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-none"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
-                <span className="text-neutral-950 block">Find your</span>
+                <span className="text-neutral-950 dark:text-neutral-50 block">Find your</span>
 
                 {/* Cycling word */}
                 <span className="relative block h-[1.15em] overflow-hidden my-1">
@@ -91,13 +91,13 @@ function Hero() {
                   ))}
                 </span>
 
-                <span className="text-neutral-950 block">internship</span>
+                <span className="text-neutral-950 dark:text-neutral-50 block">internship</span>
               </h1>
             </motion.div>
 
             {/* Subtitle */}
             <motion.p
-              className="text-lg md:text-xl text-neutral-600 max-w-lg font-normal leading-relaxed"
+              className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-lg font-normal leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
@@ -127,7 +127,7 @@ function Hero() {
                     .getElementById('how-it-works')
                     ?.scrollIntoView({ behavior: 'smooth' })
                 }
-                className="inline-flex items-center gap-2 rounded-full px-8 py-4 border-2 border-neutral-200 hover:border-violet-200 hover:bg-violet-50/50 text-neutral-700 font-semibold transition-all text-sm"
+                className="inline-flex items-center gap-2 rounded-full px-8 py-4 border-2 border-neutral-200 dark:border-neutral-700 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/50 dark:hover:bg-violet-950/30 text-neutral-700 dark:text-neutral-300 font-semibold transition-all text-sm"
               >
                 See How It Works
               </button>
@@ -147,14 +147,14 @@ function Hero() {
               className="w-full max-w-sm"
             >
               {/* Card preview */}
-              <div className="rounded-2xl border border-violet-100 bg-white shadow-2xl shadow-violet-500/10 p-6 space-y-4">
+              <div className="rounded-2xl border border-violet-100 dark:border-violet-900 bg-white dark:bg-neutral-900 shadow-2xl shadow-violet-500/10 p-6 space-y-4">
                 {/* Header row */}
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold text-neutral-900 text-base" style={{ fontFamily: 'Sora, sans-serif' }}>
+                    <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-base" style={{ fontFamily: 'Sora, sans-serif' }}>
                       Software Engineer Intern
                     </h3>
-                    <p className="text-sm text-neutral-500 mt-0.5">Stripe · San Francisco, CA</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Stripe · San Francisco, CA</p>
                   </div>
                   <span className="gradient-text font-mono font-bold text-2xl leading-none">92%</span>
                 </div>
@@ -164,7 +164,7 @@ function Hero() {
                   {['Python', 'React', 'SQL', 'REST APIs'].map((skill) => (
                     <span
                       key={skill}
-                      className="text-xs font-mono px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100"
+                      className="text-xs font-mono px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-900"
                     >
                       {skill}
                     </span>
@@ -172,13 +172,13 @@ function Hero() {
                 </div>
 
                 {/* Match summary */}
-                <p className="text-xs text-neutral-500 leading-relaxed">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
                   Strong match — your Python and React experience directly aligns
                   with their stack. 4 of 5 required skills detected.
                 </p>
 
                 {/* Footer row */}
-                <div className="pt-2 border-t border-neutral-100 flex items-center justify-between">
+                <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
                   <span className="text-xs text-green-600 font-medium flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
                     NEW · Posted 2 hours ago
@@ -190,7 +190,7 @@ function Hero() {
               </div>
 
               {/* Decorative second card behind */}
-              <div className="mt-3 mx-4 h-4 rounded-b-2xl border border-violet-100 bg-white/60 shadow-lg shadow-violet-500/5" />
+              <div className="mt-3 mx-4 h-4 rounded-b-2xl border border-violet-100 dark:border-violet-900 bg-white/60 dark:bg-neutral-900/60 shadow-lg shadow-violet-500/5" />
             </motion.div>
           </motion.div>
         </div>
