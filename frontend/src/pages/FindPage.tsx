@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Upload, AlertCircle, Sparkles, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
 // because it buffers responses. In production, use relative URLs.
@@ -300,25 +301,30 @@ const FindPage: React.FC = () => {
     error === 'No matching opportunities found for your skills.';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-violet-50/20 to-neutral-50">
-      <Header />
+    <div className="min-h-screen hero-bg">
+      <Header forceSolid />
 
       <main className="container py-8 space-y-8">
         {/* Header Section */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-2 pt-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/50 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
+            AI Matching Ready
+          </div>
           <h1
-            className="text-4xl md:text-5xl font-bold tracking-tight"
+            className="text-3xl md:text-4xl font-bold tracking-tight"
             style={{ fontFamily: 'Sora, sans-serif' }}
           >
-            Find Your Best-Fit Internships
+            Upload your resume to begin
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Upload your resume and get AI-matched to internships that actually fit your skills — in seconds.
+          <p className="text-base text-muted-foreground">
+            PDF or image — we'll handle the rest
           </p>
         </div>
 
         {/* Upload Section */}
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        <div className="max-w-2xl mx-auto p-px rounded-2xl bg-gradient-to-br from-violet-400/30 via-transparent to-cyan-400/20 dark:from-violet-500/30 dark:to-cyan-500/20 shadow-lg shadow-violet-500/10">
+          <Card className="rounded-[calc(1rem-1px)] border-0 shadow-none bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-violet-600" />
@@ -336,10 +342,10 @@ const FindPage: React.FC = () => {
                   className={cn(
                     'flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200',
                     isDragging
-                      ? 'border-violet-500 bg-violet-50 scale-[1.01]'
+                      ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/40 scale-[1.01]'
                       : selectedFile
-                      ? 'border-violet-400 bg-violet-50/60'
-                      : 'border-neutral-300 hover:border-violet-300 hover:bg-violet-50/30'
+                      ? 'border-violet-400 dark:border-violet-600 bg-violet-50/60 dark:bg-violet-950/30'
+                      : 'border-border hover:border-violet-300 hover:bg-violet-50/30 dark:hover:border-violet-700 dark:hover:bg-violet-950/20'
                   )}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
@@ -349,8 +355,8 @@ const FindPage: React.FC = () => {
                     {selectedFile ? (
                       <>
                         <CheckCircle2 className="h-8 w-8 mb-2 text-violet-600" />
-                        <p className="text-sm font-medium text-neutral-800">{selectedFile.name}</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">Click to change file</p>
+                        <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Click to change file</p>
                       </>
                     ) : isDragging ? (
                       <>
@@ -359,11 +365,11 @@ const FindPage: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <Upload className="h-8 w-8 mb-2 text-neutral-400" />
-                        <p className="text-sm font-medium text-neutral-700">
+                        <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium text-foreground">
                           Click to upload or drag and drop
                         </p>
-                        <p className="text-xs text-neutral-400 mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
                       </>
                     )}
                   </div>
@@ -377,27 +383,10 @@ const FindPage: React.FC = () => {
 
                 {/* Think Deeper toggle */}
                 <div className="w-full max-w-sm">
-                  <div className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50/80 p-3">
-                    <input
-                      type="checkbox"
-                      id="thinkDeeper"
-                      checked={thinkDeeper}
-                      onChange={(e) => setThinkDeeper(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-neutral-300 accent-violet-600 cursor-pointer"
-                    />
-                    <div>
-                      <label
-                        htmlFor="thinkDeeper"
-                        className="text-sm font-medium text-neutral-800 cursor-pointer"
-                      >
-                        Think Deeper
-                      </label>
-                      <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">
-                        Enables deeper AI reasoning — adds skill gap analysis, red flags, and career fit.
-                        Takes ~30s longer.
-                      </p>
-                    </div>
-                  </div>
+                  <ThinkDeeperToggle
+                    checked={thinkDeeper}
+                    onChange={setThinkDeeper}
+                  />
                 </div>
 
                 <Button
@@ -420,7 +409,8 @@ const FindPage: React.FC = () => {
               </div>
             </form>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
 
         {/* Enhanced Progress Section */}
         {isLoading && (
@@ -461,7 +451,7 @@ const FindPage: React.FC = () => {
 
                 {/* Enhanced Progress Bar */}
                 <div className="relative">
-                  <div className="w-full bg-violet-100 rounded-full h-3 overflow-hidden shadow-inner">
+                  <div className="w-full bg-violet-100 dark:bg-violet-950/60 rounded-full h-3 overflow-hidden shadow-inner">
                     <div
                       className={cn(
                         'h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden',
@@ -547,7 +537,7 @@ const FindPage: React.FC = () => {
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="px-3 py-1 font-mono text-xs bg-violet-50 text-violet-700 border border-violet-100"
+                    className="px-3 py-1 font-mono text-xs bg-violet-50 text-violet-700 border border-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/50"
                   >
                     {skill}
                   </Badge>
@@ -688,27 +678,27 @@ const FindPage: React.FC = () => {
                 ))
               ) : isNoResultsError ? (
                 /* ── Helpful empty state ── */
-                <div className="max-w-2xl mx-auto rounded-2xl border border-neutral-200 bg-white p-10 text-center shadow-sm">
-                  <div className="h-14 w-14 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center mx-auto mb-5">
+                <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
+                  <div className="h-14 w-14 rounded-2xl bg-violet-50 border border-violet-100 dark:bg-violet-950/50 dark:border-violet-800/50 flex items-center justify-center mx-auto mb-5">
                     <Sparkles className="h-7 w-7 text-violet-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-neutral-900 mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  <h3 className="text-xl font-semibold text-foreground mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
                     No matches found yet
                   </h3>
-                  <p className="text-neutral-500 text-sm leading-relaxed mb-5 max-w-md mx-auto">
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-5 max-w-md mx-auto">
                     We scanned our database but couldn't find a strong fit for your current resume.
                     This usually means your resume is missing technical keywords or project details.
                   </p>
                   {skillsFound.length > 0 && (
                     <div className="mb-6">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                         Skills we detected
                       </p>
                       <div className="flex flex-wrap gap-1.5 justify-center">
                         {skillsFound.map((skill, i) => (
                           <span
                             key={i}
-                            className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100"
+                            className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/50"
                           >
                             {skill}
                           </span>
@@ -716,7 +706,7 @@ const FindPage: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  <ul className="text-sm text-neutral-500 text-left max-w-xs mx-auto space-y-1.5 mb-6">
+                  <ul className="text-sm text-muted-foreground text-left max-w-xs mx-auto space-y-1.5 mb-6">
                     <li className="flex items-start gap-2">
                       <span className="text-violet-400 font-bold mt-0.5">·</span>
                       Add specific tech stacks, languages, and frameworks

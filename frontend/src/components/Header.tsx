@@ -3,7 +3,7 @@ import { useUser, UserButton, SignInButton } from '@clerk/react';
 import { ThemeToggle } from './theme-toggle';
 import { Sparkles } from 'lucide-react';
 
-const Header: React.FC = () => {
+const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
   const { isSignedIn } = useUser();
   const [scrolled, setScrolled] = useState(false);
 
@@ -18,7 +18,7 @@ const Header: React.FC = () => {
   return (
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        scrolled
+        scrolled || forceSolid
           ? 'bg-white/90 dark:bg-neutral-950/90 backdrop-blur-md shadow-sm border-b border-neutral-200/60 dark:border-neutral-800/60'
           : 'bg-transparent'
       }`}

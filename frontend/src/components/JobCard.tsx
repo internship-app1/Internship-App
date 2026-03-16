@@ -258,10 +258,10 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
               </Button>
 
               {showAIReasoning && job.ai_reasoning && (
-                <div className="space-y-3 rounded-2xl border border-violet-100/50 bg-violet-50/30 backdrop-blur-sm p-4">
+                <div className="space-y-3 rounded-2xl border border-violet-100/50 bg-violet-50/30 dark:bg-violet-950/30 dark:border-violet-800/40 backdrop-blur-sm p-4">
                   {/* Complexity Analysis */}
                   <div>
-                    <h5 className="font-medium text-sm text-violet-900 mb-2">Resume Complexity Assessment</h5>
+                    <h5 className="font-medium text-sm text-violet-900 dark:text-violet-200 mb-2">Resume Complexity Assessment</h5>
                     <div className="flex items-center gap-2 mb-1">
                       <Badge
                         variant={
@@ -283,7 +283,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
 
                   {/* Experience Match */}
                   <div>
-                    <h5 className="font-medium text-sm text-violet-900 mb-1">Experience Level Match</h5>
+                    <h5 className="font-medium text-sm text-violet-900 dark:text-violet-200 mb-1">Experience Level Match</h5>
                     <Badge
                       variant={
                         job.ai_reasoning.experience_match === 'excellent'
@@ -300,15 +300,15 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
 
                   {/* AI Reasoning */}
                   <div>
-                    <h5 className="font-medium text-sm text-violet-900 mb-2">AI Analysis</h5>
-                    <p className="text-sm text-violet-800 leading-relaxed">
+                    <h5 className="font-medium text-sm text-violet-900 dark:text-violet-200 mb-2">AI Analysis</h5>
+                    <p className="text-sm text-violet-800 dark:text-violet-300 leading-relaxed">
                       {job.ai_reasoning.reasoning}
                     </p>
                   </div>
 
                   {/* Skill Matches */}
                   <div>
-                    <h5 className="font-medium text-sm text-green-900 mb-2">Your Matching Skills</h5>
+                    <h5 className="font-medium text-sm text-green-900 dark:text-green-300 mb-2">Your Matching Skills</h5>
                     {job.ai_reasoning.skill_matches && job.ai_reasoning.skill_matches.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {job.ai_reasoning.skill_matches.map((skill, index) => (
@@ -322,7 +322,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                         ))}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded border">
+                      <div className="text-sm text-muted-foreground italic bg-muted p-2 rounded border">
                         No skills matched to this job
                       </div>
                     )}
@@ -330,7 +330,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
 
                   {/* Skill Gaps */}
                   <div>
-                    <h5 className="font-medium text-sm text-orange-900 mb-2">Skills to Develop</h5>
+                    <h5 className="font-medium text-sm text-orange-900 dark:text-orange-300 mb-2">Skills to Develop</h5>
                     {job.ai_reasoning.skill_gaps && job.ai_reasoning.skill_gaps.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {job.ai_reasoning.skill_gaps.slice(0, 5).map((skill, index) => (
@@ -352,7 +352,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded border">
+                      <div className="text-sm text-muted-foreground italic bg-muted p-2 rounded border">
                         No additional skills required
                       </div>
                     )}
@@ -361,13 +361,13 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                   {/* Red Flags */}
                   {job.ai_reasoning.red_flags && job.ai_reasoning.red_flags.length > 0 && (
                     <div>
-                      <h5 className="font-medium text-sm text-red-900 mb-2 flex items-center gap-2">
+                      <h5 className="font-medium text-sm text-red-900 dark:text-red-300 mb-2 flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4" />
                         Considerations
                       </h5>
                       <ul className="space-y-1">
                         {job.ai_reasoning.red_flags.map((flag, index) => (
-                          <li key={index} className="text-sm text-red-800 flex items-start gap-2">
+                          <li key={index} className="text-sm text-red-800 dark:text-red-400 flex items-start gap-2">
                             <span className="text-red-500 mt-1">•</span>
                             {flag}
                           </li>
