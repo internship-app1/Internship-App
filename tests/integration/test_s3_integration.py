@@ -10,13 +10,21 @@ import os
 import uuid
 import pytest
 
+PLACEHOLDER_VALUES = {"", "test-key-id", "test-secret", "test-bucket", "placeholder"}
+
+
+def _has_real_s3_config() -> bool:
+    required = [
+        os.getenv("AWS_ACCESS_KEY_ID", ""),
+        os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+        os.getenv("AWS_BUCKET_NAME", ""),
+    ]
+    return all(value and value not in PLACEHOLDER_VALUES for value in required)
+
+
 SKIP_IF_NO_S3 = pytest.mark.skipif(
-    not all([
-        os.getenv("AWS_ACCESS_KEY_ID"),
-        os.getenv("AWS_SECRET_ACCESS_KEY"),
-        os.getenv("AWS_BUCKET_NAME"),
-    ]),
-    reason="AWS credentials not set",
+    not _has_real_s3_config(),
+    reason="Real AWS S3 credentials and bucket not configured",
 )
 
 # Minimal valid single-page PDF (no real content needed for upload tests)

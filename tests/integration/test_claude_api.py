@@ -9,10 +9,17 @@ import json
 import pytest
 import anthropic
 
+PLACEHOLDER_VALUES = {"", "test-key", "placeholder"}
+
+
+def _has_real_claude_key() -> bool:
+    api_key = os.getenv("CLAUDE_API_KEY", "")
+    return bool(api_key and api_key not in PLACEHOLDER_VALUES)
+
 
 SKIP_IF_NO_KEY = pytest.mark.skipif(
-    not os.getenv("CLAUDE_API_KEY"),
-    reason="CLAUDE_API_KEY not set",
+    not _has_real_claude_key(),
+    reason="Real CLAUDE_API_KEY not configured",
 )
 
 
