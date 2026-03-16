@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser, useAuth } from '@clerk/react';
+import { useAuth } from '@clerk/react';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
@@ -48,7 +48,6 @@ const getApiBaseUrl = (): string => {
 const API_BASE_URL = getApiBaseUrl();
 
 const FindPage: React.FC = () => {
-  const user = useUser();
   const { userId } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string>('');
@@ -57,7 +56,7 @@ const FindPage: React.FC = () => {
   const [skillsFound, setSkillsFound] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
-  const [useStreaming, setUseStreaming] = useState(true);
+  const [useStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fromCache, setFromCache] = useState(false);

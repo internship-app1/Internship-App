@@ -348,7 +348,7 @@ const LandingPage: React.FC = () => {
                 },
                 {
                   quote:
-                    'I uploaded my resume on a Tuesday, had 3 interviews by Friday. InternMatch AI found roles I never would have found myself.',
+                    'I uploaded my resume on a Tuesday, had 3 interviews by Friday. internshipmatcher AI found roles I never would have found myself.',
                   initials: 'PS',
                   name: 'Priya S.',
                   role: 'Data Science · Georgia Tech → Data Analyst at Airbnb',
@@ -400,7 +400,7 @@ const LandingPage: React.FC = () => {
           <div className="container max-w-5xl mx-auto">
             <FadeUp className="text-center mb-12">
               <p className="text-xs font-semibold tracking-widest uppercase text-violet-500 mb-3">
-                Why InternMatch AI
+                Why internshipmatcher AI
               </p>
               <h2
                 className="text-4xl md:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
@@ -446,7 +446,7 @@ const LandingPage: React.FC = () => {
                   gradient: 'from-amber-400 to-orange-500',
                   shadow: 'shadow-amber-400/25',
                   title: 'Completely Free',
-                  desc: 'No paywalls, no subscriptions, no hidden fees. InternMatch AI is free to use, forever.',
+                  desc: 'No paywalls, no subscriptions, no hidden fees. internshipmatcher AI is free to use, forever.',
                 },
               ].map(({ Icon, gradient, shadow, title, desc }, i) => (
                 <motion.div
@@ -535,21 +535,21 @@ const LandingPage: React.FC = () => {
                 className="font-medium text-neutral-700 dark:text-neutral-200"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
-                InternMatch
+                internshipmatcher
                 <span className="text-cyan-500 text-xs align-super font-bold">AI</span>
               </span>
             </div>
-            <p className="text-neutral-400">© 2025 InternMatch AI. Free to use, always.</p>
+            <p className="text-neutral-400">© 2025 internshipmatcher AI. Free to use, always.</p>
             <div className="flex items-center gap-5">
-              <a href="#" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
+              <button type="button" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
                 Privacy
-              </a>
-              <a href="#" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
+              </button>
+              <button type="button" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
                 Terms
-              </a>
-              <a href="#" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
+              </button>
+              <button type="button" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
                 Contact
-              </a>
+              </button>
             </div>
           </div>
         </footer>
