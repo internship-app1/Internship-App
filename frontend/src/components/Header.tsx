@@ -17,11 +17,10 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        scrolled || forceSolid
+      className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled || forceSolid
           ? 'bg-white/90 dark:bg-neutral-950/90 backdrop-blur-md shadow-sm border-b border-neutral-200/60 dark:border-neutral-800/60'
           : 'bg-transparent'
-      }`}
+        }`}
     >
       <div className="container flex h-16 items-center justify-between mx-auto px-6">
         {/* Logo */}
@@ -33,7 +32,7 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
             className="text-xl font-bold text-neutral-950 dark:text-neutral-50"
             style={{ fontFamily: 'Sora, sans-serif' }}
           >
-            InternMatch
+            internshipmatcher
           </span>
           <span className="text-xs font-bold text-cyan-500 align-super tracking-wide -ml-0.5">
             AI
