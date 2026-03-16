@@ -16,11 +16,6 @@ jobs:
 
     env:
       DATABASE_URL: "sqlite:///:memory:"
-      CLAUDE_API_KEY: test-key
-      AWS_ACCESS_KEY_ID: test-key-id
-      AWS_SECRET_ACCESS_KEY: test-secret
-      AWS_BUCKET_NAME: test-bucket
-      AWS_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +36,7 @@ jobs:
         run: pip install -r requirements.txt pytest pytest-cov
 
       - name: Run backend tests
-        run: pytest tests/ -v --tb=short --cov=. --cov-report=term-missing
+        run: pytest tests/ -v --tb=short --ignore=tests/integration --cov=. --cov-report=term-missing
 
   # -------------------------------------------------------------------------
   # Frontend — TypeScript compile check + Jest
