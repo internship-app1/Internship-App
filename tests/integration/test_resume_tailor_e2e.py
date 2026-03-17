@@ -47,7 +47,7 @@ Skills
   Tools: Git, Docker, PostgreSQL, Redis, AWS
 
 Projects
-  InternMatch (Python, React, PostgreSQL) — 2024
+  internshipmatcher (Python, React, PostgreSQL) — 2024
   - Full-stack job matching app with AI-powered resume analysis
   - Deployed on AWS with Docker; 200+ active users
 

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { useUser, useAuth } from '@clerk/react';
+import { useAuth } from '@clerk/react';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Progress } from '../components/ui/progress';
-import { Upload, FileCheck, AlertCircle, Sparkles, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Upload, AlertCircle, Sparkles, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
 // because it buffers responses. In production, use relative URLs.
@@ -48,7 +48,6 @@ const getApiBaseUrl = (): string => {
 const API_BASE_URL = getApiBaseUrl();
 
 const FindPage: React.FC = () => {
-  const user = useUser();
   const { userId } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string>('');
@@ -57,14 +56,15 @@ const FindPage: React.FC = () => {
   const [skillsFound, setSkillsFound] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
-  const [useStreaming, setUseStreaming] = useState(true);
+  const [useStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fromCache, setFromCache] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'recent'>('desc'); // desc = highest first, asc = lowest first, recent = most recent
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'recent'>('desc');
   const itemsPerPage = 10;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,6 +72,24 @@ const FindPage: React.FC = () => {
     if (file) {
       setSelectedFile(file);
     }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
   };
 
   const hashFile = async (file: File): Promise<string> => {
@@ -86,7 +104,7 @@ const FindPage: React.FC = () => {
   };
 
   const handleFileUploadStreaming = async (file: File) => {
-    console.log('🚀 Starting file upload:', file.name);
+    console.log('Starting file upload:', file.name);
     setFromCache(false);
     const resumeHash = await hashFile(file);
 
@@ -126,8 +144,8 @@ const FindPage: React.FC = () => {
         method: 'POST',
         body: formData,
       });
-      
-      console.log('📡 SSE Response received, starting stream processing...');
+
+      console.log('SSE Response received, starting stream processing...');
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -145,12 +163,11 @@ const FindPage: React.FC = () => {
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          console.log('📭 Stream ended');
+          console.log('Stream ended');
           break;
         }
 
         const chunk = decoder.decode(value, { stream: true });
-        console.log('📨 Received chunk:', chunk.substring(0, 100) + '...');
         buffer += chunk;
         const lines = buffer.split('\n');
 
@@ -162,8 +179,6 @@ const FindPage: React.FC = () => {
             try {
               const jsonStr = line.trim().slice(6); // Remove 'data: ' prefix
               const data = JSON.parse(jsonStr);
-              
-              console.log('🔄 SSE Event:', { progress: data.progress, message: data.message, step: data.step });
 
               if (data.error) {
                 setError(data.error);
@@ -172,7 +187,6 @@ const FindPage: React.FC = () => {
               }
 
               if (data.progress !== undefined) {
-                console.log(`📊 Updating progress: ${data.progress}%`);
                 setProgress(data.progress);
               }
 
@@ -196,20 +210,17 @@ const FindPage: React.FC = () => {
                 setProgress(100);
                 setIsLoading(false);
 
-                console.log('🎉 Streaming complete! Final data:', data);
-
                 if (data.final_results && Array.isArray(data.final_results)) {
-                  console.log(`📊 Setting ${data.final_results.length} final results:`, data.final_results);
                   setJobs(data.final_results);
                   setHasResults(true);
                 } else {
-                  console.warn('⚠️ No final_results in completion data:', data);
+                  console.warn('No final_results in completion data:', data);
                 }
 
                 if (data.matches_found === 0) {
                   setError('No matching opportunities found for your skills.');
                 } else if (data.total_results) {
-                  console.log(`✅ Successfully matched ${data.matches_found} jobs, showing ${data.total_results} results`);
+                  console.log(`Successfully matched ${data.matches_found} jobs, showing ${data.total_results} results`);
                 }
                 break;
               }
@@ -233,6 +244,16 @@ const FindPage: React.FC = () => {
     }
   };
 
+  const handleTryAgain = () => {
+    setError('');
+    setHasResults(false);
+    setJobs([]);
+    setSkillsFound([]);
+    setProgress(0);
+    setCurrentStep('');
+    setSelectedFile(null);
+  };
+
   // Reset pagination when new results come in
   React.useEffect(() => {
     if (jobs.length > 0) {
@@ -244,12 +265,10 @@ const FindPage: React.FC = () => {
   const sortedJobs = React.useMemo(() => {
     const sorted = [...jobs].sort((a, b) => {
       if (sortOrder === 'recent') {
-        // Sort by first_seen timestamp (most recent first)
         const dateA = a.first_seen ? new Date(a.first_seen).getTime() : 0;
         const dateB = b.first_seen ? new Date(b.first_seen).getTime() : 0;
-        return dateB - dateA; // Newest first
+        return dateB - dateA;
       } else {
-        // Sort by match score
         const scoreA = a.match_score || a.score || 0;
         const scoreB = b.match_score || b.score || 0;
         return sortOrder === 'desc' ? scoreB - scoreA : scoreA - scoreB;
@@ -268,35 +287,46 @@ const FindPage: React.FC = () => {
 
   const handleSortChange = (newOrder: 'desc' | 'asc' | 'recent') => {
     setSortOrder(newOrder);
-    setCurrentPage(1); // Reset to first page when sorting changes
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to top of results when page changes
     document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Determine if error is a "no results" error vs a real error
+  const isNoResultsError =
+    error === 'No matching opportunities found for your skills.';
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className="min-h-screen hero-bg">
+      <Header forceSolid />
 
       <main className="container py-8 space-y-8">
         {/* Header Section */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Upload Your Resume
+        <div className="text-center space-y-2 pt-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/50 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
+            AI Matching Ready
+          </div>
+          <h1
+            className="text-3xl md:text-4xl font-bold tracking-tight"
+            style={{ fontFamily: 'Sora, sans-serif' }}
+          >
+            Upload your resume to begin
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            AI-powered matching that analyzes your resume and finds the best opportunities tailored to your skills
+          <p className="text-base text-muted-foreground">
+            PDF or image — we'll handle the rest
           </p>
         </div>
 
         {/* Upload Section */}
-        <Card className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto p-px rounded-2xl bg-gradient-to-br from-violet-400/30 via-transparent to-cyan-400/20 dark:from-violet-500/30 dark:to-cyan-500/20 shadow-lg shadow-violet-500/10">
+          <Card className="rounded-[calc(1rem-1px)] border-0 shadow-none bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+              <Upload className="h-5 w-5 text-violet-600" />
               Upload Your Resume
             </CardTitle>
             <CardDescription>
@@ -306,22 +336,39 @@ const FindPage: React.FC = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex flex-col items-center gap-4">
-                <label className={cn(
-                  "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-                  selectedFile ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:bg-accent"
-                )}>
+                {/* Drop zone */}
+                <label
+                  className={cn(
+                    'flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200',
+                    isDragging
+                      ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/40 scale-[1.01]'
+                      : selectedFile
+                      ? 'border-violet-400 dark:border-violet-600 bg-violet-50/60 dark:bg-violet-950/30'
+                      : 'border-border hover:border-violet-300 hover:bg-violet-50/30 dark:hover:border-violet-700 dark:hover:bg-violet-950/20'
+                  )}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     {selectedFile ? (
                       <>
-                        <FileCheck className="h-8 w-8 mb-2 text-primary" />
-                        <p className="text-sm font-medium">{selectedFile.name}</p>
-                        <p className="text-xs text-muted-foreground">Click to change file</p>
+                        <CheckCircle2 className="h-8 w-8 mb-2 text-violet-600" />
+                        <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Click to change file</p>
+                      </>
+                    ) : isDragging ? (
+                      <>
+                        <Upload className="h-8 w-8 mb-2 text-violet-600" />
+                        <p className="text-sm font-medium text-violet-700">Drop it here</p>
                       </>
                     ) : (
                       <>
                         <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
-                        <p className="text-sm font-medium">Click to upload</p>
-                        <p className="text-xs text-muted-foreground">PDF, PNG, JPG (MAX. 10MB)</p>
+                        <p className="text-sm font-medium text-foreground">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
                       </>
                     )}
                   </div>
@@ -333,24 +380,17 @@ const FindPage: React.FC = () => {
                   />
                 </label>
 
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="thinkDeeper"
-                      checked={thinkDeeper}
-                      onChange={(e) => setThinkDeeper(e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <label htmlFor="thinkDeeper" className="text-sm text-muted-foreground cursor-pointer">
-                      Think Deeper (AI-powered analysis)
-                    </label>
-                  </div>
+                {/* Think Deeper toggle */}
+                <div className="w-full max-w-sm">
+                  <ThinkDeeperToggle
+                    checked={thinkDeeper}
+                    onChange={setThinkDeeper}
+                  />
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full md:w-auto px-8"
+                  className="w-full md:w-auto px-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25"
                   disabled={!selectedFile || isLoading}
                 >
                   {isLoading ? (
@@ -368,20 +408,21 @@ const FindPage: React.FC = () => {
               </div>
             </form>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
 
         {/* Enhanced Progress Section */}
         {isLoading && (
-          <Card className="max-w-2xl mx-auto border-2 border-primary/20 shadow-lg">
+          <Card className="max-w-2xl mx-auto border-2 border-violet-200/60 shadow-lg shadow-violet-500/5">
             <CardContent className="pt-6 pb-6">
               <div className="space-y-5">
                 {/* Progress Header */}
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center">
                       <Sparkles className="h-5 w-5 text-white animate-pulse" />
                     </div>
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 animate-ping opacity-20"></div>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 animate-ping opacity-20"></div>
                   </div>
                   <div className="flex-1">
                     <p className="text-lg font-semibold text-foreground leading-tight">
@@ -392,7 +433,15 @@ const FindPage: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <div
+                      className="text-2xl font-bold"
+                      style={{
+                        background: 'linear-gradient(135deg,#7C3AED,#22D3EE)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}
+                    >
                       {progress}%
                     </div>
                     <p className="text-xs text-muted-foreground">Complete</p>
@@ -401,54 +450,43 @@ const FindPage: React.FC = () => {
 
                 {/* Enhanced Progress Bar */}
                 <div className="relative">
-                  <div className="w-full bg-gradient-to-r from-blue-100 to-purple-100 rounded-full h-3 overflow-hidden shadow-inner">
+                  <div className="w-full bg-violet-100 dark:bg-violet-950/60 rounded-full h-3 overflow-hidden shadow-inner">
                     <div
                       className={cn(
-                        "h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden",
-                        "bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500",
-                        "shadow-lg"
+                        'h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden',
+                        'bg-gradient-to-r from-violet-500 via-violet-600 to-cyan-500',
+                        'shadow-lg'
                       )}
                       style={{
                         width: `${progress}%`,
                         backgroundSize: '200% 100%',
-                        animation: 'gradient-shift 2s ease-in-out infinite'
+                        animation: 'gradient-shift 2s ease-in-out infinite',
                       }}
                     >
-                      {/* Shimmer effect */}
                       <div
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                        style={{
-                          animation: 'shimmer 1.5s ease-in-out infinite'
-                        }}
-                      ></div>
+                        style={{ animation: 'shimmer 1.5s ease-in-out infinite' }}
+                      />
                     </div>
                   </div>
                   {/* Progress milestones */}
                   <div className="flex justify-between mt-2 px-1">
-                    <span className={cn(
-                      "text-xs font-medium transition-colors duration-300",
-                      progress >= 25 ? "text-blue-600" : "text-muted-foreground"
-                    )}>
-                      {progress >= 25 ? "✓" : "○"} Started
-                    </span>
-                    <span className={cn(
-                      "text-xs font-medium transition-colors duration-300",
-                      progress >= 50 ? "text-purple-600" : "text-muted-foreground"
-                    )}>
-                      {progress >= 50 ? "✓" : "○"} Analyzing
-                    </span>
-                    <span className={cn(
-                      "text-xs font-medium transition-colors duration-300",
-                      progress >= 75 ? "text-blue-600" : "text-muted-foreground"
-                    )}>
-                      {progress >= 75 ? "✓" : "○"} Matching
-                    </span>
-                    <span className={cn(
-                      "text-xs font-medium transition-colors duration-300",
-                      progress >= 100 ? "text-green-600" : "text-muted-foreground"
-                    )}>
-                      {progress >= 100 ? "✓" : "○"} Complete
-                    </span>
+                    {[
+                      { label: 'Started', threshold: 25 },
+                      { label: 'Analyzing', threshold: 50 },
+                      { label: 'Matching', threshold: 75 },
+                      { label: 'Complete', threshold: 100 },
+                    ].map(({ label, threshold }) => (
+                      <span
+                        key={label}
+                        className={cn(
+                          'text-xs font-medium transition-colors duration-300',
+                          progress >= threshold ? 'text-violet-600' : 'text-muted-foreground'
+                        )}
+                      >
+                        {progress >= threshold ? '✓' : '○'} {label}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -468,8 +506,8 @@ const FindPage: React.FC = () => {
           }
         `}</style>
 
-        {/* Error Message */}
-        {error && (
+        {/* Error Message — only for real (non-zero-results) errors */}
+        {error && !isNoResultsError && (
           <Card className="max-w-2xl mx-auto border-destructive">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
@@ -488,14 +526,18 @@ const FindPage: React.FC = () => {
           <Card className="max-w-4xl mx-auto">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-violet-600" />
                 Skills Detected in Your Resume
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {skillsFound.map((skill, index) => (
-                  <Badge key={index} variant="secondary" className="px-3 py-1">
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="px-3 py-1 font-mono text-xs bg-violet-50 text-violet-700 border border-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/50"
+                  >
                     {skill}
                   </Badge>
                 ))}
@@ -511,7 +553,7 @@ const FindPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Sort by:</span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       variant={sortOrder === 'desc' ? 'default' : 'outline'}
                       size="sm"
@@ -543,7 +585,7 @@ const FindPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>
-                    Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedJobs.length)}-
+                    Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedJobs.length)}–
                     {Math.min(currentPage * itemsPerPage, sortedJobs.length)} of {sortedJobs.length} results
                   </span>
                 </div>
@@ -584,15 +626,22 @@ const FindPage: React.FC = () => {
         {hasResults && (
           <div className="space-y-6" id="results-section">
             <div className="text-center">
-              <h2 className="text-3xl font-bold">
-                {jobs.length > 0 ? `Found ${jobs.length} Matching Opportunities` : 'No Matches Found'}
+              <h2 className="text-3xl font-bold" style={{ fontFamily: 'Sora, sans-serif' }}>
+                {jobs.length > 0
+                  ? `You matched ${jobs.length} internships — here are your best fits`
+                  : 'No Matches Found'}
               </h2>
               <p className="text-muted-foreground mt-2">
-                {jobs.length > 0 ? 'AI-powered career fit analysis • Sorted by compatibility score' : 'Try updating your resume with more technical skills'}
+                {jobs.length > 0
+                  ? 'AI-powered career fit analysis · Sorted by compatibility score'
+                  : 'Try updating your resume with more technical skills'}
               </p>
               {jobs.length > 0 && (
-                <div className="flex justify-center gap-4 mt-4">
-                  <Badge variant="secondary" className="px-3 py-1">
+                <div className="flex justify-center gap-4 mt-4 flex-wrap">
+                  <Badge
+                    variant="secondary"
+                    className="px-3 py-1 bg-violet-50 text-violet-700 border border-violet-100"
+                  >
                     <Sparkles className="h-4 w-4 mr-1" />
                     Intelligent Matching
                   </Badge>
@@ -600,37 +649,85 @@ const FindPage: React.FC = () => {
                     All {jobs.length} Results
                   </Badge>
                   {fromCache && (
-                    <Badge variant="secondary" className="px-3 py-1">
-                      ⚡ Loaded from cache
+                    <Badge
+                      variant="secondary"
+                      className="px-3 py-1 bg-cyan-50 text-cyan-700 border border-cyan-100"
+                    >
+                      Loaded from cache
                     </Badge>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="grid gap-6 max-w-4xl mx-auto">
+            <div className="grid gap-4 max-w-4xl mx-auto">
               {jobs.length > 0 ? (
                 currentPageJobs.map((job, index) => (
-                  <JobCard
+                  <div
                     key={`${job.company}-${job.title}-${(currentPage - 1) * itemsPerPage + index}`}
-                    job={job}
-                    isNewResult={isLoading && useStreaming}
-                    resumeFile={selectedFile}
-                    apiBaseUrl={API_BASE_URL}
-                  />
+                    className="transition-all duration-300 hover:-translate-y-1"
+                  >
+                    <JobCard
+                      job={job}
+                      isNewResult={isLoading && useStreaming}
+                      resumeFile={selectedFile}
+                      apiBaseUrl={API_BASE_URL}
+                    />
+                  </div>
                 ))
-              ) : (
-                <Card className="max-w-2xl mx-auto">
-                  <CardContent className="pt-6 text-center">
-                    <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Matches Found</h3>
-                    <p className="text-muted-foreground">
-                      We couldn't find any internships matching your current skills.
-                      Try updating your resume with more technical skills or relevant experience.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              ) : isNoResultsError ? (
+                /* ── Helpful empty state ── */
+                <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
+                  <div className="h-14 w-14 rounded-2xl bg-violet-50 border border-violet-100 dark:bg-violet-950/50 dark:border-violet-800/50 flex items-center justify-center mx-auto mb-5">
+                    <Sparkles className="h-7 w-7 text-violet-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+                    No matches found yet
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-5 max-w-md mx-auto">
+                    We scanned our database but couldn't find a strong fit for your current resume.
+                    This usually means your resume is missing technical keywords or project details.
+                  </p>
+                  {skillsFound.length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                        Skills we detected
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 justify-center">
+                        {skillsFound.map((skill, i) => (
+                          <span
+                            key={i}
+                            className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/50"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <ul className="text-sm text-muted-foreground text-left max-w-xs mx-auto space-y-1.5 mb-6">
+                    <li className="flex items-start gap-2">
+                      <span className="text-violet-400 font-bold mt-0.5">·</span>
+                      Add specific tech stacks, languages, and frameworks
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-violet-400 font-bold mt-0.5">·</span>
+                      Include project names with measurable outcomes
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-violet-400 font-bold mt-0.5">·</span>
+                      List coursework or certifications relevant to your field
+                    </li>
+                  </ul>
+                  <button
+                    onClick={handleTryAgain}
+                    className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-500/20 transition-all hover:-translate-y-0.5"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                    Try Again with a New Resume
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             {/* Pagination Controls */}

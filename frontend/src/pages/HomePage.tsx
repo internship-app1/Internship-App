@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@clerk/react';
+// HomePage is not currently routed — kept for reference only
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
@@ -11,7 +11,6 @@ import { Upload, FileCheck, AlertCircle, Sparkles, CheckCircle2, ArrowUp, ArrowD
 import { cn } from '../lib/utils';
 
 const HomePage: React.FC = () => {
-  const user = useUser();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +18,7 @@ const HomePage: React.FC = () => {
   const [skillsFound, setSkillsFound] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
-  const [useStreaming, setUseStreaming] = useState(true);
+  const [useStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
