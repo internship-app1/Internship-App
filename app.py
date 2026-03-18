@@ -155,12 +155,14 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "your-s
 
 # Setup templates and static files using absolute paths
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # Serve React frontend build (if it exists)
 FRONTEND_BUILD = BASE_DIR / "frontend" / "build"
 if FRONTEND_BUILD.exists():
-    app.mount("/frontend-static", StaticFiles(directory=str(FRONTEND_BUILD), html=True), name="frontend-static")
+    # Mount React's built static assets at /static so index.html asset paths resolve correctly
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_BUILD / "static")), name="static")
+else:
+    app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # Create upload folder if it doesn't exist (absolute path)
 UPLOAD_FOLDER = BASE_DIR / "uploads"
