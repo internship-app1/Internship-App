@@ -19,7 +19,11 @@ engine = create_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
-    **({ "pool_size": 5, "max_overflow": 10 } if is_postgres else {})
+    **({
+        "pool_size": 5,
+        "max_overflow": 10,
+        "connect_args": {"sslmode": "require"}
+    } if is_postgres else {})
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
