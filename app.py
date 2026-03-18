@@ -42,11 +42,12 @@ async def lifespan(app: FastAPI):
     environment = os.getenv("ENVIRONMENT", "development").lower()
     print(f"🚀 Starting up Internship Matcher [{environment.upper()}] with Hybrid Cache System...")
 
-    cache_available = job_cache.init_redis()
+    loop = asyncio.get_event_loop()
+    cache_available = await loop.run_in_executor(None, job_cache.init_redis)
 
     if cache_available:
-        cache_info = job_cache.get_cache_info()
-        cached_jobs = job_cache.get_cached_jobs()
+        cache_info = await loop.run_in_executor(None, job_cache.get_cache_info)
+        cached_jobs = await loop.run_in_executor(None, job_cache.get_cached_jobs)
         should_refresh = False
 
         if environment == "development":
@@ -98,7 +99,7 @@ async def lifespan(app: FastAPI):
         print("❌ Hybrid cache system unavailable - jobs will be scraped per request")
 
     try:
-        final_info = job_cache.get_cache_info()
+        final_info = await loop.run_in_executor(None, job_cache.get_cache_info)
         if final_info.get('database', {}).get('status') == 'active':
             db_info = final_info['database']
             print(f"📊 Database: {db_info.get('active_jobs', 0)} active jobs")
