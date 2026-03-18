@@ -20,3 +20,10 @@ uploads/
 # Database files
 jobs.db
 *.db
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
