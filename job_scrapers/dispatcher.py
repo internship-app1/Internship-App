@@ -1,3 +1,7 @@
+import asyncio
+from functools import partial
+import asyncio
+from functools import partial
 from .scrape_github_internships import scrape_github_internships
 
 def scrape_all_company_sites(keyword="intern", max_results=10000, incremental=False, max_days_old=None):
@@ -56,26 +60,25 @@ async def scrape_jobs(keyword="intern", max_results=10000, incremental=None, max
             print(f"⚠️ Error detecting incremental mode: {e}")
             incremental = False
     
-    return scrape_all_company_sites(keyword, max_results, incremental=incremental, max_days_old=max_days_old)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, partial(scrape_all_company_sites, keyword, max_results, incremental=incremental, max_days_old=max_days_old)
+    )
 
 async def scrape_jobs_incremental(keyword="intern", max_results=10000, max_days_old=None):
     """
     Force incremental scraping - only return new jobs
-    
-    Args:
-        keyword: Search keyword
-        max_results: Maximum number of results to return
-        max_days_old: If set, only return jobs posted within this many days
     """
-    return scrape_all_company_sites(keyword, max_results, incremental=True, max_days_old=max_days_old)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, partial(scrape_all_company_sites, keyword, max_results, incremental=True, max_days_old=max_days_old)
+    )
 
 async def scrape_jobs_full(keyword="intern", max_results=10000, max_days_old=None):
     """
     Force full scraping - return all jobs
-    
-    Args:
-        keyword: Search keyword
-        max_results: Maximum number of results to return
-        max_days_old: If set, only return jobs posted within this many days
     """
-    return scrape_all_company_sites(keyword, max_results, incremental=False, max_days_old=max_days_old)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, partial(scrape_all_company_sites, keyword, max_results, incremental=False, max_days_old=max_days_old)
+    )
