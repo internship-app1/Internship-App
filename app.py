@@ -79,18 +79,21 @@ async def lifespan(app: FastAPI):
                 print("📥 No cached jobs found - initializing cache...")
 
         if should_refresh:
-            try:
-                jobs = await scrape_jobs(max_days_old=30)
-                if jobs:
-                    cache_result = job_cache.set_cached_jobs(jobs, cache_type='startup')
-                    if cache_result.get('database_success') or cache_result.get('redis_success'):
-                        print(f"✅ Startup cache initialized: {cache_result.get('new_jobs', 0)} new jobs, {len(jobs)} total")
+            async def _background_scrape():
+                try:
+                    jobs = await scrape_jobs(max_days_old=30)
+                    if jobs:
+                        cache_result = job_cache.set_cached_jobs(jobs, cache_type='startup')
+                        if cache_result.get('database_success') or cache_result.get('redis_success'):
+                            print(f"✅ Startup cache initialized: {cache_result.get('new_jobs', 0)} new jobs, {len(jobs)} total")
+                        else:
+                            print("⚠️ Cache initialization failed")
                     else:
-                        print("⚠️ Cache initialization failed")
-                else:
-                    print("⚠️ No jobs scraped on startup")
-            except Exception as e:
-                print(f"❌ Error during startup scraping: {e}")
+                        print("⚠️ No jobs scraped on startup")
+                except Exception as e:
+                    print(f"❌ Error during startup scraping: {e}")
+            asyncio.create_task(_background_scrape())
+            print("📥 Job scrape started in background - server starting immediately")
     else:
         print("❌ Hybrid cache system unavailable - jobs will be scraped per request")
 
