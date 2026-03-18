@@ -128,6 +128,7 @@ app = FastAPI(title="Internship Matcher", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://internship-app-production.up.railway.app",
         "http://internshipmatcher.com",
         "http://www.internshipmatcher.com",
         "https://internshipmatcher.com",
@@ -271,9 +272,12 @@ async def get_jobs_with_cache():
         return []
 
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """Home page - redirects to dashboard"""
+@app.get("/", response_class=FileResponse, include_in_schema=False)
+async def index():
+    """Serve React frontend"""
+    index_file = FRONTEND_BUILD / "index.html"
+    if index_file.exists():
+        return FileResponse(str(index_file))
     return RedirectResponse(url="/dashboard", status_code=302)
 
 
