@@ -6,7 +6,7 @@ from pathlib import Path
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -151,6 +151,11 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "your-s
 # Setup templates and static files using absolute paths
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+# Serve React frontend build (if it exists)
+FRONTEND_BUILD = BASE_DIR / "frontend" / "build"
+if FRONTEND_BUILD.exists():
+    app.mount("/frontend-static", StaticFiles(directory=str(FRONTEND_BUILD), html=True), name="frontend-static")
 
 # Create upload folder if it doesn't exist (absolute path)
 UPLOAD_FOLDER = BASE_DIR / "uploads"
@@ -1377,6 +1382,15 @@ async def tailor_resume_endpoint(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# Catch-all: serve React app for any non-API route
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_react(full_path: str):
+    index = FRONTEND_BUILD / "index.html"
+    if FRONTEND_BUILD.exists() and index.exists():
+        return FileResponse(str(index))
+    return JSONResponse({"error": "Frontend not built"}, status_code=404)
 
 
 if __name__ == "__main__":
