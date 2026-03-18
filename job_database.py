@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.sql import func
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./jobs.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./jobs.db").strip('"')
 is_postgres = DATABASE_URL.startswith("postgresql")
 engine = create_engine(
     DATABASE_URL,
