@@ -20,6 +20,17 @@ jest.mock('@clerk/react', () => ({
   UserButton: () => <div>UserButton</div>,
 }));
 
+// React Router DOM — stub out routing primitives
+jest.mock('react-router-dom', () => ({
+  BrowserRouter: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Routes: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Route: ({ element }: { element: React.ReactNode }) => <>{element}</>,
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/' }),
+  useParams: () => ({}),
+}));
+
 // Pages — stub heavy pages so we only test routing wiring
 jest.mock('../pages/LandingPage', () => () => <div data-testid="landing-page">Landing</div>);
 jest.mock('../pages/FindPage', () => () => <div data-testid="find-page">Find</div>);
