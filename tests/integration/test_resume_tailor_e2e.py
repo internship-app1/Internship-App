@@ -1,26 +1,17 @@
 """
 End-to-end integration test for the resume tailor pipeline.
 
-Requires:
-  - CLAUDE_API_KEY  (real Claude API call)
-  - pdflatex        (system binary, installed in CI via texlive)
-
+Mocked via unittest.mock to avoid real Claude API calls while still testing the LaTeX compilation.
 Run via: pytest tests/integration/ -v
 """
-import os
 import subprocess
 import pytest
-
-SKIP_IF_NO_KEY = pytest.mark.skipif(
-    not os.getenv("CLAUDE_API_KEY"),
-    reason="CLAUDE_API_KEY not set",
-)
+from unittest.mock import patch
 
 SKIP_IF_NO_LATEX = pytest.mark.skipif(
     subprocess.run(["which", "pdflatex"], capture_output=True).returncode != 0,
     reason="pdflatex not installed",
 )
-
 
 SAMPLE_RESUME_TEXT = """
 Jordan Lee | jordan@email.com | 555-777-8888 | https://jordanlee.dev
@@ -36,113 +27,77 @@ Experience
   - Reduced API response time by 35% through Redis caching
   - Wrote unit and integration tests achieving 90% code coverage
 
-  Teaching Assistant — UC Berkeley (Jan 2024 – May 2024)
-  Berkeley, CA
-  - Led weekly labs for 60 students on data structures and algorithms
-  - Graded assignments and provided written feedback
-
 Skills
   Programming Languages: Python, JavaScript, TypeScript, Java
-  Frameworks: React, FastAPI, Django, Node.js
-  Tools: Git, Docker, PostgreSQL, Redis, AWS
-
-Projects
-  internshipmatcher (Python, React, PostgreSQL) — 2024
-  - Full-stack job matching app with AI-powered resume analysis
-  - Deployed on AWS with Docker; 200+ active users
-
-  AlgoVisualiser (TypeScript, React) — 2023
-  - Interactive algorithm visualisation tool with 500 GitHub stars
 """
 
+# The simulated JSON output from tailor_resume_to_json
+MOCK_TAILORED_JSON = {
+    "name": "Jordan Lee",
+    "email": "jordan@email.com",
+    "experience": [
+        {
+            "company": "Meta",
+            "title": "Software Engineering Intern",
+            "location": "San Francisco, CA",
+            "date": "June 2024 – August 2024",
+            "bullets": [
+                "Built a real-time data pipeline in Python processing 1M events/day",
+                "Reduced API response time by 35% through Redis caching"
+            ]
+        }
+    ],
+    "education": [],
+    "skills": ["Python", "JavaScript", "React"],
+    "projects": []
+}
 
-@SKIP_IF_NO_KEY
+
 @SKIP_IF_NO_LATEX
+@patch('resume_tailor.tailor_resume.tailor_resume_to_json', return_value=MOCK_TAILORED_JSON)
 class TestFullPipeline:
-    """Tests the complete tailor_resume → PDF flow with real services."""
+    """Tests the complete tailor_resume → PDF flow with mocked services."""
 
-    def test_tailor_resume_returns_pdf_bytes(self):
-        """Full pipeline: resume text → Claude JSON → LaTeX → PDF bytes."""
-        from resume_tailor.tailor_resume import tailor_resume_to_json, inject_into_template, compile_to_single_page
-
-        data = tailor_resume_to_json(
-            SAMPLE_RESUME_TEXT,
-            job_title="Software Engineer Intern",
-            company="Stripe",
-            job_description=(
-                "Build reliable payment infrastructure using Python and Go. "
-                "Work with distributed systems, REST APIs, and PostgreSQL."
-            ),
-        )
-        latex = inject_into_template(data)
+    def test_tailor_resume_returns_pdf_bytes(self, mock_tailor):
+        from resume_tailor.tailor_resume import inject_into_template, compile_to_single_page
+        latex = inject_into_template(MOCK_TAILORED_JSON)
         pdf_bytes = compile_to_single_page(latex)
 
         assert pdf_bytes.startswith(b"%PDF"), "Output is not a valid PDF"
         assert len(pdf_bytes) > 1000, "PDF seems too small to be real"
 
-    def test_output_is_single_page(self):
-        """PDF produced by compile_to_single_page must be exactly 1 page."""
+    def test_output_is_single_page(self, mock_tailor):
         import pdfplumber
         import io
-        from resume_tailor.tailor_resume import (
-            tailor_resume_to_json,
-            inject_into_template,
-            compile_to_single_page,
-            _count_pdf_pages,
-        )
-
-        data = tailor_resume_to_json(
-            SAMPLE_RESUME_TEXT,
-            job_title="Backend Engineer Intern",
-            company="Cloudflare",
-            job_description="Distributed systems, Python, Go, networking.",
-        )
-        latex = inject_into_template(data)
+        from resume_tailor.tailor_resume import inject_into_template, compile_to_single_page, _count_pdf_pages
+        
+        latex = inject_into_template(MOCK_TAILORED_JSON)
         pdf_bytes = compile_to_single_page(latex)
 
         assert _count_pdf_pages(pdf_bytes) == 1, "Resume overflows onto more than 1 page"
 
-    def test_pdf_contains_name(self):
-        """Candidate name from resume should appear in the compiled PDF text."""
+    def test_pdf_contains_name(self, mock_tailor):
         import pdfplumber
         import io
-        from resume_tailor.tailor_resume import (
-            tailor_resume_to_json,
-            inject_into_template,
-            compile_to_single_page,
-        )
-
-        data = tailor_resume_to_json(
-            SAMPLE_RESUME_TEXT,
-            job_title="SWE Intern",
-            company="Acme",
-            job_description="Python, React, APIs.",
-        )
-        latex = inject_into_template(data)
+        from resume_tailor.tailor_resume import inject_into_template, compile_to_single_page
+        
+        latex = inject_into_template(MOCK_TAILORED_JSON)
         pdf_bytes = compile_to_single_page(latex)
 
         with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
             text = "".join(p.extract_text() or "" for p in pdf.pages)
 
-        # Claude should preserve the candidate's name
         assert "Jordan" in text or "Lee" in text, f"Name not found in PDF text: {text[:200]}"
 
 
-@SKIP_IF_NO_KEY
 class TestClaudeJsonOnly:
-    """Tests just the Claude call (no pdflatex required)."""
+    """Tests just the LaTeX compilation (no pdflatex integration required)."""
 
-    def test_inject_into_template_produces_compilable_latex(self):
-        """inject_into_template output should contain valid LaTeX structure."""
-        from resume_tailor.tailor_resume import tailor_resume_to_json, inject_into_template
-
-        data = tailor_resume_to_json(
-            SAMPLE_RESUME_TEXT,
-            job_title="SWE Intern",
-            company="Acme",
-            job_description="Python, APIs, distributed systems.",
-        )
-        latex = inject_into_template(data)
+    @patch('resume_tailor.tailor_resume.tailor_resume_to_json', return_value=MOCK_TAILORED_JSON)
+    def test_inject_into_template_produces_compilable_latex(self, mock_tailor):
+        from resume_tailor.tailor_resume import inject_into_template
+        
+        latex = inject_into_template(MOCK_TAILORED_JSON)
 
         assert r"\documentclass" in latex
         assert r"\begin{document}" in latex

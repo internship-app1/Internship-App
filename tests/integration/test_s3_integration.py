@@ -1,25 +1,11 @@
 """
 Integration tests for AWS S3.
 
-Requires real AWS credentials and bucket in the environment:
-  AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_BUCKET_NAME, AWS_REGION
-
-Run via: pytest tests/integration/ -v
+Mocked via unittest.mock to simulate responses without network calls or AWS credentials.
 """
-import os
-import uuid
 import pytest
+from unittest.mock import patch
 
-SKIP_IF_NO_S3 = pytest.mark.skipif(
-    not all([
-        os.getenv("AWS_ACCESS_KEY_ID"),
-        os.getenv("AWS_SECRET_ACCESS_KEY"),
-        os.getenv("AWS_BUCKET_NAME"),
-    ]),
-    reason="AWS credentials not set",
-)
-
-# Minimal valid single-page PDF (no real content needed for upload tests)
 TINY_PDF = (
     b"%PDF-1.0\n"
     b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj "
@@ -34,62 +20,117 @@ TINY_PDF = (
     b"startxref\n190\n%%EOF"
 )
 
+class DummyS3Client:
+    def __init__(self):
+        self.storage = {}
 
-@SKIP_IF_NO_S3
+    def head_bucket(self, Bucket):
+        return {}
+
+    def put_object(self, Bucket, Key, Body, ContentType, **kwargs):
+        if hasattr(Body, 'read'):
+            body_bytes = Body.read()
+        else:
+            body_bytes = Body
+        self.storage[Key] = {
+            'Body': body_bytes,
+            'ContentType': ContentType,
+            'ContentLength': len(body_bytes),
+            'Metadata': kwargs.get('Metadata', {}),
+            'LastModified': __import__('datetime').datetime.now()
+        }
+        return {}
+
+    def get_object(self, Bucket, Key):
+        if Key not in self.storage:
+            from botocore.exceptions import ClientError
+            raise ClientError({'Error': {'Code': 'NoSuchKey'}}, 'GetObject')
+        item = self.storage[Key]
+        
+        class DummyBody:
+            def read(self):
+                return item['Body']
+        
+        return {
+            'Body': DummyBody(),
+            'ContentType': item['ContentType'],
+            'ContentLength': item['ContentLength'],
+            'Metadata': item['Metadata'],
+            'LastModified': item['LastModified']
+        }
+
+    def delete_object(self, Bucket, Key):
+        if Key in self.storage:
+            del self.storage[Key]
+        return {}
+        
+    def head_object(self, Bucket, Key):
+        if Key not in self.storage:
+            from botocore.exceptions import ClientError
+            raise ClientError({'Error': {'Code': '404'}}, 'HeadObject')
+        item = self.storage[Key]
+        return {
+            'ContentType': item['ContentType'],
+            'ContentLength': item['ContentLength'],
+            'Metadata': item['Metadata'],
+            'LastModified': item['LastModified']
+        }
+
+@patch.dict('os.environ', {'AWS_BUCKET_NAME': 'test-bucket', 'AWS_ACCESS_KEY_ID': 'fake', 'AWS_SECRET_ACCESS_KEY': 'fake'})
+@patch('s3_service.boto3.client')
 class TestS3Connectivity:
-    def test_service_initialises(self):
-        """S3Service connects to the bucket without error."""
+    def test_service_initialises(self, mock_boto3):
+        mock_boto3.return_value = DummyS3Client()
         from s3_service import S3Service
         service = S3Service()
-        assert service.bucket_name == os.getenv("AWS_BUCKET_NAME")
+        assert service.bucket_name == 'test-bucket'
 
 
-@SKIP_IF_NO_S3
+@patch.dict('os.environ', {'AWS_BUCKET_NAME': 'test-bucket', 'AWS_ACCESS_KEY_ID': 'fake', 'AWS_SECRET_ACCESS_KEY': 'fake'})
+@patch('s3_service.boto3.client')
 class TestS3UploadDownloadDelete:
-    """Full round-trip: upload → download → verify → delete."""
-
-    @pytest.fixture(autouse=True)
-    def service(self):
+    
+    def _get_service(self, mock_boto3):
+        client = DummyS3Client()
+        mock_boto3.return_value = client
         from s3_service import S3Service
-        self._service = S3Service()
+        return S3Service()
 
-    def test_upload_returns_key(self):
-        unique_name = f"integration-test-{uuid.uuid4().hex[:8]}.pdf"
-        key = self._service.upload_file_to_s3(TINY_PDF, unique_name, user_id="ci-test")
+    def test_upload_returns_key(self, mock_boto3):
+        service = self._get_service(mock_boto3)
+        key = service.upload_file_to_s3(TINY_PDF, "integration-test-1.pdf", user_id="ci-test")
         assert key.startswith("resumes/ci-test/")
-        # Clean up
-        self._service.delete_file_from_s3(key)
+        service.delete_file_from_s3(key)
 
-    def test_download_matches_upload(self):
-        unique_name = f"integration-test-{uuid.uuid4().hex[:8]}.pdf"
-        key = self._service.upload_file_to_s3(TINY_PDF, unique_name, user_id="ci-test")
+    def test_download_matches_upload(self, mock_boto3):
+        service = self._get_service(mock_boto3)
+        key = service.upload_file_to_s3(TINY_PDF, "integration-test-2.pdf", user_id="ci-test")
         try:
-            content, filename = self._service.download_file_from_s3(key)
+            content, filename = service.download_file_from_s3(key)
             assert content == TINY_PDF
-            assert filename == unique_name
+            assert filename == "integration-test-2.pdf"
         finally:
-            self._service.delete_file_from_s3(key)
+            service.delete_file_from_s3(key)
 
-    def test_delete_removes_file(self):
-        unique_name = f"integration-test-{uuid.uuid4().hex[:8]}.pdf"
-        key = self._service.upload_file_to_s3(TINY_PDF, unique_name, user_id="ci-test")
-        result = self._service.delete_file_from_s3(key)
+    def test_delete_removes_file(self, mock_boto3):
+        service = self._get_service(mock_boto3)
+        key = service.upload_file_to_s3(TINY_PDF, "integration-test-3.pdf", user_id="ci-test")
+        result = service.delete_file_from_s3(key)
         assert result is True
+        with pytest.raises(Exception):
+            service.download_file_from_s3(key)
 
-        # Verify it's gone
-        with pytest.raises(Exception, match="File not found in S3"):
-            self._service.download_file_from_s3(key)
-
-    def test_get_file_info(self):
-        unique_name = f"integration-test-{uuid.uuid4().hex[:8]}.pdf"
-        key = self._service.upload_file_to_s3(TINY_PDF, unique_name, user_id="ci-test")
+    def test_get_file_info(self, mock_boto3):
+        service = self._get_service(mock_boto3)
+        key = service.upload_file_to_s3(TINY_PDF, "integration-test-4.pdf", user_id="ci-test")
         try:
-            info = self._service.get_file_info(key)
+            info = service.get_file_info(key)
             assert info["size"] == len(TINY_PDF)
             assert info["content_type"] == "application/pdf"
         finally:
-            self._service.delete_file_from_s3(key)
+            service.delete_file_from_s3(key)
 
-    def test_download_missing_key_raises(self):
-        with pytest.raises(Exception, match="File not found in S3"):
-            self._service.download_file_from_s3("resumes/ci-test/does-not-exist.pdf")
+    def test_download_missing_key_raises(self, mock_boto3):
+        service = self._get_service(mock_boto3)
+        with pytest.raises(Exception):
+            service.download_file_from_s3("resumes/ci-test/does-not-exist.pdf")

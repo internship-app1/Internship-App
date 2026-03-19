@@ -1611,6 +1611,170 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     return matched_jobs[:100]
 
 
+def _extract_resume_profile_haiku(resume_text: str) -> dict:
+    """Uses Claude Haiku to quickly extract skills and experience level for accurate pre-filtering."""
+    system_prompt = (
+        "Extract the candidate's skills and experience level from the resume. "
+        "Return ONLY valid JSON: "
+        '{"skills": ["skill1", "skill2"], "experience_level": "student|entry_level|experienced", "years_of_experience": 0}'
+    )
+    user_prompt = f"RESUME:\n{resume_text[:3000]}"
+    try:
+        client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=1000,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+        raw = extract_json_from_response(response.content[0].text)
+        return json.loads(raw)
+    except Exception as e:
+        print(f"❌ Haiku extraction failed: {e}")
+        return {"skills": [], "experience_level": "student", "years_of_experience": 0}
+
+
+def _prefilter_jobs_with_profile(profile: dict, jobs: List[Dict], target_count: int = 30) -> List[Dict]:
+    """Accurate pre-filtering using Haiku-extracted profile and skill overlap scoring."""
+    is_student = profile.get('experience_level') == 'student'
+    years_experience = profile.get('years_of_experience', 0)
+    resume_skills = [str(s).lower() for s in profile.get('skills', [])]
+    
+    scored_jobs = []
+    for job in jobs:
+        title = job.get('title', '').lower()
+        desc = job.get('description', '').lower()
+
+        # Filter out senior roles for juniors
+        if is_student or years_experience < 3:
+            if any(kw in title for kw in ['senior', 'lead', 'principal', 'staff', 'architect', 'manager', 'director']):
+                continue
+
+        # Filter out high experience requirements
+        skip = False
+        for match in re.findall(r'(\d+)\+?\s*years?\s*(?:of\s+)?experience', desc):
+            if int(match) >= 5 and years_experience < 3:
+                skip = True
+                break
+        if skip:
+            continue
+
+        # Calculate simple skill overlap
+        overlap = 0
+        job_skills = job.get('required_skills', [])
+        for js in job_skills:
+            js_lower = str(js).lower()
+            if any(fuzzy_skill_match(rs, js_lower) for rs in resume_skills):
+                overlap += 1
+                
+        scored_jobs.append((overlap, job))
+        
+    # Sort by overlap descending
+    scored_jobs.sort(key=lambda x: x[0], reverse=True)
+    return [job for _, job in scored_jobs][:target_count]
+
+
+def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None):
+    """
+    Combined resume analysis + job matching in a SINGLE Claude Sonnet call.
+    Uses Haiku for pre-filtering and XML prompting to prevent attention dilution.
+
+    Returns: (skills, metadata, enhanced_jobs)
+      - skills: list of skill strings
+      - metadata: dict with experience_level, years_of_experience, is_student
+      - enhanced_jobs: list of job dicts with match_score and ai_reasoning
+    """
+    if not resume_text.strip():
+        return [], {}, []
+
+    if progress_callback:
+        progress_callback("Extracting profile with AI...")
+
+    profile = _extract_resume_profile_haiku(resume_text)
+
+    if progress_callback:
+        progress_callback("Pre-filtering top candidates for you...")
+
+    candidate_jobs = _prefilter_jobs_with_profile(profile, jobs, target_count=30)
+    if not candidate_jobs:
+        candidate_jobs = jobs[:15]  # Fallback: just take first 15
+
+    if progress_callback:
+        progress_callback("Analyzing resume with AI...")
+
+    # Build XML compact job summaries to fix attention dilution
+    jobs_xml = "<job_listings>\n"
+    for i, job in enumerate(candidate_jobs):
+        jobs_xml += f'  <job id="{i + 1}">\n'
+        jobs_xml += f"    <company>{job.get('company', 'Unknown')}</company>\n"
+        jobs_xml += f"    <title>{job.get('title', 'Unknown')}</title>\n"
+        jobs_xml += f"    <location>{job.get('location', 'Unknown')}</location>\n"
+        
+        desc = job.get('description', '')[:400]
+        # Escape XML to prevent breaking parsing
+        desc = desc.replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
+        jobs_xml += f"    <description>{desc}</description>\n"
+        jobs_xml += "  </job>\n"
+    jobs_xml += "</job_listings>"
+
+    system_prompt = (
+        "You are an expert technical recruiter. Given a resume and XML job listings, "
+        "score each job based on how well the candidate fits.\n\n"
+        "SCORING (0-100):\n"
+        "- 35% Project depth & real-world impact (production deployments, user metrics, measurable results)\n"
+        "- 25% Work experience quality (internships/jobs > academic projects)\n"
+        "- 20% Skill alignment with the specific role\n"
+        "- 15% Experience level appropriateness (senior roles for juniors = 0)\n"
+        "- 5%  Career trajectory fit\n\n"
+        "Penalize keyword-stuffed resumes with no substance. Reward demonstrated impact.\n\n"
+        "Return ONLY valid JSON, no markdown, no extra text:\n"
+        "{\n"
+        '  "job_scores": [\n'
+        '    {"job_id": 1, "match_score": 85, "reasoning": "brief reason", '
+        '"skill_matches": ["Python"], "skill_gaps": ["Kubernetes"]}\n'
+        "  ]\n"
+        "}"
+    )
+
+    user_prompt = (
+        f"RESUME:\n{resume_text[:3000]}\n\n"
+        f"JOBS TO ANALYZE ({len(candidate_jobs)} positions):\n"
+        f"{jobs_xml}\n\n"
+        f"Analyze the resume and score all {len(candidate_jobs)} jobs. Return JSON only."
+    )
+
+    try:
+        client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+        response = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=4096,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+
+        raw = extract_json_from_response(response.content[0].text)
+        result = json.loads(raw)
+    except Exception as e:
+        print(f"❌ Combined LLM call failed: {e}")
+        # Fallback: keyword match with extracted skills
+        return profile.get('skills', []), profile, simple_keyword_match(profile.get('skills', []), jobs, resume_text, progress_callback=progress_callback)
+
+    skills = profile.get("skills", [])
+    metadata = {
+        "experience_level": profile.get("experience_level", "student"),
+        "years_of_experience": profile.get("years_of_experience", 0),
+        "is_student": profile.get("is_student", profile.get("experience_level") == "student"),
+    }
+
+    if progress_callback:
+        progress_callback("Enhancing results with career insights...")
+
+    job_scores = result.get("job_scores", [])
+    enhanced_jobs = enhance_batch_results(job_scores, candidate_jobs, skills)
+
+    return skills, metadata, enhanced_jobs
+
+
 def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, progress_callback=None):
     """
     Intelligent job matching system with optional LLM analysis.
