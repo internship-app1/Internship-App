@@ -59,3 +59,5 @@ describe('formatMatchScore', () => {
     expect(formatMatchScore(0.756)).toBe('76%');
   });
 });
+
+export {};
