@@ -21,8 +21,9 @@ from datetime import datetime
 
 # Import our modules
 from resume_parser import parse_resume, is_valid_resume
+from resume_parser.parse_resume import extract_text_only
 from job_scrapers.dispatcher import scrape_jobs
-from matching.matcher import match_resume_to_jobs
+from matching.matcher import match_resume_to_jobs, analyze_and_match_single_call
 from matching.metadata_matcher import extract_resume_metadata
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
@@ -670,6 +671,8 @@ async def stream_match_resume(
     
     async def generate_progress():
         try:
+            import time as _time
+            _request_start = _time.monotonic()
             print("🔄 SSE Generator started - sending initial connection event...")
             
             # Send immediate "connected" event to establish the stream
@@ -746,73 +749,36 @@ async def stream_match_resume(
                 yield f"data: {json.dumps({'error': f'S3 download failed: {str(e)}'})}\n\n"
                 return
 
-            # Step 2: Parse resume with progress callbacks (in background thread)
-            current_step[0] = 1  # Reset step counter for parse phase
+            # Step 2: Extract text (no LLM) + load jobs concurrently
+            current_step[0] = 1
+
+            # Kick off job loading immediately while we extract text
+            jobs_task = asyncio.create_task(get_jobs_with_cache())
 
             try:
-                # Run parse_resume in background thread to avoid blocking event loop
-                parse_task = asyncio.create_task(
+                text_task = asyncio.create_task(
                     asyncio.to_thread(
-                        parse_resume,
+                        extract_text_only,
                         downloaded_content,
                         original_filename,
-                        use_llm,
                         progress_callback
                     )
                 )
 
-                # Yield progress messages in real-time as they arrive
-                while not parse_task.done():
+                while not text_task.done():
                     try:
-                        # Wait for progress message with short timeout
                         progress_msg = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
                         yield f"data: {json.dumps(progress_msg)}\n\n"
-                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
+                        await asyncio.sleep(0.02)
                     except asyncio.TimeoutError:
-                        # No message yet, continue waiting for task
-                        await asyncio.sleep(0)  # Yield control to event loop
+                        await asyncio.sleep(0)
                         continue
 
-                # Get the result after task completes
-                resume_skills, resume_text, resume_metadata = await parse_task
+                resume_text = await text_task
 
-                # Drain any remaining messages in queue
-                while not progress_queue.empty():
-                    try:
-                        progress_msg = progress_queue.get_nowait()
-                        yield f"data: {json.dumps(progress_msg)}\n\n"
-                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
-                    except asyncio.QueueEmpty:
-                        break
-
-                if not resume_skills:
-                    yield f"data: {json.dumps({'error': 'No skills detected in resume'})}\n\n"
-                    return
-
-                exp_level = resume_metadata.get('experience_level', 'unknown')
-                current_step[0] += 1
-                yield f"data: {json.dumps({'step': current_step[0], 'message': f'Found {len(resume_skills)} skills in your resume', 'skills': resume_skills, 'progress': 45})}\n\n"
-                await asyncio.sleep(0.05)  # Small delay to ensure SSE flushes to client
-
-            except Exception as e:
-                yield f"data: {json.dumps({'error': f'Resume parsing failed: {str(e)}'})}\n\n"
-                # Clean up S3 file on error
-                try:
-                    delete_resume_from_s3(s3_key)
-                except:
-                    pass
-                return
-
-            # Step 3: Get jobs from cache or scrape
-            current_step[0] += 1
-            yield f"data: {json.dumps({'step': current_step[0], 'message': 'Loading internship opportunities...', 'progress': 55})}\n\n"
-            await asyncio.sleep(0.05)  # Small delay to ensure SSE flushes to client
-
-            try:
-                jobs = await get_jobs_with_cache()
-                if not jobs:
-                    yield f"data: {json.dumps({'error': 'No jobs found'})}\n\n"
-                    # Clean up S3 file on error
+                if not resume_text.strip():
+                    jobs_task.cancel()
+                    yield f"data: {json.dumps({'error': 'No text could be extracted from the resume'})}\n\n"
                     try:
                         delete_resume_from_s3(s3_key)
                     except:
@@ -820,60 +786,91 @@ async def stream_match_resume(
                     return
 
             except Exception as e:
-                yield f"data: {json.dumps({'error': f'Job loading failed: {str(e)}'})}\n\n"
-                # Clean up S3 file on error
+                jobs_task.cancel()
+                yield f"data: {json.dumps({'error': f'Resume text extraction failed: {str(e)}'})}\n\n"
                 try:
                     delete_resume_from_s3(s3_key)
                 except:
                     pass
                 return
 
-            # Step 4: Match jobs with progress callbacks (in background thread)
+            # Step 3: Await job loading (likely already done since it ran in parallel)
+            current_step[0] += 1
+            yield f"data: {json.dumps({'step': current_step[0], 'message': 'Loading internship opportunities...', 'progress': 30})}\n\n"
+            await asyncio.sleep(0.05)
+
             try:
-                # Run match_resume_to_jobs in background thread to avoid blocking event loop
-                match_task = asyncio.create_task(
-                    asyncio.to_thread(
-                        match_resume_to_jobs,
-                        resume_skills,
-                        jobs,
-                        resume_text,
-                        use_llm,
-                        progress_callback
+                jobs = await jobs_task
+                if not jobs:
+                    yield f"data: {json.dumps({'error': 'No jobs found'})}\n\n"
+                    try:
+                        delete_resume_from_s3(s3_key)
+                    except:
+                        pass
+                    return
+            except Exception as e:
+                yield f"data: {json.dumps({'error': f'Job loading failed: {str(e)}'})}\n\n"
+                try:
+                    delete_resume_from_s3(s3_key)
+                except:
+                    pass
+                return
+
+            # Step 4: Single combined LLM call — skills extraction + job matching
+            current_step[0] += 1
+            yield f"data: {json.dumps({'step': current_step[0], 'message': 'Analyzing resume and matching jobs...', 'progress': 40})}\n\n"
+            await asyncio.sleep(0.05)
+
+            try:
+                if use_llm:
+                    analysis_task = asyncio.create_task(
+                        asyncio.to_thread(
+                            analyze_and_match_single_call,
+                            resume_text,
+                            jobs,
+                            progress_callback
+                        )
                     )
-                )
 
-                # Yield progress messages in real-time as they arrive
-                while not match_task.done():
-                    try:
-                        # Wait for progress message with short timeout
-                        progress_msg = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
-                        yield f"data: {json.dumps(progress_msg)}\n\n"
-                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
-                    except asyncio.TimeoutError:
-                        # No message yet, continue waiting for task
-                        await asyncio.sleep(0)  # Yield control to event loop
-                        continue
+                    while not analysis_task.done():
+                        try:
+                            progress_msg = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
+                            yield f"data: {json.dumps(progress_msg)}\n\n"
+                            await asyncio.sleep(0.02)
+                        except asyncio.TimeoutError:
+                            await asyncio.sleep(0)
+                            continue
 
-                # Get the result after task completes
-                matched_jobs = await match_task
+                    resume_skills, resume_metadata, matched_jobs = await analysis_task
 
-                # Drain any remaining messages in queue
-                while not progress_queue.empty():
-                    try:
-                        progress_msg = progress_queue.get_nowait()
-                        yield f"data: {json.dumps(progress_msg)}\n\n"
-                        await asyncio.sleep(0.02)  # Small delay to ensure SSE flushes to client
-                    except asyncio.QueueEmpty:
-                        break
-                
-                # Convert to the format expected by frontend
+                    # Drain remaining progress messages
+                    while not progress_queue.empty():
+                        try:
+                            progress_msg = progress_queue.get_nowait()
+                            yield f"data: {json.dumps(progress_msg)}\n\n"
+                            await asyncio.sleep(0.02)
+                        except asyncio.QueueEmpty:
+                            break
+                else:
+                    # Quick mode: fast keyword matching, no LLM
+                    from matching.matcher import simple_keyword_match
+                    resume_skills = []
+                    resume_metadata = {}
+                    matched_jobs = await asyncio.to_thread(
+                        simple_keyword_match, resume_skills, jobs, resume_text, progress_callback
+                    )
+
+                if resume_skills:
+                    current_step[0] += 1
+                    yield f"data: {json.dumps({'step': current_step[0], 'message': f'Found {len(resume_skills)} skills in your resume', 'skills': resume_skills, 'progress': 80})}\n\n"
+                    await asyncio.sleep(0.05)
+
+                # Convert to format expected by frontend
                 formatted_jobs = []
                 for job in matched_jobs:
-                    # Handle timestamp conversion - could be datetime or string
                     first_seen = job.get('first_seen')
                     last_seen = job.get('last_seen')
 
-                    # Convert to ISO string if datetime object
                     if first_seen and hasattr(first_seen, 'isoformat'):
                         first_seen = first_seen.isoformat()
                     elif first_seen and not isinstance(first_seen, str):
@@ -884,39 +881,29 @@ async def stream_match_resume(
                     elif last_seen and not isinstance(last_seen, str):
                         last_seen = str(last_seen)
 
-                    job_result = {
+                    formatted_jobs.append({
                         'company': job.get('company', 'Unknown'),
                         'title': job.get('title', 'Unknown'),
                         'location': job.get('location', 'Unknown'),
                         'apply_link': job.get('apply_link', '#'),
                         'match_score': job.get('match_score', 0),
                         'match_description': job.get('match_description', ''),
-                        'ai_reasoning': job.get('ai_reasoning'),  # Include AI reasoning data
+                        'ai_reasoning': job.get('ai_reasoning'),
                         'required_skills': job.get('required_skills', []),
                         'first_seen': first_seen,
                         'last_seen': last_seen
-                    }
-                    formatted_jobs.append(job_result)
-                
-                jobs_with_matches = [job for job in formatted_jobs if job['match_score'] > 0]
+                    })
 
-                # For think deeper mode: return all results since LLM processed all jobs
-                # For quick mode: return up to 50 results (fast keyword matching can handle more)
-                if use_llm:
-                    final_results = formatted_jobs  # Return all LLM-analyzed jobs
-                else:
-                    final_results = formatted_jobs[:50] if len(formatted_jobs) >= 50 else formatted_jobs
-                
-                # Debug logging
+                jobs_with_matches = [job for job in formatted_jobs if job['match_score'] > 0]
+                final_results = formatted_jobs if use_llm else formatted_jobs[:50]
+
                 print(f"🔍 Streaming final results: {len(final_results)} jobs")
-                for i, job in enumerate(final_results):
-                    print(f"   Job {i+1}: {job['company']} - {job['title']} (Score: {job['match_score']})")
-                
-                # Update completion message based on mode and results
-                if use_llm:
-                    completion_message = f'Think Deeper analysis complete! Found {len(jobs_with_matches)} matches out of {len(final_results)} jobs analyzed.'
-                else:
-                    completion_message = f'Quick matching complete! Found {len(jobs_with_matches)} matching jobs.'
+
+                completion_message = (
+                    f'Analysis complete! Found {len(jobs_with_matches)} matches out of {len(final_results)} jobs analyzed.'
+                    if use_llm else
+                    f'Quick matching complete! Found {len(jobs_with_matches)} matching jobs.'
+                )
 
                 # Clean up S3 file after successful processing
                 try:
@@ -934,62 +921,23 @@ async def stream_match_resume(
                         print(f"⚠️ Failed to save resume cache: {cache_err}")
 
                 current_step[0] += 1
+                _elapsed = _time.monotonic() - _request_start
+                print(f"⏱️ Request completed in {_elapsed:.2f}s")
                 yield f"data: {json.dumps({'step': current_step[0], 'message': completion_message, 'final_results': final_results, 'matches_found': len(jobs_with_matches), 'total_results': len(final_results), 'progress': 100, 'complete': True})}\n\n"
-                await asyncio.sleep(0.05)  # Small delay to ensure final SSE flushes to client
+                await asyncio.sleep(0.05)
 
             except Exception as e:
-                print(f"❌ Error in intelligent matching: {e}")
-                # The match_resume_to_jobs function already has automatic keyword fallback
-                # So if we reach here, it means even the fallback failed
-                yield f"data: {json.dumps({'error': f'Job matching failed: {str(e)}'})}\n\n"
-                
-                # Format results
-                formatted_jobs = []
-                for job in matched_jobs:
-                    # Handle timestamp conversion - could be datetime or string
-                    first_seen = job.get('first_seen')
-                    last_seen = job.get('last_seen')
-
-                    # Convert to ISO string if datetime object
-                    if first_seen and hasattr(first_seen, 'isoformat'):
-                        first_seen = first_seen.isoformat()
-                    elif first_seen and not isinstance(first_seen, str):
-                        first_seen = str(first_seen)
-
-                    if last_seen and hasattr(last_seen, 'isoformat'):
-                        last_seen = last_seen.isoformat()
-                    elif last_seen and not isinstance(last_seen, str):
-                        last_seen = str(last_seen)
-
-                    job_result = {
-                        'company': job.get('company', 'Unknown'),
-                        'title': job.get('title', 'Unknown'),
-                        'location': job.get('location', 'Unknown'),
-                        'apply_link': job.get('apply_link', '#'),
-                        'match_score': job.get('match_score', 0),
-                        'match_description': job.get('match_description', ''),
-                        'ai_reasoning': job.get('ai_reasoning'),  # Include AI reasoning data
-                        'required_skills': job.get('required_skills', []),
-                        'first_seen': first_seen,
-                        'last_seen': last_seen
-                    }
-                    formatted_jobs.append(job_result)
-                
-                jobs_with_matches = [job for job in formatted_jobs if job['match_score'] > 0]
-                
-                # Fallback uses legacy matching - keep 10 result limit for speed
-                final_results = formatted_jobs[:10] if len(formatted_jobs) >= 10 else formatted_jobs
-                
-                # Clean up S3 file after fallback processing
+                _elapsed = _time.monotonic() - _request_start
+                print(f"❌ Error in job matching after {_elapsed:.2f}s: {e}")
                 try:
                     delete_resume_from_s3(s3_key)
-                    print(f"🗑️ Stream: Cleaned up S3 file after fallback: {s3_key}")
-                except Exception as cleanup_error:
-                    print(f"⚠️ Stream: Failed to clean up S3 file {s3_key}: {cleanup_error}")
-
-                yield f"data: {json.dumps({'step': 10, 'message': 'Matching complete!', 'final_results': final_results, 'matches_found': len(jobs_with_matches), 'total_results': len(final_results), 'progress': 100, 'complete': True})}\n\n"
+                except:
+                    pass
+                yield f"data: {json.dumps({'error': f'Job matching failed: {str(e)}'})}\n\n"
 
         except Exception as e:
+            _elapsed = _time.monotonic() - _request_start
+            print(f"❌ Unexpected error after {_elapsed:.2f}s: {e}")
             # Clean up S3 file on unexpected error
             try:
                 delete_resume_from_s3(s3_key)

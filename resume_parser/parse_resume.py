@@ -170,6 +170,39 @@ def parse_resume(file_content, filename, use_llm=True, progress_callback=None):
     print(f"📊 Resume metadata: {metadata['experience_level']} ({metadata['years_of_experience']} years)")
     return skills, text, metadata
 
+def extract_text_only(file_content: bytes, filename: str, progress_callback=None) -> str:
+    """
+    Extract raw text from a resume file without any LLM calls.
+    Used as the first step in the combined single-call pipeline.
+    Returns the extracted text string (empty string on failure).
+    """
+    if progress_callback:
+        progress_callback("Extracting text from resume...")
+
+    ext = os.path.splitext(filename)[1].lower() if filename else ''
+    text = ""
+
+    if ext in [".png", ".jpg", ".jpeg"]:
+        try:
+            from PIL import Image
+            import pytesseract
+            image = Image.open(io.BytesIO(file_content))
+            text = pytesseract.image_to_string(image)
+        except Exception as e:
+            print(f"Error processing image: {e}")
+    else:
+        try:
+            with pdfplumber.open(io.BytesIO(file_content)) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text
+        except Exception as e:
+            print(f"Error processing PDF: {e}")
+
+    return text
+
+
 def extract_skills_with_llm_full(resume_text: str) -> Dict[str, Any]:
     """
     Enhanced version that returns full metadata along with skills.
