@@ -178,7 +178,7 @@ Title: {job_title}
 Description: {job_description}"""
 
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-haiku-4-5",
             max_tokens=800,
             system="You are a technical recruiter who understands what skills are needed for different software engineering roles. You infer specific technical requirements from job titles and descriptions. Always return valid JSON only.",
             messages=[
@@ -299,7 +299,7 @@ Title: {job_title}
 Description: {job_description}"""
 
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-haiku-4-5",
             max_tokens=500,
             system="You are a job posting analyzer that extracts metadata for matching purposes. Always return valid JSON only.",
             messages=[

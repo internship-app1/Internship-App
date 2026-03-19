@@ -608,8 +608,10 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
 
 
 @app.get("/api/resume-cache/{resume_hash}")
-async def check_resume_cache(resume_hash: str, user_id: str = Query(...)):
-    cached = get_resume_cache(user_id, resume_hash)
+async def check_resume_cache(resume_hash: str, user_id: str = Query(...), think_deeper: str = Query("true")):
+    use_llm = think_deeper.lower() == "true"
+    cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
+    cached = get_resume_cache(user_id, cache_key)
     if cached:
         return JSONResponse({"hit": True, "results": cached["results"], "skills": cached["skills"]})
     return JSONResponse({"hit": False})
@@ -852,10 +854,20 @@ async def stream_match_resume(
                         except asyncio.QueueEmpty:
                             break
                 else:
-                    # Quick mode: fast keyword matching, no LLM
-                    from matching.matcher import simple_keyword_match
-                    resume_skills = []
-                    resume_metadata = {}
+                    # Quick mode: fast keyword matching with Haiku skills, no heavy Sonnet LLM
+                    from matching.matcher import simple_keyword_match, _extract_resume_profile_haiku
+                    
+                    if progress_callback:
+                        progress_callback("Extracting profile with AI...")
+                        
+                    profile = await asyncio.to_thread(_extract_resume_profile_haiku, resume_text)
+                    resume_skills = profile.get("skills", [])
+                    resume_metadata = {
+                        "experience_level": profile.get("experience_level", "student"),
+                        "years_of_experience": profile.get("years_of_experience", 0),
+                        "is_student": profile.get("experience_level", "student") == "student",
+                    }
+                    
                     matched_jobs = await asyncio.to_thread(
                         simple_keyword_match, resume_skills, jobs, resume_text, progress_callback
                     )
@@ -915,8 +927,9 @@ async def stream_match_resume(
                 # Save to resume cache if user is authenticated
                 if user_id and resume_hash:
                     try:
-                        set_resume_cache(user_id, resume_hash, final_results, resume_skills)
-                        print(f"💾 Saved results to resume cache for user {user_id}")
+                        save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
+                        set_resume_cache(user_id, save_cache_key, final_results, resume_skills)
+                        print(f"💾 Saved results to resume cache for user {user_id} ({save_cache_key})")
                     except Exception as cache_err:
                         print(f"⚠️ Failed to save resume cache: {cache_err}")
 

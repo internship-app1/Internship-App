@@ -1611,35 +1611,41 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     return matched_jobs[:100]
 
 
-def _prefilter_jobs_from_text(resume_text: str, jobs: List[Dict], target_count: int = 15) -> List[Dict]:
-    """
-    Fast keyword-based pre-filter that works directly from raw resume text,
-    without needing LLM-extracted skills. Used by analyze_and_match_single_call.
-    Filters out senior/high-experience roles and picks the top N by keyword overlap.
-    """
-    text_lower = resume_text.lower()
+def _extract_resume_profile_haiku(resume_text: str) -> dict:
+    """Uses Claude Haiku to quickly extract skills and experience level for accurate pre-filtering."""
+    system_prompt = (
+        "Extract the candidate's skills and experience level from the resume. "
+        "Return ONLY valid JSON: "
+        '{"skills": ["skill1", "skill2"], "experience_level": "student|entry_level|experienced", "years_of_experience": 0}'
+    )
+    user_prompt = f"RESUME:\n{resume_text[:3000]}"
+    try:
+        client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=1000,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+        raw = extract_json_from_response(response.content[0].text)
+        return json.loads(raw)
+    except Exception as e:
+        print(f"❌ Haiku extraction failed: {e}")
+        return {"skills": [], "experience_level": "student", "years_of_experience": 0}
 
-    # Detect experience level heuristically from raw text
-    is_student = any(kw in text_lower for kw in [
-        'sophomore', 'junior year', 'senior year', 'expected graduation',
-        'pursuing a', 'undergraduate', 'currently enrolled', 'b.s.', 'gpa',
-        'bachelor of science', 'bachelor of arts', 'computer science student',
-    ])
-    # Future graduation year also indicates student
-    future_years = re.findall(r'\b(202[6-9]|203\d)\b', resume_text)
-    if future_years:
-        is_student = True
 
-    # Count rough years of experience from text
-    exp_matches = re.findall(r'(\d+)\+?\s*years?\s*(?:of\s+)?(?:experience|software|development)', text_lower)
-    years_experience = max((int(y) for y in exp_matches), default=0)
-
-    filtered = []
+def _prefilter_jobs_with_profile(profile: dict, jobs: List[Dict], target_count: int = 30) -> List[Dict]:
+    """Accurate pre-filtering using Haiku-extracted profile and skill overlap scoring."""
+    is_student = profile.get('experience_level') == 'student'
+    years_experience = profile.get('years_of_experience', 0)
+    resume_skills = [str(s).lower() for s in profile.get('skills', [])]
+    
+    scored_jobs = []
     for job in jobs:
         title = job.get('title', '').lower()
         desc = job.get('description', '').lower()
 
-        # Filter out senior roles for junior candidates
+        # Filter out senior roles for juniors
         if is_student or years_experience < 3:
             if any(kw in title for kw in ['senior', 'lead', 'principal', 'staff', 'architect', 'manager', 'director']):
                 continue
@@ -1653,15 +1659,25 @@ def _prefilter_jobs_from_text(resume_text: str, jobs: List[Dict], target_count: 
         if skip:
             continue
 
-        filtered.append(job)
-
-    return filtered[:target_count]
+        # Calculate simple skill overlap
+        overlap = 0
+        job_skills = job.get('required_skills', [])
+        for js in job_skills:
+            js_lower = str(js).lower()
+            if any(fuzzy_skill_match(rs, js_lower) for rs in resume_skills):
+                overlap += 1
+                
+        scored_jobs.append((overlap, job))
+        
+    # Sort by overlap descending
+    scored_jobs.sort(key=lambda x: x[0], reverse=True)
+    return [job for _, job in scored_jobs][:target_count]
 
 
 def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None):
     """
     Combined resume analysis + job matching in a SINGLE Claude Sonnet call.
-    Replaces separate Haiku skill extraction + multiple Sonnet batch calls.
+    Uses Haiku for pre-filtering and XML prompting to prevent attention dilution.
 
     Returns: (skills, metadata, enhanced_jobs)
       - skills: list of skill strings
@@ -1672,27 +1688,38 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         return [], {}, []
 
     if progress_callback:
-        progress_callback("Analyzing resume with AI...")
+        progress_callback("Extracting profile with AI...")
 
-    # Pre-filter to top 15 jobs using fast heuristics (no LLM needed)
-    candidate_jobs = _prefilter_jobs_from_text(resume_text, jobs, target_count=30)
+    profile = _extract_resume_profile_haiku(resume_text)
+
+    if progress_callback:
+        progress_callback("Pre-filtering top candidates for you...")
+
+    candidate_jobs = _prefilter_jobs_with_profile(profile, jobs, target_count=30)
     if not candidate_jobs:
         candidate_jobs = jobs[:15]  # Fallback: just take first 15
 
-    # Build compact job summaries
-    jobs_summary = []
+    if progress_callback:
+        progress_callback("Analyzing resume with AI...")
+
+    # Build XML compact job summaries to fix attention dilution
+    jobs_xml = "<job_listings>\n"
     for i, job in enumerate(candidate_jobs):
-        jobs_summary.append({
-            "job_id": i + 1,
-            "company": job.get('company', 'Unknown'),
-            "title": job.get('title', 'Unknown'),
-            "location": job.get('location', 'Unknown'),
-            "description": job.get('description', '')[:400],
-        })
+        jobs_xml += f'  <job id="{i + 1}">\n'
+        jobs_xml += f"    <company>{job.get('company', 'Unknown')}</company>\n"
+        jobs_xml += f"    <title>{job.get('title', 'Unknown')}</title>\n"
+        jobs_xml += f"    <location>{job.get('location', 'Unknown')}</location>\n"
+        
+        desc = job.get('description', '')[:400]
+        # Escape XML to prevent breaking parsing
+        desc = desc.replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
+        jobs_xml += f"    <description>{desc}</description>\n"
+        jobs_xml += "  </job>\n"
+    jobs_xml += "</job_listings>"
 
     system_prompt = (
-        "You are an expert technical recruiter. Given a resume and job listings, "
-        "extract the candidate's skills and score each job in a single pass.\n\n"
+        "You are an expert technical recruiter. Given a resume and XML job listings, "
+        "score each job based on how well the candidate fits.\n\n"
         "SCORING (0-100):\n"
         "- 35% Project depth & real-world impact (production deployments, user metrics, measurable results)\n"
         "- 25% Work experience quality (internships/jobs > academic projects)\n"
@@ -1702,10 +1729,6 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         "Penalize keyword-stuffed resumes with no substance. Reward demonstrated impact.\n\n"
         "Return ONLY valid JSON, no markdown, no extra text:\n"
         "{\n"
-        '  "skills": ["skill1", "skill2"],\n'
-        '  "experience_level": "student|recent_graduate|entry_level|experienced",\n'
-        '  "years_of_experience": 0,\n'
-        '  "is_student": true,\n'
         '  "job_scores": [\n'
         '    {"job_id": 1, "match_score": 85, "reasoning": "brief reason", '
         '"skill_matches": ["Python"], "skill_gaps": ["Kubernetes"]}\n'
@@ -1715,9 +1738,9 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
 
     user_prompt = (
         f"RESUME:\n{resume_text[:3000]}\n\n"
-        f"JOBS TO ANALYZE ({len(jobs_summary)} positions):\n"
-        f"{json.dumps(jobs_summary, indent=2)}\n\n"
-        f"Analyze the resume and score all {len(jobs_summary)} jobs."
+        f"JOBS TO ANALYZE ({len(candidate_jobs)} positions):\n"
+        f"{jobs_xml}\n\n"
+        f"Analyze the resume and score all {len(candidate_jobs)} jobs. Return JSON only."
     )
 
     try:
@@ -1733,14 +1756,14 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         result = json.loads(raw)
     except Exception as e:
         print(f"❌ Combined LLM call failed: {e}")
-        # Fallback: keyword match with no skills
-        return [], {}, simple_keyword_match([], jobs, resume_text, progress_callback=progress_callback)
+        # Fallback: keyword match with extracted skills
+        return profile.get('skills', []), profile, simple_keyword_match(profile.get('skills', []), jobs, resume_text, progress_callback=progress_callback)
 
-    skills = result.get("skills", [])
+    skills = profile.get("skills", [])
     metadata = {
-        "experience_level": result.get("experience_level", "student"),
-        "years_of_experience": result.get("years_of_experience", 0),
-        "is_student": result.get("is_student", True),
+        "experience_level": profile.get("experience_level", "student"),
+        "years_of_experience": profile.get("years_of_experience", 0),
+        "is_student": profile.get("is_student", profile.get("experience_level") == "student"),
     }
 
     if progress_callback:

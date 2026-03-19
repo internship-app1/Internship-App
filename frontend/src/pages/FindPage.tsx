@@ -110,7 +110,7 @@ const FindPage: React.FC = () => {
 
     if (userId) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?user_id=${userId}`);
+        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?user_id=${userId}&think_deeper=${thinkDeeper}`);
         const data = await res.json();
         if (data.hit) {
           setJobs(data.results);
