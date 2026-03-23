@@ -27,6 +27,10 @@ RUN mkdir -p auth
 # Copy application code
 COPY . .
 
+# Accept build-time arg for CRA (env vars must be baked in at build time, not runtime)
+ARG REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY
+ENV REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY=$REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY
+
 # Build React frontend so GET / serves it directly
 RUN cd frontend && npm install && npm run build
 
