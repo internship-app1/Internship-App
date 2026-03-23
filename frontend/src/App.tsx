@@ -26,7 +26,7 @@ function PageTracker() {
 function App() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-      <ClerkProvider publishableKey={process.env.REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY as string}>
+      <ClerkProvider publishableKey="pk_live_Y2xlcmsuaW50ZXJuc2hpcG1hdGNoZXIuY29tJA">
         <BrowserRouter>
           <ThemeProvider defaultTheme="system" storageKey="internship-ui-theme">
             <PageTracker />
