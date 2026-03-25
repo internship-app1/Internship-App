@@ -557,7 +557,7 @@ def set_resume_cache(user_id: str, resume_hash: str, results: list, skills: list
             resume_hash=resume_hash,
             results=json.dumps(results),
             skills=json.dumps(skills),
-            expires_at=datetime.utcnow() + timedelta(hours=24)
+            expires_at=datetime.utcnow() + timedelta(days=30)
         )
         db.add(entry)
         db.commit()
