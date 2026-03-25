@@ -28,7 +28,7 @@ from matching.metadata_matcher import extract_resume_metadata
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
-from job_database import get_resume_cache, set_resume_cache
+from job_database import get_resume_cache, set_resume_cache, get_user_resume_history
 
 # Base directory of this file (used for templates/static/uploads paths)
 BASE_DIR = Path(__file__).resolve().parent
@@ -615,6 +615,12 @@ async def check_resume_cache(resume_hash: str, user_id: str = Query(...), think_
     if cached:
         return JSONResponse({"hit": True, "results": cached["results"], "skills": cached["skills"]})
     return JSONResponse({"hit": False})
+
+
+@app.get("/api/user-history")
+async def get_user_history(user_id: str = Query(...)):
+    entries = get_user_resume_history(user_id)
+    return JSONResponse(entries)
 
 
 @app.post("/api/match-stream")

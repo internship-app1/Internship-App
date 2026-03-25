@@ -521,6 +521,29 @@ def get_resume_cache(user_id: str, resume_hash: str) -> Optional[Dict]:
     finally:
         db.close()
 
+def get_user_resume_history(user_id: str) -> List[Dict]:
+    """Returns all non-expired resume cache entries for a user, newest first."""
+    db = get_db()
+    try:
+        entries = db.query(ResumeCache).filter(
+            ResumeCache.user_id == user_id,
+            ResumeCache.expires_at > datetime.utcnow()
+        ).order_by(ResumeCache.created_at.desc()).all()
+        return [
+            {
+                "id": e.id,
+                "resume_hash": e.resume_hash,
+                "results": json.loads(e.results),
+                "skills": json.loads(e.skills),
+                "created_at": e.created_at.isoformat(),
+                "expires_at": e.expires_at.isoformat(),
+            }
+            for e in entries
+        ]
+    finally:
+        db.close()
+
+
 def set_resume_cache(user_id: str, resume_hash: str, results: list, skills: list) -> None:
     """Upsert cache entry with 24h TTL."""
     db = get_db()

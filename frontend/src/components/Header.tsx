@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUser, UserButton, SignInButton } from '@clerk/react';
+import { Link } from 'react-router-dom';
 import { ThemeToggle } from './theme-toggle';
 import { Sparkles } from 'lucide-react';
 
@@ -61,6 +62,14 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
           >
             Features
           </a>
+          {isSignedIn && (
+            <Link
+              to="/history"
+              className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors"
+            >
+              My History
+            </Link>
+          )}
         </nav>
 
         {/* Right side actions */}
