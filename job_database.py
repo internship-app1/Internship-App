@@ -77,7 +77,7 @@ class ResumeCache(Base):
     __tablename__ = "resume_cache"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(255), nullable=False, index=True)
-    resume_hash = Column(String(64), nullable=False, index=True)
+    resume_hash = Column(String(255), nullable=False, index=True)
     results = Column(Text, nullable=False)
     skills = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
