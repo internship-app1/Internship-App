@@ -303,7 +303,7 @@ const FindPage: React.FC = () => {
     <div className="min-h-screen hero-bg">
       <Header forceSolid />
 
-      <main className="container py-8 space-y-8">
+      <main className="container px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Header Section */}
         <div className="text-center space-y-2 pt-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/50 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3">
@@ -366,7 +366,8 @@ const FindPage: React.FC = () => {
                       <>
                         <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
                         <p className="text-sm font-medium text-foreground">
-                          Click to upload or drag and drop
+                          Tap to upload
+                          <span className="hidden sm:inline"> or drag and drop</span>
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
                       </>
@@ -470,7 +471,7 @@ const FindPage: React.FC = () => {
                     </div>
                   </div>
                   {/* Progress milestones */}
-                  <div className="flex justify-between mt-2 px-1">
+                  <div className="grid grid-cols-2 sm:flex sm:justify-between mt-2 px-1 gap-y-1">
                     {[
                       { label: 'Started', threshold: 25 },
                       { label: 'Analyzing', threshold: 50 },
@@ -626,7 +627,7 @@ const FindPage: React.FC = () => {
         {hasResults && (
           <div className="space-y-6" id="results-section">
             <div className="text-center">
-              <h2 className="text-3xl font-bold" style={{ fontFamily: 'Sora, sans-serif' }}>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold" style={{ fontFamily: 'Sora, sans-serif' }}>
                 {jobs.length > 0
                   ? `You matched ${jobs.length} internships — here are your best fits`
                   : 'No Matches Found'}
@@ -766,7 +767,7 @@ const FindPage: React.FC = () => {
                               variant={currentPage === pageNum ? 'default' : 'outline'}
                               size="sm"
                               onClick={() => handlePageChange(pageNum)}
-                              className="w-10 h-10"
+                              className="w-11 h-11 min-w-[44px] min-h-[44px]"
                             >
                               {pageNum}
                             </Button>

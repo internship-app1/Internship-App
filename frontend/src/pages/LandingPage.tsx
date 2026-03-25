@@ -136,7 +136,7 @@ const LandingPage: React.FC = () => {
                 What we do
               </p>
               <h2
-                className="text-4xl md:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
+                className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Everything you need to{' '}
@@ -237,7 +237,7 @@ const LandingPage: React.FC = () => {
                 The Process
               </p>
               <h2
-                className="text-4xl md:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
+                className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Three steps to your{' '}
@@ -311,7 +311,7 @@ const LandingPage: React.FC = () => {
           <div className="container max-w-5xl mx-auto">
             <FadeUp className="text-center mb-14">
               <h2
-                className="text-4xl md:text-5xl font-bold text-white mb-4"
+                className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Students land their{' '}
@@ -403,7 +403,7 @@ const LandingPage: React.FC = () => {
                 Why internshipmatcher AI
               </p>
               <h2
-                className="text-4xl md:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
+                className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-950 dark:text-neutral-50"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Built for students,
@@ -488,7 +488,7 @@ const LandingPage: React.FC = () => {
               </div>
 
               <h2
-                className="text-4xl md:text-6xl font-bold text-white leading-tight mb-6"
+                className="text-3xl md:text-4xl lg:text-6xl font-bold text-white leading-tight mb-6"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 Your next internship is
@@ -539,7 +539,7 @@ const LandingPage: React.FC = () => {
                 <span className="text-cyan-500 text-xs align-super font-bold">AI</span>
               </span>
             </div>
-            <p className="text-neutral-400">© 2025 internshipmatcher AI. Free to use, always.</p>
+            <p className="text-neutral-400 text-center md:text-left">© 2025 internshipmatcher AI. Free to use, always.</p>
             <div className="flex items-center gap-5">
               <button type="button" className="hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors">
                 Privacy

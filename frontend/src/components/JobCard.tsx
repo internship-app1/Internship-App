@@ -134,7 +134,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <CardTitle className="text-xl">{job.title}</CardTitle>
+              <CardTitle className="text-base sm:text-xl leading-snug">{job.title}</CardTitle>
               {showNewBadge && (
                 <Badge
                   className="text-xs px-2 py-0.5 bg-gradient-to-r from-violet-500 to-cyan-500 text-white border-0 hover:opacity-90"
@@ -162,7 +162,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
           </div>
 
           {/* Match score badge */}
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <div className="flex items-center gap-1.5 rounded-full border border-violet-100 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-900/40 px-3 py-1.5">
               <TrendingUp className="h-4 w-4 text-violet-500" />
               <span

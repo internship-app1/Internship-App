@@ -120,10 +120,10 @@ const HistoryPage: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <Header forceSolid />
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Page header */}
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-neutral-950 dark:text-neutral-50 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-neutral-950 dark:text-neutral-50 mb-2">
             Past Analyses
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400">
@@ -186,7 +186,7 @@ const HistoryPage: React.FC = () => {
                     onClick={() => setExpandedId(expanded ? null : entry.id)}
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-1.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <CardTitle className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                             {entry.results.length} job
