@@ -1,9 +1,12 @@
+import logging
 import re
 import os
 import json
 import anthropic
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 def extract_json_from_response(text: str) -> str:
     """
@@ -112,31 +115,15 @@ def clean_and_validate_llm_response(response_text: str, expected_job_count: int)
     # Step 1: Try to parse as-is
     try:
         result = json.loads(response_text)
-        print("✅ JSON parsed successfully on first attempt")
     except json.JSONDecodeError as e:
-        print(f"⚠️  Initial JSON parse failed: {e}")
-        print(f"🔧 Attempting to repair JSON...")
-
         # Step 2: Try to repair truncated JSON
         repaired = repair_truncated_json(response_text)
 
         try:
             result = json.loads(repaired)
-            print("✅ JSON repaired and parsed successfully")
+            logger.warning(f"JSON repair succeeded (original error: line {e.lineno}, col {e.colno})")
         except json.JSONDecodeError as e2:
-            print(f"❌ JSON repair failed: {e2}")
-            print(f"📄 Original error at line {e.lineno}, col {e.colno}")
-            print(f"📄 Repair error at line {e2.lineno}, col {e2.colno}")
-
-            # Show diagnostic info
-            lines = response_text.split('\n')
-            start_line = max(0, e.lineno - 3)
-            end_line = min(len(lines), e.lineno + 2)
-            print("📄 Context around original error:")
-            for i in range(start_line, end_line):
-                marker = ">>> " if i == e.lineno - 1 else "    "
-                print(f"{marker}{i+1}: {lines[i][:100]}")
-
+            logger.error(f"JSON repair failed: {e2} (original: line {e.lineno}, col {e.colno})")
             raise Exception(f"JSON is irreparably malformed: {e}")
 
     # Step 3: Validate structure
@@ -157,13 +144,10 @@ def clean_and_validate_llm_response(response_text: str, expected_job_count: int)
 
     for idx, score_obj in enumerate(job_scores):
         if not isinstance(score_obj, dict):
-            print(f"⚠️  Job score #{idx+1} is not a dict, skipping")
             invalid_count += 1
             continue
 
         if not validate_job_score_structure(score_obj):
-            print(f"⚠️  Job score #{idx+1} (job_id: {score_obj.get('job_id', '?')}) has invalid structure:")
-            print(f"     Keys present: {list(score_obj.keys())}")
             invalid_count += 1
             continue
 
@@ -185,28 +169,22 @@ def clean_and_validate_llm_response(response_text: str, expected_job_count: int)
 
         valid_scores.append(score_obj)
 
-    # Step 5: Report validation results
-    print(f"📊 Validation results:")
-    print(f"   Expected: {expected_job_count} jobs")
-    print(f"   Received: {len(job_scores)} total job scores")
-    print(f"   Valid: {len(valid_scores)} job scores")
-    print(f"   Invalid: {invalid_count} job scores (skipped)")
-
     # Update result with cleaned scores
     result["job_scores"] = valid_scores
 
-    # Step 6: Warn if we're missing jobs
+    # Warn if missing jobs or duplicates
+    issues = []
+    if invalid_count:
+        issues.append(f"{invalid_count} invalid")
     if len(valid_scores) < expected_job_count:
-        missing = expected_job_count - len(valid_scores)
-        print(f"⚠️  WARNING: Missing {missing} job scores (expected {expected_job_count}, got {len(valid_scores)} valid)")
-        print(f"⚠️  This may indicate truncation or LLM error")
-
-    # Step 7: Check for duplicate job_ids
+        issues.append(f"missing {expected_job_count - len(valid_scores)}")
     job_ids = [score['job_id'] for score in valid_scores]
     if len(job_ids) != len(set(job_ids)):
-        print(f"⚠️  WARNING: Duplicate job_ids detected!")
-        duplicates = [jid for jid in job_ids if job_ids.count(jid) > 1]
-        print(f"   Duplicate IDs: {set(duplicates)}")
+        issues.append("duplicate job_ids")
+    if issues:
+        logger.warning(f"JSON validation: {len(valid_scores)}/{expected_job_count} valid scores — {', '.join(issues)}")
+    else:
+        logger.info(f"JSON validation: {len(valid_scores)}/{expected_job_count} valid scores")
 
     return result
 
@@ -388,7 +366,7 @@ def intelligent_resume_based_scoring(job, resume_skills, resume_text=""):
     Returns: score (0-100)
     """
     if not resume_text or not resume_text.strip():
-        print("❌ No resume text provided for intelligent scoring")
+        logger.error("No resume text provided for intelligent scoring")
         raise Exception("Resume text is required for intelligent scoring")
     
     try:
@@ -596,10 +574,6 @@ Return ONLY valid JSON (no markdown, no code blocks):
         complexity = result.get("resume_complexity", "UNKNOWN")
         reasoning = result.get("reasoning", "No reasoning provided")
         
-        print(f"🤖 Intelligent Scoring: {job_company} - {job_title}")
-        print(f"   Score: {score}/100 | Complexity: {complexity}")
-        print(f"   Reasoning: {reasoning}")
-        
         # Return full analysis object instead of just score
         return {
             "score": score,
@@ -612,7 +586,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
         }
         
     except Exception as e:
-        print(f"❌ Error in intelligent scoring for {job.get('title', 'Unknown')}: {e}")
+        logger.error(f"Error in intelligent scoring for {job.get('title', 'Unknown')}: {e}")
         raise Exception(f"Intelligent scoring failed: {str(e)}")
 
 
@@ -1195,7 +1169,7 @@ Analyze each job and return complete JSON for all {len(filtered_jobs)} jobs."""
         return job_scores
 
     except Exception as e:
-        print(f"❌ Error in batch LLM analysis: {e}")
+        logger.error(f"Error in batch LLM analysis: {e}")
 
         # Re-raise to allow caller to handle retries
         raise Exception(f"Batch LLM analysis failed: {str(e)}")
@@ -1574,7 +1548,7 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     if progress_callback:
         progress_callback("Matching jobs with keyword analysis...")
 
-    print(f"🔍 Quick Mode: Analyzing {len(jobs)} jobs with keyword matching...")
+    logger.info(f"Quick Mode: Analyzing {len(jobs)} jobs with keyword matching...")
 
     for job in jobs:
         score = simple_keyword_scoring(job, resume_skills, resume_text)
@@ -1605,7 +1579,7 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     # Sort by score descending
     matched_jobs.sort(key=lambda x: x['match_score'], reverse=True)
 
-    print(f"✅ Quick Mode: Found {len(matched_jobs)} matching jobs")
+    logger.info(f"Quick Mode: Found {len(matched_jobs)} matching jobs")
 
     # Return top 100 results (analyze more jobs since it's fast)
     return matched_jobs[:100]
@@ -1630,7 +1604,7 @@ def _extract_resume_profile_haiku(resume_text: str) -> dict:
         raw = extract_json_from_response(response.content[0].text)
         return json.loads(raw)
     except Exception as e:
-        print(f"❌ Haiku extraction failed: {e}")
+        logger.error(f"Haiku extraction failed: {e}")
         return {"skills": [], "experience_level": "student", "years_of_experience": 0}
 
 
@@ -1755,7 +1729,7 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         raw = extract_json_from_response(response.content[0].text)
         result = json.loads(raw)
     except Exception as e:
-        print(f"❌ Combined LLM call failed: {e}")
+        logger.error(f"Combined LLM call failed: {e}")
         # Fallback: keyword match with extracted skills
         return profile.get('skills', []), profile, simple_keyword_match(profile.get('skills', []), jobs, resume_text, progress_callback=progress_callback)
 

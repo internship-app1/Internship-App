@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 from dotenv import load_dotenv
 import requests
@@ -10,6 +11,8 @@ import time
 # Load environment variables from .env file
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 GITHUB_INTERNSHIPS_URL = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md"
 
 def scrape_job_details_from_apply_link(apply_link):
@@ -17,7 +20,7 @@ def scrape_job_details_from_apply_link(apply_link):
     Follow the apply link and extract real job qualifications from the company's job posting page.
     """
     try:
-        print(f"🔍 Following apply link: {apply_link}")
+        logger.debug(f"Following apply link: {apply_link}")
         
         # Add headers to mimic a real browser
         headers = {
@@ -40,7 +43,7 @@ def scrape_job_details_from_apply_link(apply_link):
         # Check if we have manual requirements for this job
         manual_requirements = get_manual_requirements(apply_link)
         if manual_requirements:
-            print(f"✅ Using manual requirements for {apply_link}")
+            logger.debug(f"Using manual requirements for {apply_link}")
             return {
                 'description': manual_requirements['description'],
                 'required_skills': manual_requirements['skills'],
@@ -61,7 +64,7 @@ def scrape_job_details_from_apply_link(apply_link):
         if job_requirements and job_requirements != "Requirements not available":
             description += "\n\n📋 Job Requirements:\n" + job_requirements
         
-        print(f"✅ Extracted {len(extracted_skills)} skills from job posting")
+        logger.debug(f"Extracted {len(extracted_skills)} skills from job posting")
         return {
             'description': description,
             'required_skills': extracted_skills,
@@ -70,7 +73,7 @@ def scrape_job_details_from_apply_link(apply_link):
         }
         
     except Exception as e:
-        print(f"⚠️ Could not extract details from {apply_link}: {e}")
+        logger.warning(f"Could not extract details from {apply_link}: {e}")
         return None
 
 def get_manual_requirements(apply_link):
@@ -868,7 +871,7 @@ def extract_job_description(soup):
         return "About this company: Software Engineering internship position. Please click 'Apply Here' for detailed information."
         
     except Exception as e:
-        print(f"⚠️ Error extracting job description: {e}")
+        logger.warning(f"Error extracting job description: {e}")
         return "About this company: Software Engineering internship position. Please click 'Apply Here' for detailed information."
 
 def filter_jobs_by_date(jobs, max_days=None):
@@ -901,7 +904,7 @@ def filter_jobs_by_date(jobs, max_days=None):
             skipped += 1
     
     if skipped > 0:
-        print(f"📅 [Date Filter] Filtered out {skipped} jobs older than {max_days} days")
+        logger.info(f"[Date Filter] Filtered out {skipped} jobs older than {max_days} days")
     
     return filtered
 
@@ -918,7 +921,7 @@ def scrape_github_internships(keyword="intern", max_results=10000, incremental=F
     """
     scrape_type = "incremental" if incremental else "full"
     date_filter_msg = f" (last {max_days_old} days)" if max_days_old else ""
-    print(f"🔍 [GitHub Internships] Starting {scrape_type} scrape{date_filter_msg} from Summer 2026 Tech Internships repository...")
+    logger.info(f"[GitHub Internships] Starting {scrape_type} scrape{date_filter_msg}...")
     
     try:
         # Get the raw markdown content from GitHub
@@ -940,18 +943,17 @@ def scrape_github_internships(keyword="intern", max_results=10000, incremental=F
             try:
                 from job_cache import get_new_jobs_only
                 filtered_jobs = get_new_jobs_only(all_jobs)
-                print(f"✅ [GitHub Internships] {scrape_type} scrape: {len(filtered_jobs)} new jobs (from {len(all_jobs)} total)")
+                logger.info(f"[GitHub Internships] Incremental scrape: {len(filtered_jobs)} new jobs (from {len(all_jobs)} total)")
                 return filtered_jobs
             except Exception as e:
-                print(f"⚠️ [GitHub Internships] Incremental filtering failed: {e}")
-                print(f"📝 [GitHub Internships] Falling back to full scrape")
+                logger.warning(f"[GitHub Internships] Incremental filtering failed: {e} — falling back to full scrape")
                 return all_jobs
         else:
-            print(f"✅ [GitHub Internships] {scrape_type} scrape: {len(all_jobs)} total jobs")
+            logger.info(f"[GitHub Internships] Full scrape: {len(all_jobs)} total jobs")
             return all_jobs
-        
+
     except Exception as e:
-        print(f"❌ [GitHub Internships] Error during {scrape_type} scrape: {e}")
+        logger.error(f"[GitHub Internships] Error during {scrape_type} scrape: {e}")
         return []
 
 def extract_skills_from_job(job):
@@ -983,7 +985,7 @@ def extract_skills_from_job(job):
             return title_skills
             
     except Exception as e:
-        print(f"⚠️ LLM extraction failed, using title-based inference: {e}")
+        logger.warning(f"LLM extraction failed, using title-based inference: {e}")
         return title_skills
 
 def infer_skills_from_title_aggressive(job_title):
@@ -1235,17 +1237,17 @@ def parse_date_to_days(date_string):
         except:
             pass
         
-        print(f"⚠️ [Date Parser] Could not parse date format: '{date_string}'")
+        logger.debug(f"[Date Parser] Could not parse date format: '{date_string}'")
         return None
-        
+
     except Exception as e:
-        print(f"⚠️ [Date Parser] Error parsing date '{date_string}': {e}")
+        logger.debug(f"[Date Parser] Error parsing date '{date_string}': {e}")
         return None
 
 def parse_internship_table(content, max_results):
     jobs = []
     
-    print(f"🔍 [GitHub] Parsing {len(content)} characters...")
+    logger.info(f"[GitHub] Parsing {len(content)} characters...")
     
     # Use BeautifulSoup to parse the HTML table
     from bs4 import BeautifulSoup
@@ -1255,31 +1257,34 @@ def parse_internship_table(content, max_results):
     tables = soup.find_all('table')
     
     if not tables:
-        print("❌ [GitHub] No tables found in content")
+        logger.error("[GitHub] No tables found in content")
         return jobs
     
     # Look for the software engineering table (should be the first one after the header)
     table = tables[0]  # Assume first table is the software engineering table
     
     rows = table.find_all('tr')
-    print(f"🔍 [GitHub] Found table with {len(rows)} rows")
-    
+    logger.info(f"[GitHub] Found table with {len(rows)} rows")
+
     # Parse header to determine column indices
     header_row = rows[0] if rows else None
     date_posted_index = None
-    
+
     if header_row:
         headers = [cell.get_text(strip=True).lower() for cell in header_row.find_all(['th', 'td'])]
-        print(f"🔍 [GitHub] Table headers: {headers}")
-        
+
         # Find the date posted column (can have various names)
         date_keywords = ['date posted', 'posted', 'date added', 'added', 'date', 'age']
         for idx, header in enumerate(headers):
             if any(keyword in header for keyword in date_keywords):
                 date_posted_index = idx
-                print(f"✅ [GitHub] Found date column at index {date_posted_index}: '{header}'")
                 break
-    
+
+    # Counters for summary log
+    _jobs_added = 0
+    _skill_failures = 0
+    _parse_errors = 0
+
     # Skip header row
     for row in rows[1:]:  # Skip the header row
         if len(jobs) >= max_results:
@@ -1323,9 +1328,6 @@ def parse_internship_table(content, max_results):
                     
                     # Parse the date to extract days since posted for filtering
                     days_since_posted = parse_date_to_days(date_posted_raw)
-                    
-                    if days_since_posted is not None:
-                        print(f"📅 [GitHub] {company} - {role}: Posted {days_since_posted} days ago ({date_posted_raw})")
                 
                 # Generate better description based on role and company
                 detailed_description = generate_detailed_description(company, role, location)
@@ -1349,21 +1351,19 @@ def parse_internship_table(content, max_results):
                 try:
                     extracted_skills = extract_skills_from_job(job)
                     job['required_skills'] = extracted_skills if extracted_skills else ['Programming', 'Software Development']
-                    date_info = f" (Posted: {date_posted})" if date_posted else ""
-                    print(f"✅ [GitHub] Added job: {company} - {role}{date_info} (Skills: {job['required_skills'][:3]}...)")
+                    _jobs_added += 1
                 except Exception as e:
-                    print(f"⚠️ [GitHub] Skill extraction failed for {company} - {role}: {e}")
+                    _skill_failures += 1
                     job['required_skills'] = ['Programming', 'Software Development', 'Computer Science']
-                    date_info = f" (Posted: {date_posted})" if date_posted else ""
-                    print(f"✅ [GitHub] Added job: {company} - {role}{date_info} (Default skills)")
-                
+                    _jobs_added += 1
+
                 jobs.append(job)
-                
+
             except Exception as e:
-                print(f"⚠️ [GitHub] Error parsing row: {e}")
+                _parse_errors += 1
                 continue
-    
-    print(f"📋 [GitHub] Total jobs parsed: {len(jobs)}")
+
+    logger.info(f"[GitHub] Scraped {len(jobs)} jobs ({_skill_failures} skill-extraction failures, {_parse_errors} parse errors)")
     return jobs
 
 def generate_detailed_description(company, role, location):

@@ -4,12 +4,15 @@ This replaces all hardcoded skill lists with dynamic, AI-powered extraction.
 """
 
 import difflib
+import logging
 import os
 import json
 import hashlib
 from dotenv import load_dotenv
 import anthropic
 from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -87,7 +90,7 @@ def _db_get_job_skills(cache_key: str):
         finally:
             close_db(db)
     except Exception as e:
-        print(f"⚠️ DB job-skills cache read failed: {e}")
+        logger.warning(f"DB job-skills cache read failed: {e}")
     return None
 
 def _db_set_job_skills(cache_key: str, skills: List[str]) -> None:
@@ -115,7 +118,7 @@ def _db_set_job_skills(cache_key: str, skills: List[str]) -> None:
         finally:
             close_db(db)
     except Exception as e:
-        print(f"⚠️ DB job-skills cache write failed: {e}")
+        logger.warning(f"DB job-skills cache write failed: {e}")
 
 def extract_job_skills_with_llm(job_title: str, job_description: str, company: str = "") -> List[str]:
     """
@@ -128,19 +131,16 @@ def extract_job_skills_with_llm(job_title: str, job_description: str, company: s
 
     # Check in-memory cache first
     if cache_key in _job_skills_cache:
-        print(f"🔄 Using cached skills for job: {job_title}")
         return _job_skills_cache[cache_key]
 
     # Check DB cache before calling LLM
     db_skills = _db_get_job_skills(cache_key)
     if db_skills is not None:
-        print(f"🔄 Using DB-cached skills for job: {job_title}")
         _job_skills_cache[cache_key] = db_skills
         return db_skills
 
     # If job description is too short, raise error
     if len(job_description.strip()) < 50:
-        print(f"❌ Job description too short for LLM extraction: {job_title}")
         raise Exception(f"Job description too short (<50 chars) for: {job_title}")
 
     try:
@@ -195,10 +195,6 @@ Description: {job_description}"""
         # Get required skills
         all_skills = result.get("required_skills", [])
 
-        print(f"🤖 LLM extracted {len(all_skills)} skills from job: {job_title}")
-        print(f"🤖 Skills: {all_skills}")
-        print(f"🤖 Role: {result.get('role_type', 'unknown')}, Confidence: {result.get('confidence', 'unknown')}")
-
         # Cache the result in memory and DB
         _job_skills_cache[cache_key] = all_skills
         _db_set_job_skills(cache_key, all_skills)
@@ -206,7 +202,7 @@ Description: {job_description}"""
         return all_skills
         
     except Exception as e:
-        print(f"❌ Error with LLM job skill extraction: {e}")
+        logger.error(f"Error with LLM job skill extraction: {e}")
         raise Exception(f"LLM job skill extraction failed: {str(e)}")
 
 
@@ -243,8 +239,6 @@ def match_skills_dynamically(job_skills: List[str], resume_skills: List[str], th
     """
     matches = []
 
-    print(f"🔍 Exact skill matching - Job: {job_skills}, Resume: {resume_skills}")
-
     # Only exact matching
     for job_skill in job_skills:
         for resume_skill in resume_skills:
@@ -255,7 +249,6 @@ def match_skills_dynamically(job_skills: List[str], resume_skills: List[str], th
                     "resume_skill": resume_skill,
                     "similarity_score": 1.0
                 })
-                print(f"✅ Exact Match: {job_skill} ↔ {resume_skill}")
                 break  # Only match once per job skill
 
     return matches
@@ -315,7 +308,7 @@ Description: {job_description}"""
         return result
         
     except Exception as e:
-        print(f"❌ Error extracting job metadata: {e}")
+        logger.error(f"Error extracting job metadata: {e}")
         return {
             "experience_level": "entry_level",  # Default for internships
             "years_required": 0,
@@ -346,7 +339,7 @@ def _db_get_candidate_profile(cache_key: str):
         finally:
             close_db(db)
     except Exception as e:
-        print(f"⚠️ DB candidate-profile cache read failed: {e}")
+        logger.warning(f"DB candidate-profile cache read failed: {e}")
     return None
 
 def _db_set_candidate_profile(cache_key: str, profile: Dict[str, Any]) -> None:
@@ -375,7 +368,7 @@ def _db_set_candidate_profile(cache_key: str, profile: Dict[str, Any]) -> None:
         finally:
             close_db(db)
     except Exception as e:
-        print(f"⚠️ DB candidate-profile cache write failed: {e}")
+        logger.warning(f"DB candidate-profile cache write failed: {e}")
 
 def analyze_candidate_profile_with_llm(resume_skills: List[str], resume_text: str = "") -> Dict[str, Any]:
     """
@@ -387,13 +380,11 @@ def analyze_candidate_profile_with_llm(resume_skills: List[str], resume_text: st
 
     # Check in-memory cache first
     if cache_key in _candidate_profile_cache:
-        print("🔄 Using cached candidate profile analysis")
         return _candidate_profile_cache[cache_key]
 
     # Check DB cache before calling LLM
     db_profile = _db_get_candidate_profile(cache_key)
     if db_profile is not None:
-        print("🔄 Using DB-cached candidate profile analysis")
         _candidate_profile_cache[cache_key] = db_profile
         return db_profile
 
@@ -446,8 +437,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
         response_text = extract_json_from_response(response.content[0].text)
         result = json.loads(response_text)
         
-        print(f"🤖 Analyzed candidate profile: {result.get('experience_level')} {result.get('career_direction')} developer")
-        print(f"🤖 Top skills: {result.get('top_skills', [])}")
+        logger.info(f"Candidate profile: {result.get('experience_level')} {result.get('career_direction')} developer")
 
         # Cache in memory and DB
         _candidate_profile_cache[cache_key] = result
@@ -456,7 +446,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
         return result
         
     except Exception as e:
-        print(f"❌ Error analyzing candidate profile: {e}")
+        logger.error(f"Error analyzing candidate profile: {e}")
         # Fallback to basic analysis
         return {
             "top_skills": resume_skills[:8],
@@ -545,7 +535,7 @@ Focus on COMPATIBILITY and GROWTH, not just skill matching."""
         result = json.loads(response_text)
         rankings = result.get("rankings", [])
         
-        print(f"🤖 LLM deep ranking completed: {len(rankings)} jobs ranked")
+        logger.info(f"LLM deep ranking completed: {len(rankings)} jobs ranked")
         
         # Map rankings back to job objects with enhanced descriptions
         ranked_jobs = []
@@ -562,12 +552,11 @@ Focus on COMPATIBILITY and GROWTH, not just skill matching."""
                 job['match_description'] = enhanced_description.strip()
                 ranked_jobs.append(job)
         
-        print(f"✅ Returning {len(ranked_jobs)} intelligently ranked jobs")
+        logger.info(f"Returning {len(ranked_jobs)} intelligently ranked jobs")
         return ranked_jobs
-        
+
     except Exception as e:
-        print(f"❌ Error in LLM deep ranking: {e}")
-        print("🔄 Falling back to score-based ranking")
+        logger.error(f"Error in LLM deep ranking: {e} — falling back to score-based ranking")
         
         # Fallback: return jobs sorted by their existing match scores
         return sorted(top_jobs, key=lambda x: x.get('match_score', 0), reverse=True)[:10]

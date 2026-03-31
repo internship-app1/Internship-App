@@ -1,3 +1,4 @@
+import logging
 import pdfplumber
 import re
 import os
@@ -5,6 +6,8 @@ import io
 import json
 import anthropic
 from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 def extract_json_from_response(text: str) -> str:
     """Extract JSON from Claude response, handling markdown code blocks."""
@@ -94,15 +97,12 @@ def extract_skills_with_llm(resume_text: str) -> List[str]:
         years = result.get("years_of_experience", 0)
         is_student = result.get("is_student", True)
         
-        print(f"🤖 LLM extracted {len(skills)} skills: {skills}")
-        print(f"🤖 Experience level: {experience_level} ({years} years)")
-        print(f"🤖 Is student: {is_student}")
-        print(f"🤖 LLM confidence notes: {result.get('confidence_notes', 'None')}")
-        
+        logger.info(f"LLM extracted {len(skills)} skills — {experience_level} ({years}yr), student={is_student}")
+
         return skills
-        
+
     except Exception as e:
-        print(f"❌ Error with LLM skill extraction: {e}")
+        logger.error(f"Error with LLM skill extraction: {e}")
         # Re-raise the exception to be handled by the calling function
         raise Exception(f"LLM skill extraction failed: {str(e)}")
 
@@ -132,7 +132,7 @@ def parse_resume(file_content, filename, use_llm=True, progress_callback=None):
             image = Image.open(io.BytesIO(file_content))
             text = pytesseract.image_to_string(image)
         except Exception as e:
-            print(f"Error processing image: {e}")
+            logger.warning(f"Error processing image: {e}")
             text = ""
     else:
         try:
@@ -142,19 +142,19 @@ def parse_resume(file_content, filename, use_llm=True, progress_callback=None):
                     if page_text:
                         text += page_text
         except Exception as e:
-            print(f"Error processing PDF: {e}")
+            logger.warning(f"Error processing PDF: {e}")
             text = ""
 
     # Check if text was extracted successfully
     if not text.strip():
-        print("⚠️ No text extracted from resume, cannot perform skill extraction")
+        logger.warning("No text extracted from resume — cannot perform skill extraction")
         return [], "", {}
 
     # Send progress: Starting AI analysis
     if progress_callback:
         progress_callback("Analyzing resume with AI...")
 
-    print("🤖 Starting LLM-based resume analysis with Claude Sonnet 4.5...")
+    logger.info("Starting LLM-based resume analysis...")
 
     # LLM extraction with full metadata (NO FALLBACK)
     result = extract_skills_with_llm_full(text)
@@ -166,8 +166,7 @@ def parse_resume(file_content, filename, use_llm=True, progress_callback=None):
         "confidence_notes": result.get("confidence_notes", "")
     }
 
-    print(f"✅ Successfully extracted {len(skills)} skills using LLM")
-    print(f"📊 Resume metadata: {metadata['experience_level']} ({metadata['years_of_experience']} years)")
+    logger.info(f"Extracted {len(skills)} skills — {metadata['experience_level']} ({metadata['years_of_experience']} years)")
     return skills, text, metadata
 
 def extract_text_only(file_content: bytes, filename: str, progress_callback=None) -> str:
@@ -189,7 +188,7 @@ def extract_text_only(file_content: bytes, filename: str, progress_callback=None
             image = Image.open(io.BytesIO(file_content))
             text = pytesseract.image_to_string(image)
         except Exception as e:
-            print(f"Error processing image: {e}")
+            logger.warning(f"Error processing image: {e}")
     else:
         try:
             with pdfplumber.open(io.BytesIO(file_content)) as pdf:
@@ -198,7 +197,7 @@ def extract_text_only(file_content: bytes, filename: str, progress_callback=None
                     if page_text:
                         text += page_text
         except Exception as e:
-            print(f"Error processing PDF: {e}")
+            logger.warning(f"Error processing PDF: {e}")
 
     return text
 
@@ -222,15 +221,12 @@ def extract_skills_with_llm_full(resume_text: str) -> Dict[str, Any]:
         response_text = extract_json_from_response(response.content[0].text)
         result = json.loads(response_text)
         
-        print(f"🤖 LLM extracted {len(result.get('skills', []))} skills: {result.get('skills', [])}")
-        print(f"🤖 Experience level: {result.get('experience_level', 'unknown')} ({result.get('years_of_experience', 0)} years)")
-        print(f"🤖 Is student: {result.get('is_student', True)}")
-        print(f"🤖 Confidence: {result.get('confidence_notes', 'None')}")
-        
+        logger.info(f"LLM extracted {len(result.get('skills', []))} skills — {result.get('experience_level', 'unknown')} ({result.get('years_of_experience', 0)}yr)")
+
         return result
-        
+
     except Exception as e:
-        print(f"❌ Error with LLM skill extraction: {e}")
+        logger.error(f"Error with LLM skill extraction: {e}")
         raise Exception(f"LLM skill extraction failed: {str(e)}")
 
 
