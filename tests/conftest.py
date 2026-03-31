@@ -5,6 +5,7 @@ without real credentials.
 """
 import os
 import pytest
+from unittest.mock import patch
 
 # Point the database at an in-memory SQLite instance before any module imports
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
@@ -13,6 +14,8 @@ os.environ.setdefault("AWS_ACCESS_KEY_ID", "test-key-id")
 os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "test-secret")
 os.environ.setdefault("AWS_BUCKET_NAME", "test-bucket")
 os.environ.setdefault("AWS_REGION", "us-east-1")
+# Use in-memory rate limit storage so tests never need a real Redis server
+os.environ.setdefault("REDIS_URL", "memory://")
 
 
 @pytest.fixture()
@@ -78,3 +81,50 @@ def minimal_pdf_bytes() -> bytes:
         b"trailer<</Size 4/Root 1 0 R>>\n"
         b"startxref\n190\n%%EOF"
     )
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting test fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=False)
+def mock_lifespan_deps():
+    """
+    Prevent the app lifespan from connecting to Redis or scraping jobs.
+    Applied explicitly in rate limiting tests (not autouse globally).
+    """
+    with patch("job_cache.init_redis", return_value=False), \
+         patch("job_cache.get_cache_info", return_value={}), \
+         patch("job_cache.get_cached_jobs", return_value=[]):
+        yield
+
+
+@pytest.fixture(autouse=False)
+def reset_rate_limiter():
+    """
+    Swap the limiter's backing storage for a fresh MemoryStorage before
+    each test so rate-limit counters don't bleed between tests.
+
+    slowapi's Limiter keeps a reference at both limiter._storage and
+    limiter._limiter.storage (they point to the same object). We patch
+    both so the FixedWindowRateLimiter uses the fresh in-memory store.
+    """
+    from limits.storage import MemoryStorage
+    from app import limiter
+
+    fresh = MemoryStorage()
+    old = limiter._storage
+    limiter._storage = fresh
+    limiter._limiter.storage = fresh
+    yield
+    limiter._storage = old
+    limiter._limiter.storage = old
+
+
+@pytest.fixture(autouse=False)
+def api_client(mock_lifespan_deps):
+    """TestClient wrapping the FastAPI app. Lifespan deps are already mocked."""
+    from starlette.testclient import TestClient
+    from app import app
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
