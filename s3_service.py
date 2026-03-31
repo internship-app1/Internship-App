@@ -1,3 +1,4 @@
+import logging
 import boto3
 import os
 import uuid
@@ -6,6 +7,8 @@ from typing import Optional, Tuple
 from botocore.exceptions import ClientError, NoCredentialsError
 import io
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 class S3Service:
     def __init__(self):
@@ -25,10 +28,10 @@ class S3Service:
                 
             # Test connection
             self._test_connection()
-            print(f"✅ S3 service initialized successfully with bucket: {self.bucket_name}")
+            logger.info(f"S3 service initialized with bucket: {self.bucket_name}")
             
         except Exception as e:
-            print(f"❌ Failed to initialize S3 service: {e}")
+            logger.error(f"Failed to initialize S3 service: {e}")
             raise
 
     def _test_connection(self):
@@ -88,11 +91,11 @@ class S3Service:
                 }
             )
             
-            print(f"📤 Uploaded file to S3: {s3_key}")
+            logger.info(f"Uploaded file to S3: {s3_key}")
             return s3_key
             
         except Exception as e:
-            print(f"❌ Failed to upload file to S3: {e}")
+            logger.error(f"Failed to upload file to S3: {e}")
             raise Exception(f"S3 upload failed: {str(e)}")
 
     def download_file_from_s3(self, s3_key: str) -> Tuple[bytes, str]:
@@ -112,7 +115,7 @@ class S3Service:
             # Get original filename from metadata
             original_filename = response.get('Metadata', {}).get('original_filename', 'resume.pdf')
             
-            print(f"📥 Downloaded file from S3: {s3_key} ({len(file_content)} bytes)")
+            logger.info(f"Downloaded file from S3: {s3_key} ({len(file_content)} bytes)")
             return file_content, original_filename
             
         except ClientError as e:
@@ -122,7 +125,7 @@ class S3Service:
             else:
                 raise Exception(f"S3 download error: {e}")
         except Exception as e:
-            print(f"❌ Failed to download file from S3: {e}")
+            logger.error(f"Failed to download file from S3: {e}")
             raise Exception(f"S3 download failed: {str(e)}")
 
     def delete_file_from_s3(self, s3_key: str) -> bool:
@@ -137,11 +140,11 @@ class S3Service:
         """
         try:
             self.s3_client.delete_object(Bucket=self.bucket_name, Key=s3_key)
-            print(f"🗑️ Deleted file from S3: {s3_key}")
+            logger.info(f"Deleted file from S3: {s3_key}")
             return True
             
         except Exception as e:
-            print(f"❌ Failed to delete file from S3: {e}")
+            logger.error(f"Failed to delete file from S3: {e}")
             return False
 
     def _get_content_type(self, filename: str) -> str:
@@ -171,7 +174,7 @@ class S3Service:
                 'metadata': response.get('Metadata', {})
             }
         except Exception as e:
-            print(f"❌ Failed to get file info from S3: {e}")
+            logger.error(f"Failed to get file info from S3: {e}")
             return {}
 
 # Global S3 service instance

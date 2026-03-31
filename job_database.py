@@ -2,10 +2,13 @@
 Job Database Module - SQLAlchemy-based persistent storage for job data
 Provides deduplication, historical tracking, and efficient querying
 """
+import logging
 import os
 import hashlib
 import json
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 from typing import List, Dict, Optional, Set
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, Index
 from sqlalchemy.ext.declarative import declarative_base
@@ -89,10 +92,10 @@ def init_database():
     """Initialize database tables"""
     try:
         Base.metadata.create_all(bind=engine)
-        print("✅ Database initialized successfully")
+        logger.info("Database initialized successfully")
         return True
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
+        logger.error(f"Database initialization failed: {e}")
         return False
 
 def get_db() -> Session:
@@ -164,12 +167,12 @@ def mark_old_jobs_inactive(max_days_old: int = 30, db: Session = None) -> int:
                 continue
 
         if inactive_count > 0:
-            print(f"📅 Marked {inactive_count} jobs inactive based on posting date (>{max_days_old} days old)")
+            logger.info(f"Marked {inactive_count} jobs inactive (>{max_days_old} days old)")
 
         return inactive_count
 
     except Exception as e:
-        print(f"❌ Error marking old jobs inactive: {e}")
+        logger.error(f"Error marking old jobs inactive: {e}")
         return 0
     finally:
         if should_close:
@@ -282,12 +285,12 @@ def bulk_insert_jobs(jobs: List[Dict], db: Session = None) -> Dict:
         }
 
         total_inactive = inactive_count + date_based_inactive_count
-        print(f"✅ Database operation: {new_jobs} new, {updated_jobs} updated, {total_inactive} marked inactive ({inactive_count} by last_seen, {date_based_inactive_count} by posting date)")
+        logger.info(f"Database: {new_jobs} new, {updated_jobs} updated, {total_inactive} marked inactive")
         return summary
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Database error during bulk insert: {e}")
+        logger.error(f"Database error during bulk insert: {e}")
         return {'error': str(e)}
     finally:
         if should_close:
@@ -348,12 +351,12 @@ def get_active_jobs(limit: Optional[int] = None, offset: int = 0, max_days_old: 
             result.append(job_dict)
 
         if filtered_count > 0:
-            print(f"🔍 Filtered out {filtered_count} jobs older than {max_days_old} days from cache")
+            logger.info(f"Filtered out {filtered_count} jobs older than {max_days_old} days from cache")
 
         return result
         
     except Exception as e:
-        print(f"❌ Error getting active jobs: {e}")
+        logger.error(f"Error getting active jobs: {e}")
         return []
     finally:
         close_db(db)
@@ -412,12 +415,12 @@ def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
             result.append(job_dict)
 
         if filtered_count > 0:
-            print(f"🔍 Filtered out {filtered_count} jobs older than {max_days_old} days from new jobs")
+            logger.info(f"Filtered out {filtered_count} jobs older than {max_days_old} days from new jobs")
 
         return result
         
     except Exception as e:
-        print(f"❌ Error getting new jobs: {e}")
+        logger.error(f"Error getting new jobs: {e}")
         return []
     finally:
         close_db(db)
@@ -459,7 +462,7 @@ def get_database_stats() -> Dict:
         }
         
     except Exception as e:
-        print(f"❌ Error getting database stats: {e}")
+        logger.error(f"Error getting database stats: {e}")
         return {}
     finally:
         close_db(db)
@@ -479,11 +482,11 @@ def record_cache_operation(cache_type: str, job_count: int, new_jobs: int, statu
         db.add(cache_record)
         db.commit()
         
-        print(f"✅ Cache operation recorded: {cache_type} - {new_jobs} new jobs")
+        logger.info(f"Cache operation recorded: {cache_type} — {new_jobs} new jobs")
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Error recording cache operation: {e}")
+        logger.error(f"Error recording cache operation: {e}")
     finally:
         close_db(db)
 
@@ -498,11 +501,11 @@ def cleanup_old_metadata(days: int = 30):
         ).delete()
         
         db.commit()
-        print(f"✅ Cleaned up {deleted} old cache metadata entries")
+        logger.info(f"Cleaned up {deleted} old cache metadata entries")
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Error cleaning up metadata: {e}")
+        logger.error(f"Error cleaning up metadata: {e}")
     finally:
         close_db(db)
 
@@ -563,7 +566,7 @@ def set_resume_cache(user_id: str, resume_hash: str, results: list, skills: list
         db.commit()
     except Exception as e:
         db.rollback()
-        print(f"⚠️ Failed to save resume cache: {e}")
+        logger.warning(f"Failed to save resume cache: {e}")
     finally:
         db.close()
 

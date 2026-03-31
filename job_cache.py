@@ -3,11 +3,14 @@ Job Cache Module - Hybrid Redis + Database caching for scraped jobs
 - Redis: Fast access to active job listings (4-hour TTL)
 - Database: Persistent storage with deduplication and historical tracking
 """
+import logging
 import os
 import json
 import redis
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 from job_database import (
     init_database, bulk_insert_jobs, get_active_jobs, 
     get_new_jobs_since, get_database_stats, record_cache_operation,
@@ -32,10 +35,10 @@ def init_redis():
     if not database_initialized:
         database_initialized = init_database()
         if database_initialized:
-            print("✅ Database initialized successfully")
+            logger.info("Database initialized successfully")
         else:
-            print("⚠️ Database initialization failed")
-    
+            logger.warning("Database initialization failed")
+
     # Initialize Redis
     try:
         redis_client = redis.from_url(
@@ -47,15 +50,14 @@ def init_redis():
         )
         # Test connection
         redis_client.ping()
-        print("✅ Redis connected successfully")
+        logger.info("Redis connected successfully")
         return True
     except redis.ConnectionError as e:
-        print(f"⚠️ Redis connection failed: {e}")
-        print("📝 Continuing with database only - Redis cache disabled")
+        logger.warning(f"Redis connection failed: {e} — continuing with database only")
         redis_client = None
         return database_initialized
     except Exception as e:
-        print(f"❌ Redis initialization error: {e}")
+        logger.error(f"Redis initialization error: {e}")
         redis_client = None
         return database_initialized
 
@@ -72,12 +74,11 @@ def get_cached_jobs() -> Optional[List[Dict]]:
             cached_data = redis_client.get(CACHE_KEY)
             if cached_data:
                 jobs = json.loads(cached_data)
-                print(f"⚡ Retrieved {len(jobs)} jobs from Redis cache")
                 return jobs
         except redis.RedisError as e:
-            print(f"⚠️ Redis error while getting cache: {e}")
+            logger.warning(f"Redis error while getting cache: {e}")
         except json.JSONDecodeError as e:
-            print(f"❌ Invalid JSON in Redis cache: {e}")
+            logger.error(f"Invalid JSON in Redis cache: {e}")
             # Clear corrupted cache
             try:
                 redis_client.delete(CACHE_KEY)
@@ -89,26 +90,26 @@ def get_cached_jobs() -> Optional[List[Dict]]:
         try:
             jobs = get_active_jobs(limit=10000)  # Get all active jobs
             if jobs:
-                print(f"📦 Retrieved {len(jobs)} jobs from database")
-                
+                logger.info(f"Retrieved {len(jobs)} jobs from database")
+
                 # Warm Redis cache if available
                 if redis_client and jobs:
                     try:
                         jobs_json = json.dumps(jobs, default=str)
                         redis_client.setex(CACHE_KEY, CACHE_TTL, jobs_json)
-                        print(f"🔄 Warmed Redis cache with {len(jobs)} jobs")
+                        logger.info(f"Warmed Redis cache with {len(jobs)} jobs")
                     except Exception as e:
-                        print(f"⚠️ Failed to warm Redis cache: {e}")
-                
+                        logger.warning(f"Failed to warm Redis cache: {e}")
+
                 return jobs
             else:
-                print("📝 No active jobs in database")
+                logger.info("No active jobs in database")
                 return None
         except Exception as e:
-            print(f"❌ Database error while getting jobs: {e}")
+            logger.error(f"Database error while getting jobs: {e}")
             return None
-    
-    print("📝 No cache available - Redis and database both unavailable")
+
+    logger.warning("No cache available — Redis and database both unavailable")
     return None
 
 def set_cached_jobs(jobs: List[Dict], cache_type: str = 'daily') -> Dict:
@@ -144,12 +145,12 @@ def set_cached_jobs(jobs: List[Dict], cache_type: str = 'daily') -> Dict:
                     metadata=db_result
                 )
                 
-                print(f"✅ Database: {summary['new_jobs']} new jobs, {summary['updated_jobs']} updated")
+                logger.info(f"Database: {summary['new_jobs']} new jobs, {summary['updated_jobs']} updated")
             else:
-                print(f"❌ Database error: {db_result['error']}")
+                logger.error(f"Database error: {db_result['error']}")
         except Exception as e:
-            print(f"❌ Database error while storing jobs: {e}")
-    
+            logger.error(f"Database error while storing jobs: {e}")
+
     # Update Redis cache
     if redis_client:
         try:
@@ -160,17 +161,19 @@ def set_cached_jobs(jobs: List[Dict], cache_type: str = 'daily') -> Dict:
                     jobs_json = json.dumps(active_jobs, default=str)
                     redis_client.setex(CACHE_KEY, CACHE_TTL, jobs_json)
                     summary['redis_success'] = True
-                    print(f"✅ Redis cache updated with {len(active_jobs)} active jobs")
+                    cached_count = len(active_jobs)
             else:
                 # Fallback to original Redis-only approach
                 jobs_json = json.dumps(jobs, default=str)
                 redis_client.setex(CACHE_KEY, CACHE_TTL, jobs_json)
                 summary['redis_success'] = True
-                print(f"✅ Redis cache updated with {len(jobs)} jobs")
+                cached_count = len(jobs)
+            if summary['redis_success']:
+                logger.info(f"Redis cache updated with {cached_count} jobs")
         except redis.RedisError as e:
-            print(f"⚠️ Redis error while setting cache: {e}")
+            logger.warning(f"Redis error while setting cache: {e}")
         except Exception as e:
-            print(f"❌ Error updating Redis cache: {e}")
+            logger.error(f"Error updating Redis cache: {e}")
     
     # Update last scrape time
     if redis_client:
@@ -266,9 +269,9 @@ def clear_cache() -> Dict:
             redis_client.delete(CACHE_KEY)
             redis_client.delete(LAST_SCRAPE_KEY)
             result["redis"] = True
-            print("✅ Redis cache cleared successfully")
+            logger.info("Redis cache cleared successfully")
         except redis.RedisError as e:
-            print(f"⚠️ Error clearing Redis cache: {e}")
+            logger.warning(f"Error clearing Redis cache: {e}")
     
     return result
 
@@ -283,23 +286,21 @@ def should_do_incremental_scrape() -> bool:
     try:
         last_scrape = redis_client.get(LAST_SCRAPE_KEY)
         if not last_scrape:
-            print("📝 No last scrape time - doing full scrape")
+            logger.info("No last scrape time — doing full scrape")
             return False  # Full scrape if never scraped
-        
+
         last_scrape_time = datetime.fromisoformat(last_scrape)
         time_since_scrape = datetime.utcnow() - last_scrape_time
-        
-        # Do full scrape if more than 24 hours since last scrape
+
         if time_since_scrape > timedelta(hours=24):
-            print(f"📝 Last scrape was {time_since_scrape} ago - doing full scrape")
+            logger.info(f"Last scrape was {time_since_scrape} ago — doing full scrape")
             return False
-        
-        # Do incremental scrape if less than 24 hours
-        print(f"📝 Last scrape was {time_since_scrape} ago - doing incremental scrape")
+
+        logger.info(f"Last scrape was {time_since_scrape} ago — doing incremental scrape")
         return True
-        
+
     except Exception as e:
-        print(f"⚠️ Error checking last scrape time: {e}")
+        logger.warning(f"Error checking last scrape time: {e}")
         return True  # Default to incremental
 
 def get_new_jobs_only(scraped_jobs: List[Dict]) -> List[Dict]:
@@ -308,7 +309,7 @@ def get_new_jobs_only(scraped_jobs: List[Dict]) -> List[Dict]:
     Uses database to check for existing jobs
     """
     if not database_initialized:
-        print("⚠️ Database not available - returning all jobs")
+        logger.warning("Database not available — returning all jobs")
         return scraped_jobs
     
     try:
@@ -343,11 +344,11 @@ def get_new_jobs_only(scraped_jobs: List[Dict]) -> List[Dict]:
             if job_hash not in existing_hashes
         ]
         
-        print(f"🔍 Filtered {len(scraped_jobs)} scraped jobs → {len(new_jobs)} new jobs")
+        logger.info(f"Filtered {len(scraped_jobs)} scraped jobs → {len(new_jobs)} new jobs")
         return new_jobs
-        
+
     except Exception as e:
-        print(f"❌ Error filtering new jobs: {e}")
+        logger.error(f"Error filtering new jobs: {e}")
         return scraped_jobs  # Return all jobs on error
 
 def get_jobs_for_matching(limit: Optional[int] = None) -> List[Dict]:
@@ -403,9 +404,9 @@ def perform_weekly_cleanup():
     if database_initialized:
         try:
             cleanup_old_metadata(days=30)
-            print("✅ Weekly cleanup completed")
+            logger.info("Weekly cleanup completed")
         except Exception as e:
-            print(f"❌ Weekly cleanup failed: {e}")
+            logger.error(f"Weekly cleanup failed: {e}")
 
 # Initialize on import
 init_redis()

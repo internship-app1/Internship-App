@@ -59,7 +59,7 @@ function Hero() {
               transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             >
               <h1
-                className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-none"
+                className="text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight leading-none"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 <span className="text-neutral-950 dark:text-neutral-50 block">Find your</span>
@@ -108,14 +108,14 @@ function Hero() {
 
             {/* CTA buttons */}
             <motion.div
-              className="flex flex-row gap-3 flex-wrap"
+              className="flex flex-col sm:flex-row gap-3"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
               <button
                 onClick={() => navigate('/find')}
-                className="inline-flex items-center gap-2 rounded-full px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-lg shadow-violet-500/30 hover:-translate-y-0.5 transition-all text-sm"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-lg shadow-violet-500/30 hover:-translate-y-0.5 transition-all text-sm w-full sm:w-auto"
               >
                 <Sparkles className="w-4 h-4" />
                 Get Started — Upload Resume
@@ -127,7 +127,7 @@ function Hero() {
                     .getElementById('how-it-works')
                     ?.scrollIntoView({ behavior: 'smooth' })
                 }
-                className="inline-flex items-center gap-2 rounded-full px-8 py-4 border-2 border-neutral-200 dark:border-neutral-700 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/50 dark:hover:bg-violet-950/30 text-neutral-700 dark:text-neutral-300 font-semibold transition-all text-sm"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 border-2 border-neutral-200 dark:border-neutral-700 hover:border-violet-200 dark:hover:border-violet-700 hover:bg-violet-50/50 dark:hover:bg-violet-950/30 text-neutral-700 dark:text-neutral-300 font-semibold transition-all text-sm w-full sm:w-auto"
               >
                 See How It Works
               </button>

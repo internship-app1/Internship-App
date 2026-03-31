@@ -1,17 +1,28 @@
+import logging
 import os
 import re
 import secrets
 import subprocess
 from pathlib import Path
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from sse_starlette.sse import EventSourceResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import uvicorn
 from dotenv import load_dotenv
 import io
@@ -29,6 +40,7 @@ import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
 from job_database import get_resume_cache, set_resume_cache, get_user_resume_history
+from auth import require_user
 
 # Base directory of this file (used for templates/static/uploads paths)
 BASE_DIR = Path(__file__).resolve().parent
@@ -41,7 +53,7 @@ async def lifespan(app: FastAPI):
     """Manage startup and shutdown with a proper lifespan context."""
     # ---- startup ----
     environment = os.getenv("ENVIRONMENT", "development").lower()
-    print(f"🚀 Starting up Internship Matcher [{environment.upper()}] with Hybrid Cache System...")
+    logger.info(f"Starting up Internship Matcher [{environment.upper()}] with Hybrid Cache System...")
 
     loop = asyncio.get_event_loop()
     cache_available = await loop.run_in_executor(None, job_cache.init_redis)
@@ -61,24 +73,23 @@ async def lifespan(app: FastAPI):
                         last_update_time = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
                         time_since_update = datetime.now(last_update_time.tzinfo) - last_update_time
                         if time_since_update > timedelta(hours=6):
-                            print(f"🔄 Cache is {time_since_update.total_seconds() / 3600:.1f} hours old - refreshing...")
+                            logger.info(f"Cache is {time_since_update.total_seconds() / 3600:.1f} hours old — refreshing...")
                             should_refresh = True
                         else:
-                            print(f"📦 Using existing cache: {len(cached_jobs)} jobs (updated {time_since_update.total_seconds() / 3600:.1f} hours ago)")
+                            logger.info(f"Using existing cache: {len(cached_jobs)} jobs (updated {time_since_update.total_seconds() / 3600:.1f}h ago)")
                     except Exception as e:
-                        print(f"⚠️ Error parsing cache timestamp: {e}")
+                        logger.warning(f"Error parsing cache timestamp: {e}")
                 else:
-                    print(f"📦 Using existing cache: {len(cached_jobs)} jobs available")
+                    logger.info(f"Using existing cache: {len(cached_jobs)} jobs available")
             else:
                 should_refresh = True
-                print("📥 No cached jobs found - initializing cache...")
+                logger.info("No cached jobs found — initializing cache...")
         else:
             if cached_jobs:
-                print(f"📦 Using existing cache: {len(cached_jobs)} jobs available")
-                print(f"🔍 Cache status: {cache_info.get('hybrid', {}).get('message', 'Unknown')}")
+                logger.info(f"Using existing cache: {len(cached_jobs)} jobs available")
             else:
                 should_refresh = True
-                print("📥 No cached jobs found - initializing cache...")
+                logger.info("No cached jobs found — initializing cache...")
 
         if should_refresh:
             async def _background_scrape():
@@ -87,34 +98,34 @@ async def lifespan(app: FastAPI):
                     if jobs:
                         cache_result = job_cache.set_cached_jobs(jobs, cache_type='startup')
                         if cache_result.get('database_success') or cache_result.get('redis_success'):
-                            print(f"✅ Startup cache initialized: {cache_result.get('new_jobs', 0)} new jobs, {len(jobs)} total")
+                            logger.info(f"Startup cache initialized: {cache_result.get('new_jobs', 0)} new jobs, {len(jobs)} total")
                         else:
-                            print("⚠️ Cache initialization failed")
+                            logger.warning("Cache initialization failed")
                     else:
-                        print("⚠️ No jobs scraped on startup")
+                        logger.warning("No jobs scraped on startup")
                 except Exception as e:
-                    print(f"❌ Error during startup scraping: {e}")
+                    logger.error(f"Error during startup scraping: {e}")
             asyncio.create_task(_background_scrape())
-            print("📥 Job scrape started in background - server starting immediately")
+            logger.info("Job scrape started in background — server starting immediately")
     else:
-        print("❌ Hybrid cache system unavailable - jobs will be scraped per request")
+        logger.warning("Hybrid cache system unavailable — jobs will be scraped per request")
 
     try:
         final_info = await loop.run_in_executor(None, job_cache.get_cache_info)
         if final_info.get('database', {}).get('status') == 'active':
             db_info = final_info['database']
-            print(f"📊 Database: {db_info.get('active_jobs', 0)} active jobs")
+            logger.info(f"Database: {db_info.get('active_jobs', 0)} active jobs")
         if final_info.get('redis', {}).get('status') == 'active':
             redis_info = final_info['redis']
-            print(f"⚡ Redis: {redis_info.get('job_count', 0)} jobs cached")
+            logger.info(f"Redis: {redis_info.get('job_count', 0)} jobs cached")
     except Exception as e:
-        print(f"⚠️ Error getting final cache status: {e}")
+        logger.warning(f"Error getting final cache status: {e}")
 
-    print("✅ Startup complete!")
+    logger.info("Startup complete!")
 
     # Start background refresh task and track it for clean cancellation
     refresh_task = asyncio.create_task(daily_cache_refresh_task())
-    print("🕒 Daily cache refresh scheduler started")
+    logger.info("Daily cache refresh scheduler started")
 
     yield  # server is running
 
@@ -126,8 +137,53 @@ async def lifespan(app: FastAPI):
         pass
 
 
+# ---------------------------------------------------------------------------
+# Rate limiting setup
+# ---------------------------------------------------------------------------
+
+def _get_rate_limit_key(request: Request) -> str:
+    """
+    Rate-limit by Clerk user_id when the request carries a valid Bearer token,
+    falling back to client IP. This prevents shared IPs (campus / office NAT)
+    from exhausting each other's quotas.
+    """
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        try:
+            import jwt as _jwt
+            payload = _jwt.decode(
+                auth[7:], options={"verify_signature": False}
+            )
+            sub = payload.get("sub")
+            if sub:
+                return f"user:{sub}"
+        except Exception:
+            pass
+    return f"ip:{request.client.host if request.client else 'unknown'}"
+
+
+_REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+limiter = Limiter(key_func=_get_rate_limit_key, storage_uri=_REDIS_URL)
+
+# Global concurrency gate — prevents OOM from simultaneous LLM calls.
+# Railway hobby tier has ~512 MB RAM; each analysis can use 100–200 MB.
+# Two concurrent analyses is the safe maximum.
+LLM_SEMAPHORE = asyncio.Semaphore(2)
+
 # Create FastAPI app
 app = FastAPI(title="Internship Matcher", version="1.0.0", lifespan=lifespan)
+app.state.limiter = limiter
+
+def _log_rate_limit_exceeded(request: Request, exc: RateLimitExceeded):
+    logger.warning(
+        "Rate limit exceeded — limit=%s endpoint=%s key=%s",
+        exc.limit.limit,
+        request.url.path,
+        _get_rate_limit_key(request),
+    )
+    return _rate_limit_exceeded_handler(request, exc)
+
+app.add_exception_handler(RateLimitExceeded, _log_rate_limit_exceeded)
 
 # Add CORS middleware for React frontend
 app.add_middleware(
@@ -183,17 +239,17 @@ async def daily_cache_refresh_task():
     while True:
         try:
             # Wait 24 hours before first refresh (cache was just initialized on startup)
-            print(f"⏰ [Scheduled] Next cache refresh in 24 hours...")
+            logger.info("[Scheduled] Next cache refresh in 24 hours...")
             await asyncio.sleep(24 * 60 * 60)  # 24 hours in seconds
 
             refresh_count += 1
-            print(f"🔄 [Scheduled #{refresh_count}] Starting daily cache refresh at {datetime.utcnow().isoformat()}")
+            logger.info(f"[Scheduled #{refresh_count}] Starting daily cache refresh")
 
             # Perform smart scraping with 30-day filter
             try:
                 jobs = await scrape_jobs(max_days_old=30)
             except Exception as scrape_error:
-                print(f"❌ [Scheduled] Scraping failed: {scrape_error}")
+                logger.error(f"[Scheduled] Scraping failed: {scrape_error}")
                 import traceback
                 traceback.print_exc()
                 continue  # Don't stop the task, try again in 24h
@@ -206,25 +262,23 @@ async def daily_cache_refresh_task():
                     total_jobs = cache_result.get('total_jobs', len(jobs))
 
                     if cache_result.get('database_success') or cache_result.get('redis_success'):
-                        print(f"✅ [Scheduled #{refresh_count}] Daily refresh complete: {new_jobs} new jobs, {total_jobs} total active jobs")
+                        logger.info(f"[Scheduled #{refresh_count}] Daily refresh complete: {new_jobs} new jobs, {total_jobs} total active jobs")
                     else:
-                        print(f"⚠️ [Scheduled #{refresh_count}] Cache refresh failed - no storage backend succeeded")
+                        logger.warning(f"[Scheduled #{refresh_count}] Cache refresh failed — no storage backend succeeded")
                 except Exception as cache_error:
-                    print(f"❌ [Scheduled #{refresh_count}] Cache storage failed: {cache_error}")
+                    logger.error(f"[Scheduled #{refresh_count}] Cache storage failed: {cache_error}")
                     import traceback
                     traceback.print_exc()
             else:
-                print(f"📝 [Scheduled #{refresh_count}] No new jobs found in daily refresh")
+                logger.info(f"[Scheduled #{refresh_count}] No new jobs found in daily refresh")
 
         except asyncio.CancelledError:
-            print(f"🛑 Daily cache refresh task cancelled after {refresh_count} refreshes")
+            logger.info(f"[Scheduled] Daily cache refresh task cancelled after {refresh_count} refreshes")
             break
         except Exception as e:
-            print(f"❌ [Scheduled #{refresh_count}] Unexpected error in daily cache refresh: {e}")
+            logger.error(f"[Scheduled #{refresh_count}] Unexpected error in daily cache refresh: {e}")
             import traceback
             traceback.print_exc()
-            # Continue running even if one refresh fails
-            print(f"🔄 [Scheduled] Will retry in 24 hours...")
             continue
 
 
@@ -237,45 +291,40 @@ async def get_jobs_with_cache():
     cached_jobs = job_cache.get_cached_jobs()
     
     if cached_jobs:
-        print(f"⚡ Using {len(cached_jobs)} jobs from hybrid cache")
+        logger.info(f"Using {len(cached_jobs)} jobs from hybrid cache")
         return cached_jobs
-    
+
     # Cache miss - use smart scraping strategy
-    print("🌐 Cache miss - using smart scraping strategy...")
+    logger.info("Cache miss — using smart scraping strategy...")
     try:
-        # Smart scraping automatically detects incremental vs full
-        # Default to 30-day filter to only get recent jobs
         jobs = await scrape_jobs(max_days_old=30)
-        
-        # Store in hybrid cache system
+
         if jobs:
             cache_result = job_cache.set_cached_jobs(jobs, cache_type='on_demand')
             new_jobs = cache_result.get('new_jobs', 0)
             total_jobs = cache_result.get('total_jobs', len(jobs))
-            
+
             if cache_result.get('database_success') or cache_result.get('redis_success'):
-                print(f"✅ Scraped and cached: {new_jobs} new jobs, {total_jobs} total")
+                logger.info(f"Scraped and cached: {new_jobs} new jobs, {total_jobs} total")
             else:
-                print(f"⚠️ Scraping successful but caching failed: {total_jobs} jobs")
-            
-            # Return all active jobs from cache for consistency
+                logger.warning(f"Scraping successful but caching failed: {total_jobs} jobs")
+
             return job_cache.get_cached_jobs() or jobs
         else:
-            print("⚠️ No jobs scraped")
+            logger.warning("No jobs scraped")
             return []
-            
+
     except Exception as e:
-        print(f"❌ Error during smart scraping: {e}")
-        # Try to get any available jobs from database as fallback
+        logger.error(f"Error during smart scraping: {e}")
         try:
             from job_cache import get_jobs_for_matching
             fallback_jobs = get_jobs_for_matching()
             if fallback_jobs:
-                print(f"🔄 Using {len(fallback_jobs)} fallback jobs from database")
+                logger.info(f"Using {len(fallback_jobs)} fallback jobs from database")
                 return fallback_jobs
         except Exception as fallback_error:
-            print(f"❌ Fallback also failed: {fallback_error}")
-        
+            logger.error(f"Fallback also failed: {fallback_error}")
+
         return []
 
 
@@ -331,16 +380,14 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
                     "error": "The uploaded file appears to be empty. Please upload a valid resume file."
                 })
         except Exception as e:
-            print(f"❌ Error reading file: {e}")
+            logger.error(f"Error reading file: {e}")
             return templates.TemplateResponse("dashboard.html", {
                 "request": request,
                 "results": None,
                 "error": f"Error reading the uploaded file: {str(e)}"
             })
 
-        print(f"📥 Uploaded: {resume.filename}")
-        print(f"📊 File size: {len(file_content)} bytes")
-        print(f"🔍 File type: {resume.content_type}")
+        logger.info(f"Upload: {resume.filename} ({len(file_content)} bytes, {resume.content_type})")
 
         # Parse resume using LLM (returns skills, text, and metadata)
         try:
@@ -352,16 +399,15 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
                     "error": "No skills were detected in your resume. Please make sure your resume includes technical skills, programming languages, or relevant experience."
                 })
         except Exception as e:
-            print(f"❌ Error parsing resume: {e}")
+            logger.error(f"Error parsing resume: {e}")
             return templates.TemplateResponse("dashboard.html", {
                 "request": request,
                 "results": None,
                 "error": f"Error parsing your resume: {str(e)}"
             })
 
-        print(f"🔍 Extracted resume skills: {resume_skills}")
-        print(f"📊 Resume analysis: {resume_metadata.get('experience_level', 'unknown')} level")
-        
+        logger.info(f"Resume: {len(resume_skills)} skills, {resume_metadata.get('experience_level', 'unknown')} level")
+
         # Validate resume content
         if resume_text and not is_valid_resume(resume_text):
             return templates.TemplateResponse("dashboard.html", {
@@ -372,7 +418,6 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
         # Get jobs from cache or scrape
         try:
-            print("🌐 Fetching internship opportunities...")
             jobs = await get_jobs_with_cache()
             if not jobs:
                 return templates.TemplateResponse("dashboard.html", {
@@ -380,9 +425,8 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
                     "results": None,
                     "error": "Unable to fetch internship opportunities at this time. Please try again later."
                 })
-            print(f"📋 Total jobs available: {len(jobs)}")
         except Exception as e:
-            print(f"❌ Error fetching jobs: {e}")
+            logger.error(f"Error fetching jobs: {e}")
             return templates.TemplateResponse("dashboard.html", {
                 "request": request,
                 "results": None,
@@ -391,7 +435,6 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
         # Match resume to jobs
         try:
-            print("🎯 Starting job matching...")
             matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text)
             if not matched_jobs:
                 return templates.TemplateResponse("dashboard.html", {
@@ -399,9 +442,9 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
                     "results": None,
                     "error": "No matching internship opportunities were found for your skills. Consider updating your resume with more relevant technical skills."
                 })
-            print(f"✅ Final matched jobs: {len(matched_jobs)}")
+            logger.info(f"Matched {len(matched_jobs)} jobs")
         except Exception as e:
-            print(f"❌ Error matching jobs: {e}")
+            logger.error(f"Error matching jobs: {e}")
             return templates.TemplateResponse("dashboard.html", {
                 "request": request,
                 "results": None,
@@ -416,7 +459,7 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
         })
 
     except Exception as e:
-        print(f"❌ Unexpected error in match_resume: {e}")
+        logger.error(f"Unexpected error in match_resume: {e}")
         import traceback
         traceback.print_exc()
         return templates.TemplateResponse("dashboard.html", {
@@ -427,7 +470,8 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
 
 @app.post("/api/match")
-async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = Form("true")):
+@limiter.limit("3/10minutes")
+async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true")):
     """API endpoint for React frontend - returns JSON instead of HTML"""
     try:
         # Validate file
@@ -450,31 +494,25 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
             if not file_content:
                 raise HTTPException(status_code=400, detail="The uploaded file appears to be empty. Please upload a valid resume file.")
         except Exception as e:
-            print(f"❌ Error reading file: {e}")
+            logger.error(f"Error reading file: {e}")
             raise HTTPException(status_code=400, detail=f"Error reading the uploaded file: {str(e)}")
 
-        print(f"📥 Uploaded: {resume.filename}")
-        print(f"📊 File size: {len(file_content)} bytes")
-        print(f"🔍 File type: {resume.content_type}")
+        logger.info(f"Upload: {resume.filename} ({len(file_content)} bytes, {resume.content_type})")
 
         # Upload file to S3
         s3_key = None
         try:
-            print("☁️ Uploading resume to S3...")
             s3_key = upload_resume_to_s3(file_content, resume.filename)
-            print(f"✅ Resume uploaded to S3: {s3_key}")
+            logger.info(f"S3: uploaded {resume.filename} as {s3_key}")
         except Exception as e:
-            print(f"❌ S3 upload failed: {e}")
+            logger.error(f"S3 upload failed: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to upload resume: {str(e)}")
 
         # Download file from S3 for processing
         try:
-            print("📥 Downloading resume from S3 for processing...")
             downloaded_content, original_filename = download_resume_from_s3(s3_key)
-            print(f"✅ Downloaded {len(downloaded_content)} bytes from S3")
         except Exception as e:
-            print(f"❌ S3 download failed: {e}")
-            # Clean up S3 file if download fails
+            logger.error(f"S3 download failed: {e}")
             if s3_key:
                 delete_resume_from_s3(s3_key)
             raise HTTPException(status_code=500, detail=f"Failed to process resume: {str(e)}")
@@ -482,66 +520,47 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
         # Parse resume using selected method (returns skills, text, and metadata)
         try:
             use_llm = think_deeper.lower() == "true"
-            if use_llm:
-                print("📄 Step 1/4: Analyzing your resume with AI (GPT-5)...")
-            else:
-                print("📄 Step 1/4: Analyzing your resume with text-based parsing...")
             resume_skills, resume_text, resume_metadata = parse_resume(downloaded_content, original_filename, use_llm)
             if not resume_skills:
                 raise HTTPException(
-                    status_code=400, 
+                    status_code=400,
                     detail="No skills were detected in your resume. Please make sure your resume includes technical skills, programming languages, or relevant experience."
                 )
         except Exception as e:
-            print(f"❌ Error parsing resume: {e}")
+            logger.error(f"Error parsing resume: {e}")
             raise HTTPException(status_code=400, detail=f"Error parsing your resume: {str(e)}")
 
-        print(f"✅ Step 1 complete: Extracted {len(resume_skills)} skills from resume")
-        print(f"🔍 Skills found: {resume_skills}")
-        print(f"📊 Candidate level: {resume_metadata.get('experience_level', 'unknown')}")
-        
+        logger.info(f"Resume: {len(resume_skills)} skills, {resume_metadata.get('experience_level', 'unknown')} level")
+
         # Validate resume content
         if resume_text and not is_valid_resume(resume_text):
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="The uploaded file does not appear to be a valid resume. Please upload a document that contains relevant professional information."
             )
 
         # Get jobs from cache or scrape
         try:
-            print("🌐 Step 2/4: Fetching internship opportunities...")
             jobs = await get_jobs_with_cache()
             if not jobs:
                 raise HTTPException(
-                    status_code=500, 
+                    status_code=500,
                     detail="Unable to fetch internship opportunities at this time. Please try again later."
                 )
-            print(f"✅ Step 2 complete: Found {len(jobs)} internship opportunities")
         except Exception as e:
-            print(f"❌ Error fetching jobs: {e}")
+            logger.error(f"Error fetching jobs: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching internship opportunities: {str(e)}")
 
         # Match resume to jobs with intelligent prefiltering
         try:
-            print("🤖 Step 3/4: Analyzing job requirements with AI...")
-            print(f"🔍 Your skills: {resume_skills}")
-            print(f"📊 Intelligent prefiltering will select top 50 jobs from {len(jobs)} total jobs based on your skills")
-            
-            # Pass ALL jobs - intelligent_prefilter_jobs will filter from 1000s → 50 based on THIS resume's skills
-            print("🎯 Step 4/4: Matching your skills to job requirements...")
             matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm)
-            
-            print(f"✅ Matching complete: Found {len(matched_jobs)} relevant opportunities")
-            
+            logger.info(f"Matched {len(matched_jobs)} jobs from {len(jobs)} total")
+
             # Filter jobs with score > 0 for the final response
             jobs_with_matches = [job for job in matched_jobs if job.get('match_score', 0) > 0]
-            
+
             if not jobs_with_matches:
-                # Show all jobs with their scores for debugging
-                print("❌ No jobs with score > 0 - showing all job scores for debugging:")
-                for i, job in enumerate(matched_jobs[:5]):
-                    print(f"   Job {i+1}: {job.get('company')} - {job.get('title')} (Score: {job.get('match_score', 0)})")
-                    print(f"      Skills: {job.get('required_skills', [])}")
+                logger.warning(f"No jobs with score > 0 out of {len(matched_jobs)} matched")
                 
                 return JSONResponse(content={
                     "success": True,
@@ -559,18 +578,16 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
             
             # Use jobs with matches for the success response
             matched_jobs = jobs_with_matches
-            print(f"✅ Final matched jobs: {len(matched_jobs)}")
         except Exception as e:
-            print(f"❌ Error matching jobs: {e}")
+            logger.error(f"Error matching jobs: {e}")
             raise HTTPException(status_code=500, detail=f"Error matching your resume to jobs: {str(e)}")
 
         # Clean up S3 file after processing
         if s3_key:
             try:
                 delete_resume_from_s3(s3_key)
-                print(f"🗑️ Cleaned up S3 file: {s3_key}")
             except Exception as cleanup_error:
-                print(f"⚠️ Failed to clean up S3 file {s3_key}: {cleanup_error}")
+                logger.warning(f"Failed to clean up S3 file {s3_key}: {cleanup_error}")
 
         # Return JSON response for React frontend
         return JSONResponse(content={
@@ -581,34 +598,31 @@ async def api_match_resume(resume: UploadFile = File(...), think_deeper: str = F
         })
 
     except HTTPException:
-        # Clean up S3 file on error
         if 's3_key' in locals() and s3_key:
             try:
                 delete_resume_from_s3(s3_key)
-                print(f"🗑️ Cleaned up S3 file after error: {s3_key}")
             except Exception as cleanup_error:
-                print(f"⚠️ Failed to clean up S3 file {s3_key}: {cleanup_error}")
+                logger.warning(f"Failed to clean up S3 file {s3_key}: {cleanup_error}")
         raise
     except Exception as e:
-        # Clean up S3 file on unexpected error
         if 's3_key' in locals() and s3_key:
             try:
                 delete_resume_from_s3(s3_key)
-                print(f"🗑️ Cleaned up S3 file after error: {s3_key}")
             except Exception as cleanup_error:
-                print(f"⚠️ Failed to clean up S3 file {s3_key}: {cleanup_error}")
-        
-        print(f"❌ Unexpected error in api_match_resume: {e}")
+                logger.warning(f"Failed to clean up S3 file {s3_key}: {cleanup_error}")
+
+        logger.error(f"Unexpected error in api_match_resume: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"An unexpected error occurred: {str(e)}. Please try again or contact support if the problem persists."
         )
 
 
 @app.get("/api/resume-cache/{resume_hash}")
-async def check_resume_cache(resume_hash: str, user_id: str = Query(...), think_deeper: str = Query("true")):
+@limiter.limit("20/minute")
+async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true")):
     use_llm = think_deeper.lower() == "true"
     cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
     cached = get_resume_cache(user_id, cache_key)
@@ -618,17 +632,20 @@ async def check_resume_cache(resume_hash: str, user_id: str = Query(...), think_
 
 
 @app.get("/api/user-history")
-async def get_user_history(user_id: str = Query(...)):
+@limiter.limit("20/minute")
+async def get_user_history(request: Request, user_id: str = Depends(require_user)):
     entries = get_user_resume_history(user_id)
     return JSONResponse(entries)
 
 
 @app.post("/api/match-stream")
+@limiter.limit("3/10minutes")
 async def stream_match_resume(
+    request: Request,
     resume: UploadFile = File(...),
     think_deeper: str = Form("true"),
-    user_id: str = Form(default=""),
     resume_hash: str = Form(default=""),
+    user_id: str = Depends(require_user),
 ):
     """Streaming endpoint that provides real-time progress updates"""
     
@@ -653,20 +670,36 @@ async def stream_match_resume(
         file_content = await resume.read()
         filename = resume.filename
         content_type = resume.content_type
-        
+
         if not file_content:
             async def error_response():
                 yield {"data": json.dumps({'error': 'Empty file uploaded'})}
             return EventSourceResponse(error_response())
 
+        # Check resume cache before doing S3 upload or any LLM work
+        if user_id and resume_hash:
+            try:
+                use_llm_early = think_deeper.lower() == "true"
+                cache_key_early = f"{resume_hash}_{'deep' if use_llm_early else 'quick'}"
+                cached_early = get_resume_cache(user_id, cache_key_early)
+                if cached_early:
+                    logger.info(f"Cache hit before S3 upload for user {user_id}, returning early")
+                    cached_results = cached_early['results']
+                    cached_skills = cached_early['skills']
+                    async def cached_response():
+                        yield f"data: {json.dumps({'step': 0, 'message': 'Connection established, starting analysis...', 'progress': 5})}\n\n"
+                        await asyncio.sleep(0.01)
+                        yield f"data: {json.dumps({'step': 1, 'message': 'Found cached results!', 'final_results': cached_results, 'matches_found': len([j for j in cached_results if j.get('match_score', 0) > 0]), 'total_results': len(cached_results), 'progress': 100, 'complete': True, 'from_cache': True})}\n\n"
+                    return EventSourceResponse(cached_response())
+            except Exception as cache_err:
+                logger.warning(f"Pre-S3 cache check failed, proceeding normally: {cache_err}")
+
         # Upload file to S3 ONCE, before the generator
         try:
-            print(f"📤 Stream: Starting S3 upload for {filename}...")
             s3_key = upload_resume_to_s3(file_content, filename)
-            print(f"✅ Stream: Resume uploaded to S3: {s3_key}")
-            print(f"🚀 Stream: About to start SSE generator...")
+            logger.info(f"Stream: uploaded {filename} to S3 as {s3_key}")
         except Exception as e:
-            print(f"❌ Stream: S3 upload failed: {e}")
+            logger.error(f"Stream: S3 upload failed: {e}")
             error_msg = str(e)
             async def error_response():
                 yield {"data": json.dumps({'error': f'S3 upload failed: {error_msg}'})}
@@ -678,16 +711,25 @@ async def stream_match_resume(
         return EventSourceResponse(error_response())
     
     async def generate_progress():
+        # Acquire the global LLM semaphore — this is the key protection against OOM
+        # on Railway's 512 MB hobby container. If 2 analyses are already running,
+        # new requests wait at most 5 seconds then yield a "server busy" event.
+        try:
+            acquired = await asyncio.wait_for(LLM_SEMAPHORE.acquire(), timeout=5.0)
+        except asyncio.TimeoutError:
+            yield {"data": json.dumps({
+                "error": "Server is busy processing other requests. Please try again in 30 seconds."
+            })}
+            return
+
         try:
             import time as _time
             _request_start = _time.monotonic()
-            print("🔄 SSE Generator started - sending initial connection event...")
-            
+            logger.info("SSE generator started (semaphore acquired)")
+
             # Send immediate "connected" event to establish the stream
-            # This ensures the client knows the connection is active
             yield f"data: {json.dumps({'step': 0, 'message': 'Connection established, starting analysis...', 'progress': 5})}\n\n"
             await asyncio.sleep(0.01)  # Tiny delay to flush
-            print("✅ Initial SSE connection event sent")
             
             # Convert think_deeper parameter to boolean
             use_llm = think_deeper.lower() == "true"
@@ -696,7 +738,6 @@ async def stream_match_resume(
             current_step = [0]  # Use list to allow modification in nested function
             progress_queue = asyncio.Queue()  # Async queue for real-time progress messages
             loop = asyncio.get_running_loop()  # Get RUNNING event loop for thread-safe operations (critical for async generators)
-            print(f"🔄 Event loop obtained: {loop}")
 
             def progress_callback(message):
                 """Thread-safe callback function to queue progress messages"""
@@ -745,10 +786,8 @@ async def stream_match_resume(
                     loop
                 )
 
-            print("🔄 Yielding first SSE message (10% - Uploading resume)...")
             yield f"data: {json.dumps({'step': 1, 'message': 'Uploading resume to secure storage...', 'progress': 10})}\n\n"
             await asyncio.sleep(0.05)  # Small delay to ensure SSE flushes to client
-            print("✅ First SSE message yielded successfully")
 
             # Download file from S3 for processing
             try:
@@ -915,8 +954,6 @@ async def stream_match_resume(
                 jobs_with_matches = [job for job in formatted_jobs if job['match_score'] > 0]
                 final_results = formatted_jobs if use_llm else formatted_jobs[:50]
 
-                print(f"🔍 Streaming final results: {len(final_results)} jobs")
-
                 completion_message = (
                     f'Analysis complete! Found {len(jobs_with_matches)} matches out of {len(final_results)} jobs analyzed.'
                     if use_llm else
@@ -926,28 +963,27 @@ async def stream_match_resume(
                 # Clean up S3 file after successful processing
                 try:
                     delete_resume_from_s3(s3_key)
-                    print(f"🗑️ Stream: Cleaned up S3 file: {s3_key}")
                 except Exception as cleanup_error:
-                    print(f"⚠️ Stream: Failed to clean up S3 file {s3_key}: {cleanup_error}")
+                    logger.warning(f"Stream: Failed to clean up S3 file {s3_key}: {cleanup_error}")
 
                 # Save to resume cache if user is authenticated
                 if user_id and resume_hash:
                     try:
                         save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
                         set_resume_cache(user_id, save_cache_key, final_results, resume_skills)
-                        print(f"💾 Saved results to resume cache for user {user_id} ({save_cache_key})")
+                        logger.info(f"Saved results to resume cache for user {user_id}")
                     except Exception as cache_err:
-                        print(f"⚠️ Failed to save resume cache: {cache_err}")
+                        logger.warning(f"Failed to save resume cache: {cache_err}")
 
                 current_step[0] += 1
                 _elapsed = _time.monotonic() - _request_start
-                print(f"⏱️ Request completed in {_elapsed:.2f}s")
+                logger.info(f"Request completed in {_elapsed:.2f}s — {len(jobs_with_matches)} matches")
                 yield f"data: {json.dumps({'step': current_step[0], 'message': completion_message, 'final_results': final_results, 'matches_found': len(jobs_with_matches), 'total_results': len(final_results), 'progress': 100, 'complete': True})}\n\n"
                 await asyncio.sleep(0.05)
 
             except Exception as e:
                 _elapsed = _time.monotonic() - _request_start
-                print(f"❌ Error in job matching after {_elapsed:.2f}s: {e}")
+                logger.error(f"Error in job matching after {_elapsed:.2f}s: {e}")
                 try:
                     delete_resume_from_s3(s3_key)
                 except:
@@ -956,15 +992,16 @@ async def stream_match_resume(
 
         except Exception as e:
             _elapsed = _time.monotonic() - _request_start
-            print(f"❌ Unexpected error after {_elapsed:.2f}s: {e}")
-            # Clean up S3 file on unexpected error
+            logger.error(f"Unexpected error after {_elapsed:.2f}s: {e}")
             try:
                 delete_resume_from_s3(s3_key)
-                print(f"🗑️ Stream: Cleaned up S3 file after error: {s3_key}")
             except Exception as cleanup_error:
-                print(f"⚠️ Stream: Failed to clean up S3 file {s3_key}: {cleanup_error}")
+                logger.warning(f"Stream: Failed to clean up S3 file {s3_key}: {cleanup_error}")
             
             yield f"data: {json.dumps({'error': f'Unexpected error: {str(e)}'})}\n\n"
+        finally:
+            LLM_SEMAPHORE.release()
+            logger.info("SSE generator finished (semaphore released)")
 
     async def sse_generator():
         """Wrapper generator that converts string yields to proper SSE format for EventSourceResponse"""
@@ -990,7 +1027,8 @@ async def stream_match_resume(
 
 
 @app.get("/api/cache-status")
-async def cache_status():
+@limiter.limit("10/minute")
+async def cache_status(request: Request):
     """Get comprehensive hybrid cache status and information"""
     cache_info = job_cache.get_cache_info()
     
@@ -1058,7 +1096,7 @@ async def test_matching():
         })
         
     except Exception as e:
-        print(f"❌ Test matching error: {e}")
+        logger.error(f"Test matching error: {e}")
         return JSONResponse({
             "success": False,
             "error": str(e),
@@ -1069,7 +1107,8 @@ async def test_matching():
 
 
 @app.post("/api/refresh-cache")
-async def refresh_cache(force_full: bool = False, max_days_old: int = 30):
+@limiter.limit("1/5minutes")
+async def refresh_cache(request: Request, force_full: bool = False, max_days_old: int = 30):
     """
     Manually refresh the hybrid cache system (admin endpoint)
 
@@ -1080,7 +1119,7 @@ async def refresh_cache(force_full: bool = False, max_days_old: int = 30):
     try:
         scrape_type = "full" if force_full else "smart"
         date_filter_msg = f" (last {max_days_old} days)" if max_days_old else ""
-        print(f"🔄 Manual cache refresh requested ({scrape_type} scrape{date_filter_msg})...")
+        logger.info(f"Manual cache refresh requested ({scrape_type} scrape{date_filter_msg})")
         
         # Clear Redis cache (keep database for deduplication)
         clear_result = job_cache.clear_cache()
@@ -1124,12 +1163,13 @@ async def refresh_cache(force_full: bool = False, max_days_old: int = 30):
             "redis_ttl_hours": job_cache.CACHE_TTL / 3600
         })
     except Exception as e:
-        print(f"❌ Error refreshing cache: {e}")
+        logger.error(f"Error refreshing cache: {e}")
         raise HTTPException(status_code=500, detail=f"Cache refresh failed: {str(e)}")
 
 
 @app.post("/api/refresh-cache-incremental")
-async def refresh_cache_incremental(max_days_old: int = 30):
+@limiter.limit("2/5minutes")
+async def refresh_cache_incremental(request: Request, max_days_old: int = 30):
     """
     Force incremental cache refresh (only new jobs)
 
@@ -1138,7 +1178,7 @@ async def refresh_cache_incremental(max_days_old: int = 30):
     """
     try:
         date_filter_msg = f" (last {max_days_old} days)" if max_days_old else ""
-        print(f"🔄 Incremental cache refresh requested{date_filter_msg}...")
+        logger.info(f"Incremental cache refresh requested{date_filter_msg}")
         
         from job_scrapers.dispatcher import scrape_jobs_incremental
         jobs = await scrape_jobs_incremental(max_days_old=max_days_old)
@@ -1155,12 +1195,13 @@ async def refresh_cache_incremental(max_days_old: int = 30):
             "max_days_old": max_days_old
         })
     except Exception as e:
-        print(f"❌ Error in incremental refresh: {e}")
+        logger.error(f"Error in incremental refresh: {e}")
         raise HTTPException(status_code=500, detail=f"Incremental refresh failed: {str(e)}")
 
 
 @app.get("/api/database-stats")
-async def database_stats():
+@limiter.limit("10/minute")
+async def database_stats(request: Request):
     """Get detailed database statistics"""
     try:
         from job_database import get_database_stats
@@ -1176,7 +1217,8 @@ async def database_stats():
 
 
 @app.get("/api/refresh-health")
-async def refresh_health():
+@limiter.limit("10/minute")
+async def refresh_health(request: Request):
     """Check the health of the cache refresh system"""
     try:
         from job_database import get_db, CacheMetadata, Job
@@ -1278,7 +1320,7 @@ async def refresh_health():
             db.close()
 
     except Exception as e:
-        print(f"❌ Error checking refresh health: {e}")
+        logger.error(f"Error checking refresh health: {e}")
         return JSONResponse({
             "success": False,
             "error": str(e),
@@ -1296,30 +1338,27 @@ def _sanitize_filename(value: str) -> str:
 
 
 @app.post("/api/tailor-resume")
+@limiter.limit("5/10minutes")
 async def tailor_resume_endpoint(
     request: Request,
     resume: UploadFile = File(...),
     job_title: str = Form(...),
     company: str = Form(...),
     job_description: str = Form(default=""),
-    user_id: str = Form(default="anonymous"),
+    user_id: str = Depends(require_user),
 ):
     # Extract client IP for additional context
     client_ip = request.client.host if request.client else "unknown"
     
-    print(f"\n[{datetime.utcnow().isoformat()}] 👔 TAILOR RESUME REQUEST START")
-    print(f"👤 User ID: {user_id} | 🌐 IP: {client_ip}")
-    print(f"🎯 Target Job: '{job_title}' at '{company}'")
-    print(f"📄 Original Resume: {resume.filename}")
-    print(f"📝 Description provided: {'Yes' if job_description.strip() else 'No'} ({len(job_description)} chars)")
+    logger.info(f"Tailor request: user={user_id} job='{job_title}' at '{company}' file={resume.filename}")
 
     if not resume.filename or not resume.filename.lower().endswith(".pdf"):
-        print(f"❌ Tailor error (User: {user_id}): Unsupported file format - {resume.filename}")
+        logger.error(f"Tailor error (user={user_id}): unsupported format — {resume.filename}")
         raise HTTPException(status_code=400, detail="Only PDF resumes are supported")
 
     file_content = await resume.read()
     if not file_content:
-        print(f"❌ Tailor error (User: {user_id}): Uploaded file is empty")
+        logger.error(f"Tailor error (user={user_id}): empty file")
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
     import time
@@ -1328,19 +1367,19 @@ async def tailor_resume_endpoint(
     try:
         pdf_bytes = _tailor_resume(file_content, job_title, company, job_description)
     except ValueError as e:
-        print(f"❌ Tailor error (User: {user_id}): {e}")
+        logger.error(f"Tailor error (user={user_id}): {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError:
-        print(f"❌ Tailor error (User: {user_id}): pdflatex not found")
+        logger.error(f"Tailor error (user={user_id}): pdflatex not found")
         raise HTTPException(status_code=500, detail="LaTeX compiler unavailable — pdflatex not found")
     except subprocess.TimeoutExpired:
-        print(f"❌ Tailor error (User: {user_id}): pdflatex timed out")
+        logger.error(f"Tailor error (user={user_id}): pdflatex timed out")
         raise HTTPException(status_code=500, detail="LaTeX compilation timed out")
     except RuntimeError as e:
-        print(f"❌ Tailor error (User: {user_id}): Runtime error - {e}")
+        logger.error(f"Tailor error (user={user_id}): runtime error — {e}")
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        print(f"❌ Tailor error (User: {user_id}): Unexpected error - {e}")
+        logger.error(f"Tailor error (user={user_id}): unexpected — {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Resume tailoring failed: {e}")
@@ -1349,10 +1388,8 @@ async def tailor_resume_endpoint(
     safe_company = _sanitize_filename(company)
     safe_title = _sanitize_filename(job_title)
     filename = f"resume_tailored_{safe_company}_{safe_title}.pdf"
-    
-    print(f"✅ Tailoring Complete for User: {user_id}")
-    print(f"⏱️ Generation time: {execution_time} seconds | Result size: {len(pdf_bytes)} bytes")
-    print(f"[{datetime.utcnow().isoformat()}] 👔 TAILOR RESUME REQUEST END\n")
+
+    logger.info(f"Tailor complete: user={user_id} time={execution_time}s size={len(pdf_bytes)} bytes")
 
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
