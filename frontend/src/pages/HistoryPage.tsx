@@ -33,20 +33,23 @@ interface HistoryEntry {
 }
 
 const HistoryPage: React.FC = () => {
-  const { userId, isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !userId) return;
+    if (!isLoaded || !isSignedIn) return;
 
     const fetchHistory = async () => {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch(`${API_BASE_URL}/api/user-history?user_id=${userId}`);
+        const token = await getToken();
+        const res = await fetch(`${API_BASE_URL}/api/user-history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data: HistoryEntry[] = await res.json();
         setHistory(data);
@@ -58,7 +61,7 @@ const HistoryPage: React.FC = () => {
     };
 
     fetchHistory();
-  }, [isLoaded, isSignedIn, userId]);
+  }, [isLoaded, isSignedIn, getToken]);
 
   const formatDate = (iso: string) => {
     // Backend returns UTC timestamps without a timezone suffix — append Z so

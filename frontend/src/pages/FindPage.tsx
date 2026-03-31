@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useAuth } from '@clerk/react';
+import React, { useState, useEffect } from 'react';
+import { useAuth, useClerk } from '@clerk/react';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
@@ -47,8 +47,14 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// sessionStorage keys — used to persist the pending resume across OAuth redirects
+// (Google/GitHub sign-in redirects away from the page, losing in-memory React state).
+const PENDING_RESUME_DATA_KEY = 'iam_pending_resume_data';
+const PENDING_RESUME_META_KEY = 'iam_pending_resume_meta';
+
 const FindPage: React.FC = () => {
-  const { userId } = useAuth();
+  const { userId, getToken, isSignedIn } = useAuth();
+  const { openSignIn } = useClerk();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +67,54 @@ const FindPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const [pendingAnalysis, setPendingAnalysis] = useState(false);
+
+  // Auto-submit after sign-in — handles both paths:
+  //   A) In-page modal (no redirect): isSignedIn flips true while pendingAnalysis is set
+  //   B) OAuth redirect (page reload):  sessionStorage has the saved file, isSignedIn is true on mount
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    // Path B: restore file from sessionStorage after an OAuth redirect
+    const storedData = sessionStorage.getItem(PENDING_RESUME_DATA_KEY);
+    if (storedData) {
+      try {
+        const meta = JSON.parse(sessionStorage.getItem(PENDING_RESUME_META_KEY) || '{}');
+        sessionStorage.removeItem(PENDING_RESUME_DATA_KEY);
+        sessionStorage.removeItem(PENDING_RESUME_META_KEY);
+
+        // Decode base64 data URL back into a File
+        const base64 = storedData.split(',')[1];
+        const byteString = atob(base64);
+        const arr = new Uint8Array(byteString.length);
+        for (let i = 0; i < byteString.length; i++) arr[i] = byteString.charCodeAt(i);
+        const file = new File([arr], meta.name || 'resume', {
+          type: meta.type || 'application/pdf',
+          lastModified: meta.lastModified || Date.now(),
+        });
+        const restoredThinkDeeper: boolean = meta.thinkDeeper ?? true;
+
+        setSelectedFile(file);
+        setThinkDeeper(restoredThinkDeeper);
+        // Pass thinkDeeperOverride directly so it's used before the state flush
+        handleFileUploadStreaming(file, restoredThinkDeeper);
+      } catch (e) {
+        // Corrupted storage — clear it and let the user re-upload
+        sessionStorage.removeItem(PENDING_RESUME_DATA_KEY);
+        sessionStorage.removeItem(PENDING_RESUME_META_KEY);
+      }
+      return;
+    }
+
+    // Path A: in-page modal sign-in
+    if (pendingAnalysis && selectedFile) {
+      setPendingAnalysis(false);
+      handleFileUploadStreaming(selectedFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, pendingAnalysis]);
 
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,6 +146,16 @@ const FindPage: React.FC = () => {
     setIsDragging(false);
   };
 
+  const startCooldown = (seconds: number) => {
+    setCooldown(seconds);
+    const timer = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) { clearInterval(timer); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const hashFile = async (file: File): Promise<string> => {
     if (crypto?.subtle?.digest) {
       const buffer = await file.arrayBuffer();
@@ -103,14 +167,21 @@ const FindPage: React.FC = () => {
     return `${file.name}-${file.size}-${file.lastModified}`;
   };
 
-  const handleFileUploadStreaming = async (file: File) => {
+  const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean) => {
+    const useThinkDeeper = thinkDeeperOverride ?? thinkDeeper;
     console.log('Starting file upload:', file.name);
     setFromCache(false);
     const resumeHash = await hashFile(file);
 
-    if (userId) {
+    // Obtain a fresh Clerk JWT for this request
+    const token = await getToken();
+    setAuthToken(token);
+
+    if (token) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?user_id=${userId}&think_deeper=${thinkDeeper}`);
+        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?think_deeper=${useThinkDeeper}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
         if (data.hit) {
           setJobs(data.results);
@@ -135,21 +206,31 @@ const FindPage: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('resume', file);
-      formData.append('think_deeper', thinkDeeper.toString());
-      formData.append('user_id', userId || '');
+      formData.append('think_deeper', useThinkDeeper.toString());
       formData.append('resume_hash', resumeHash);
 
       // Use direct backend URL to bypass CRA proxy buffering for SSE
       const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
         method: 'POST',
         body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
       console.log('SSE Response received, starting stream processing...');
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 429) {
+          // Rate limited — just start the cooldown, no error banner
+          startCooldown(120);
+        } else {
+          setError(`HTTP error! status: ${response.status}`);
+        }
+        setIsLoading(false);
+        return;
       }
+
+      // Start 60-second cooldown to prevent accidental re-submissions
+      startCooldown(60);
 
       const reader = response.body?.getReader();
       if (!reader) {
@@ -181,7 +262,16 @@ const FindPage: React.FC = () => {
               const data = JSON.parse(jsonStr);
 
               if (data.error) {
-                setError(data.error);
+                // "Server busy" means semaphore full — start a short cooldown silently
+                const isBusy = typeof data.error === 'string' &&
+                  (data.error.toLowerCase().includes('busy') ||
+                   data.error.toLowerCase().includes('rate limit') ||
+                   data.error.toLowerCase().includes('try again'));
+                if (isBusy) {
+                  startCooldown(30);
+                } else {
+                  setError(data.error);
+                }
                 setIsLoading(false);
                 return;
               }
@@ -239,9 +329,39 @@ const FindPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedFile) {
-      handleFileUploadStreaming(selectedFile);
+    if (!selectedFile) return;
+
+    if (!isSignedIn) {
+      setPendingAnalysis(true);
+
+      // Save the file to sessionStorage so it survives an OAuth (Google/GitHub) redirect.
+      // FileReader is async, but it completes well before the redirect happens.
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          sessionStorage.setItem(PENDING_RESUME_DATA_KEY, reader.result as string);
+          sessionStorage.setItem(PENDING_RESUME_META_KEY, JSON.stringify({
+            name: selectedFile.name,
+            type: selectedFile.type,
+            lastModified: selectedFile.lastModified,
+            thinkDeeper,
+          }));
+        } catch (e) {
+          // sessionStorage quota exceeded (very large file) — modal flow still works;
+          // OAuth redirect won't restore the file, but that's better than blocking sign-in.
+          console.warn('Could not persist resume to sessionStorage:', e);
+        }
+      };
+      reader.readAsDataURL(selectedFile);
+
+      openSignIn({
+        afterSignInUrl: window.location.href,
+        afterSignUpUrl: window.location.href,
+      });
+      return;
     }
+
+    handleFileUploadStreaming(selectedFile);
   };
 
   const handleTryAgain = () => {
@@ -391,13 +511,23 @@ const FindPage: React.FC = () => {
 
                 <Button
                   type="submit"
-                  className="w-full md:w-auto px-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25"
-                  disabled={!selectedFile || isLoading}
+                  className="w-full md:w-auto px-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={!selectedFile || isLoading || cooldown > 0}
                 >
                   {isLoading ? (
                     <>
                       <Sparkles className="h-4 w-4 mr-2 animate-spin" />
                       Analyzing...
+                    </>
+                  ) : cooldown > 0 ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2" />
+                      Please wait {cooldown}s
+                    </>
+                  ) : selectedFile && !isSignedIn ? (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Sign in to analyze
                     </>
                   ) : (
                     <>
@@ -673,6 +803,7 @@ const FindPage: React.FC = () => {
                       isNewResult={isLoading && useStreaming}
                       resumeFile={selectedFile}
                       apiBaseUrl={API_BASE_URL}
+                      authToken={authToken}
                     />
                   </div>
                 ))

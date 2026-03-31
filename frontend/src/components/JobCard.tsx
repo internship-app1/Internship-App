@@ -11,9 +11,10 @@ interface JobCardProps {
   isNewResult?: boolean;
   resumeFile?: File | null;
   apiBaseUrl?: string;
+  authToken?: string | null;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile, apiBaseUrl = '' }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile, apiBaseUrl = '', authToken }) => {
   const [showAIReasoning, setShowAIReasoning] = useState(false);
   const [isTailoring, setIsTailoring] = useState(false);
   const [tailorError, setTailorError] = useState('');
@@ -32,6 +33,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
       const response = await fetch(`${apiBaseUrl}/api/tailor-resume`, {
         method: 'POST',
         body: formData,
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       });
 
       if (!response.ok) {
