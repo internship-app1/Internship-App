@@ -4,10 +4,7 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Clock, ChevronDown, ChevronUp, Sparkles, Upload } from 'lucide-react';
+import { Clock, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 
 const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
@@ -84,10 +81,10 @@ const HistoryPage: React.FC = () => {
   // ── Not loaded yet ──────────────────────────────────────────────────────────
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <div className="min-h-screen bg-bg text-text-primary">
         <Header forceSolid />
         <div className="flex items-center justify-center h-64">
-          <div className="h-8 w-8 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
+          <div className="h-8 w-8 border-2 border-text-primary border-t-transparent animate-spin" />
         </div>
       </div>
     );
@@ -96,22 +93,25 @@ const HistoryPage: React.FC = () => {
   // ── Not signed in ──────────────────────────────────────────────────────────
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <div className="min-h-screen bg-bg text-text-primary">
         <Header forceSolid />
-        <div className="max-w-lg mx-auto px-6 py-24 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center mx-auto mb-6">
-            <Sparkles className="h-7 w-7 text-white" />
+        <div className="max-w-[860px] mx-auto px-6 py-24">
+          <div className="flex flex-col gap-2 mb-6">
+            <span className="block w-8 h-px bg-text-tertiary" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+              Sign in required
+            </span>
           </div>
-          <h2 className="text-2xl font-bold text-neutral-950 dark:text-neutral-50 mb-3">
-            Sign in to see your history
+          <h2 className="font-serif text-3xl text-text-primary mb-3">
+            Your history lives here.
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-8">
-            Your past resume analyses are saved to your account so you never
-            have to re-upload.
+          <p className="font-mono text-xs text-text-tertiary mb-8 max-w-sm">
+            Sign in to see your past resume analyses — saved automatically so
+            you never have to re-upload.
           </p>
           <SignInButton mode="modal">
-            <button className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg px-7 py-3 text-sm font-semibold shadow-md shadow-violet-500/25 hover:-translate-y-0.5 transition-all">
-              Sign In
+            <button className="inline-block bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+              Sign in →
             </button>
           </SignInButton>
         </div>
@@ -120,154 +120,159 @@ const HistoryPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-screen bg-bg text-text-primary">
       <Header forceSolid />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="max-w-[860px] mx-auto px-6 py-12">
         {/* Page header */}
-        <div className="mb-10">
-          <h1 className="text-2xl sm:text-3xl font-bold text-neutral-950 dark:text-neutral-50 mb-2">
-            Past Analyses
+        <div className="mb-10 pb-6 border-b border-lp-border">
+          <div className="flex flex-col gap-2 mb-4">
+            <span className="block w-8 h-px bg-text-tertiary" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+              Past analyses
+            </span>
+          </div>
+          <h1 className="font-serif text-3xl text-text-primary">
+            Your resume history.
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400">
-            All your previous resume scans — click any entry to see its matched
-            jobs.
+          <p className="font-mono text-xs text-text-tertiary mt-2">
+            All previous scans — click any entry to expand its matched jobs.
           </p>
         </div>
 
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center h-40">
-            <div className="h-8 w-8 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
+            <div className="h-8 w-8 border-2 border-text-primary border-t-transparent animate-spin" />
           </div>
         )}
 
         {/* Error */}
         {!loading && error && (
-          <Card className="border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30">
-            <CardContent className="py-6 text-sm text-red-600 dark:text-red-400">
-              {error}
-            </CardContent>
-          </Card>
+          <div className="border border-lp-border bg-surface p-5">
+            <p className="font-mono text-xs text-text-secondary">{error}</p>
+          </div>
         )}
 
         {/* Empty state */}
         {!loading && !error && history.length === 0 && (
-          <div className="text-center py-24">
-            <Upload className="h-12 w-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-              No analyses yet
+          <div className="py-24">
+            <Upload className="h-8 w-8 text-text-tertiary mb-6" />
+            <h3 className="font-serif text-2xl text-text-primary mb-2">
+              No analyses yet.
             </h3>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-6 text-sm">
-              Upload your resume on the Find page and your results will be saved
-              here automatically.
+            <p className="font-mono text-xs text-text-tertiary mb-8">
+              Upload your resume on the Find page and your results will be
+              saved here automatically.
             </p>
-            <Link to="/find">
-              <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg px-6">
-                Upload Resume
-              </Button>
+            <Link
+              to="/find"
+              className="inline-block bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            >
+              Upload Resume →
             </Link>
           </div>
         )}
 
         {/* History list */}
         {!loading && !error && history.length > 0 && (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-3">
             {history.map((entry) => {
               const expanded = expandedId === entry.id;
               const expired = isExpired(entry.expires_at);
               const mode = analysisLabel(entry.resume_hash);
 
-              return (
-                <Card
-                  key={entry.id}
-                  className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm"
-                >
-                  {/* Row header — always visible */}
-                  <CardHeader
-                    className="cursor-pointer select-none"
-                    onClick={() => setExpandedId(expanded ? null : entry.id)}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex flex-col gap-1.5 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <CardTitle className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                            {entry.results.length} job
-                            {entry.results.length !== 1 ? 's' : ''} matched
-                          </CardTitle>
-                          <Badge
-                            variant="secondary"
-                            className={
-                              mode === 'Think Deeper'
-                                ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 text-xs'
-                                : 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300 text-xs'
-                            }
-                          >
-                            {mode}
-                          </Badge>
-                          {expired && (
-                            <Badge
-                              variant="secondary"
-                              className="bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 text-xs"
-                            >
-                              Cache expired
-                            </Badge>
-                          )}
-                        </div>
+              const gradientBar = mode === 'Think Deeper'
+                ? 'bg-gradient-to-b from-red-500/60 to-transparent'
+                : 'bg-gradient-to-b from-emerald-500/60 to-transparent';
 
-                        {/* Skills */}
-                        {entry.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {entry.skills.slice(0, 8).map((s) => (
-                              <span
-                                key={s}
-                                className="text-xs bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 rounded-full px-2 py-0.5"
-                              >
-                                {s}
-                              </span>
-                            ))}
-                            {entry.skills.length > 8 && (
-                              <span className="text-xs text-neutral-400 dark:text-neutral-500 px-1 py-0.5">
-                                +{entry.skills.length - 8} more
+              return (
+                <div
+                  key={entry.id}
+                  className="border border-lp-border bg-surface flex"
+                >
+                  {/* Mode accent — left edge gradient strip */}
+                  <div className={`w-0.5 shrink-0 ${gradientBar}`} />
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Row header — always visible */}
+                    <button
+                      type="button"
+                      className="w-full text-left px-5 py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-inset"
+                      onClick={() => setExpandedId(expanded ? null : entry.id)}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-serif text-base text-text-primary">
+                              {entry.results.length} job
+                              {entry.results.length !== 1 ? 's' : ''} matched
+                            </span>
+                            <span className="font-mono text-[10px] uppercase tracking-widest border border-lp-border px-1.5 py-0.5 text-text-secondary">
+                              {mode}
+                            </span>
+                            {expired && (
+                              <span className="font-mono text-[10px] uppercase tracking-widest border border-lp-border px-1.5 py-0.5 text-text-tertiary">
+                                Cache expired
                               </span>
                             )}
                           </div>
-                        )}
 
-                        {/* Timestamp */}
-                        <div className="flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
-                          <Clock className="h-3 w-3" />
-                          {formatDate(entry.created_at)}
+                          {/* Skills */}
+                          {entry.skills.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-0.5">
+                              {entry.skills.slice(0, 8).map((s) => (
+                                <span
+                                  key={s}
+                                  className="font-mono text-[10px] px-1.5 py-0.5 border border-lp-border text-text-secondary"
+                                >
+                                  {s}
+                                </span>
+                              ))}
+                              {entry.skills.length > 8 && (
+                                <span className="font-mono text-[10px] text-text-tertiary px-1 py-0.5">
+                                  +{entry.skills.length - 8} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Timestamp */}
+                          <div className="flex items-center gap-1 font-mono text-[10px] text-text-tertiary mt-0.5">
+                            <Clock className="h-3 w-3" />
+                            {formatDate(entry.created_at)}
+                          </div>
+                        </div>
+
+                        <div className="text-text-tertiary pt-1 shrink-0">
+                          {expanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
                         </div>
                       </div>
+                    </button>
 
-                      <div className="text-neutral-400 dark:text-neutral-600 pt-1 shrink-0">
-                        {expanded ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
+                    {/* Expanded job list */}
+                    {expanded && (
+                      <div className="px-5 pb-5 pt-0 space-y-3">
+                        <div className="border-t border-lp-border pt-4">
+                          {entry.results.length === 0 ? (
+                            <p className="font-mono text-xs text-text-tertiary text-center py-4">
+                              No job matches were stored for this analysis.
+                            </p>
+                          ) : (
+                            entry.results.map((job, idx) => (
+                              <JobCard key={idx} job={job} />
+                            ))
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-
-                  {/* Expanded job list */}
-                  {expanded && (
-                    <CardContent className="pt-0 pb-4 space-y-3">
-                      <div className="border-t border-neutral-100 dark:border-neutral-800 pt-4">
-                        {entry.results.length === 0 ? (
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-4">
-                            No job matches were stored for this analysis.
-                          </p>
-                        ) : (
-                          entry.results.map((job, idx) => (
-                            <JobCard key={idx} job={job} />
-                          ))
-                        )}
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>

@@ -358,15 +358,15 @@ const FindPage: React.FC = () => {
 
   const isNoResultsError = error === 'No matching opportunities found for your skills.';
 
-  const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
+  const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
 
   const sortBtn = (order: 'desc' | 'asc' | 'recent', label: React.ReactNode) => (
     <button
       onClick={() => handleSortChange(order)}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${focusRing} ${
+      className={`inline-flex items-center gap-1.5 font-mono text-xs transition-colors pb-0.5 ${focusRing} ${
         sortOrder === order
-          ? 'bg-ia text-bg'
-          : 'border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50'
+          ? 'text-text-primary border-b border-text-primary'
+          : 'text-text-secondary hover:text-text-primary border-b border-transparent'
       }`}
     >
       {label}
@@ -377,10 +377,10 @@ const FindPage: React.FC = () => {
     <button
       key={page}
       onClick={() => handlePageChange(page)}
-      className={`w-9 h-9 rounded-md text-xs font-medium transition-colors ${focusRing} ${
+      className={`w-8 h-8 font-mono text-xs transition-colors ${focusRing} ${
         active
-          ? 'bg-ia text-bg'
-          : 'border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50'
+          ? 'bg-text-primary text-bg'
+          : 'border border-lp-border text-text-secondary hover:text-text-primary'
       }`}
     >
       {page}
@@ -391,130 +391,136 @@ const FindPage: React.FC = () => {
     <div className="min-h-screen bg-bg text-text-primary">
       <Header forceSolid />
 
-      <main className="max-w-4xl mx-auto px-6 md:px-10 py-10 space-y-8">
+      <main className="max-w-[860px] mx-auto px-6 py-12 space-y-0">
 
         {/* Hero */}
-        <div className="text-center pt-4 pb-2">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-text-tertiary text-xs">Live job database</span>
+        <div className="pt-6 pb-10 border-b border-lp-border">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="block w-8 h-px bg-text-tertiary flex-shrink-0" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+              Resume matcher
+            </span>
           </div>
-          <h1 className="font-serif italic text-3xl md:text-4xl text-text-primary">
-            Upload your resume to begin
+          <h1 className="font-serif text-3xl md:text-4xl text-text-primary mb-2">
+            Upload your resume to begin.
           </h1>
-          <p className="text-text-secondary text-sm mt-2">
+          <p className="text-sm text-text-secondary">
             PDF or image — we'll handle the rest
           </p>
         </div>
 
         {/* Upload card */}
-        <div className="max-w-2xl mx-auto bg-surface border border-lp-border rounded-lg p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <Upload className="h-4 w-4 text-text-secondary" />
-            <span className="text-text-primary text-sm font-semibold">Upload Your Resume</span>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Drop zone */}
-            <label
-              className={`flex flex-col items-center justify-center w-full h-32 border border-dashed rounded-lg cursor-pointer transition-colors ${
-                isDragging
-                  ? 'border-ia bg-ia-subtle'
-                  : selectedFile
-                  ? 'border-ia/60 bg-ia-subtle'
-                  : 'border-lp-border hover:border-ia/50'
-              }`}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-            >
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                {selectedFile ? (
-                  <>
-                    <CheckCircle2 className="h-7 w-7 mb-2 text-ia" />
-                    <p className="text-sm font-medium text-text-primary">{selectedFile.name}</p>
-                    <p className="text-xs text-text-tertiary mt-0.5">Click to change file</p>
-                  </>
-                ) : isDragging ? (
-                  <>
-                    <Upload className="h-7 w-7 mb-2 text-ia" />
-                    <p className="text-sm font-medium text-ia">Drop it here</p>
-                  </>
+        <div className="py-8 border-b border-lp-border">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-2 mb-5">
+              <Upload className="h-4 w-4 text-text-secondary" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+                Upload Your Resume
+              </span>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Drop zone */}
+              <label
+                className={`flex flex-col items-center justify-center w-full h-32 border border-dashed cursor-pointer transition-colors ${
+                  isDragging
+                    ? 'border-text-primary bg-ia-subtle'
+                    : selectedFile
+                    ? 'border-text-primary bg-ia-subtle'
+                    : 'border-lp-border hover:border-text-secondary'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {selectedFile ? (
+                    <>
+                      <CheckCircle2 className="h-6 w-6 mb-2 text-text-primary" />
+                      <p className="text-sm text-text-primary">{selectedFile.name}</p>
+                      <p className="font-mono text-[10px] text-text-tertiary mt-0.5">Click to change file</p>
+                    </>
+                  ) : isDragging ? (
+                    <>
+                      <Upload className="h-6 w-6 mb-2 text-text-primary" />
+                      <p className="text-sm text-text-primary">Drop it here</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 mb-2 text-text-tertiary" />
+                      <p className="text-sm text-text-secondary">
+                        Tap to upload
+                        <span className="hidden sm:inline"> or drag and drop</span>
+                      </p>
+                      <p className="font-mono text-[10px] text-text-tertiary mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileChange}
+                />
+              </label>
+
+              {/* Think Deeper toggle */}
+              <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
+
+              <button
+                type="submit"
+                className={`w-full md:w-auto px-8 py-2.5 bg-text-primary text-bg font-mono text-xs tracking-wide hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
+                disabled={!selectedFile || isLoading || cooldown > 0}
+              >
+                {isLoading ? (
+                  'Analyzing...'
+                ) : cooldown > 0 ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Please wait {cooldown}s
+                  </span>
+                ) : selectedFile && !isSignedIn ? (
+                  'Sign in to analyze →'
                 ) : (
-                  <>
-                    <Upload className="h-7 w-7 mb-2 text-text-tertiary" />
-                    <p className="text-sm font-medium text-text-secondary">
-                      Tap to upload
-                      <span className="hidden sm:inline"> or drag and drop</span>
-                    </p>
-                    <p className="text-xs text-text-tertiary mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
-                  </>
+                  'Find Matches →'
                 )}
-              </div>
-              <input
-                type="file"
-                className="hidden"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={handleFileChange}
-              />
-            </label>
-
-            {/* Think Deeper toggle */}
-            <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
-
-            <button
-              type="submit"
-              className={`w-full md:w-auto px-8 py-2.5 rounded-lg bg-ia text-bg text-sm font-semibold hover:bg-ia-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`}
-              disabled={!selectedFile || isLoading || cooldown > 0}
-            >
-              {isLoading ? (
-                'Analyzing...'
-              ) : cooldown > 0 ? (
-                <span className="inline-flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Please wait {cooldown}s
-                </span>
-              ) : selectedFile && !isSignedIn ? (
-                'Sign in to analyze'
-              ) : (
-                'Find Matches'
-              )}
-            </button>
-          </form>
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Progress */}
         {isLoading && (
-          <div className="max-w-2xl mx-auto bg-surface border border-lp-border rounded-lg p-6">
+          <div className="py-8 border-b border-lp-border max-w-2xl">
             <div className="flex items-center gap-4 mb-5">
               <div className="flex-1">
-                <p className="text-text-primary text-sm font-medium leading-tight">
+                <p className="text-text-primary text-sm leading-tight">
                   {currentStep || 'Processing...'}
                 </p>
-                <p className="text-text-tertiary text-xs mt-0.5">
+                <p className="font-mono text-[10px] text-text-tertiary mt-0.5">
                   Please wait while we analyze your resume
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <div className="font-serif italic text-3xl text-text-primary leading-none">{progress}%</div>
+                <div className="font-serif text-3xl text-text-primary leading-none">{progress}%</div>
               </div>
             </div>
 
-            <div className="w-full h-1 bg-lp-border rounded-full overflow-hidden">
+            <div className="w-full h-px bg-lp-border overflow-hidden">
               <div
-                className="h-full bg-ia rounded-full transition-all duration-700 ease-out"
+                className="h-full bg-text-primary transition-all duration-700 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
 
-            <div className="flex justify-between mt-2 px-0.5">
+            <div className="flex justify-between mt-2">
               {PROGRESS_MILESTONES.map(({ label, threshold }) => (
                 <span
                   key={label}
-                  className={`text-[10px] transition-colors ${
-                    progress >= threshold ? 'text-ia' : 'text-text-tertiary'
+                  className={`font-mono text-[10px] transition-colors ${
+                    progress >= threshold ? 'text-text-primary' : 'text-text-tertiary'
                   }`}
                 >
-                  {progress >= threshold ? '✓' : '○'} {label}
+                  {progress >= threshold ? '—' : '·'} {label}
                 </span>
               ))}
             </div>
@@ -523,12 +529,12 @@ const FindPage: React.FC = () => {
 
         {/* Error */}
         {error && !isNoResultsError && (
-          <div className="max-w-2xl mx-auto bg-surface border border-red-500/30 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="py-8 border-b border-lp-border max-w-2xl">
+            <div className="border border-lp-border p-4 flex items-start gap-3">
+              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-red-300 text-sm font-medium">Error</p>
-                <p className="text-text-secondary text-sm mt-0.5">{error}</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-red-500 mb-1">Error</p>
+                <p className="text-text-secondary text-sm">{error}</p>
               </div>
             </div>
           </div>
@@ -536,13 +542,13 @@ const FindPage: React.FC = () => {
 
         {/* Detected skills */}
         {skillsFound.length > 0 && (
-          <div className="bg-surface border border-lp-border rounded-lg p-5">
-            <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-2">
+          <div className="py-6 border-b border-lp-border">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
               Skills detected in your resume
             </div>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {skillsFound.map((skill, i) => (
-                <span key={i} className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                <span key={i} className="font-mono text-[10px] px-1.5 py-0.5 border border-lp-border text-text-secondary">
                   {skill}
                 </span>
               ))}
@@ -552,16 +558,16 @@ const FindPage: React.FC = () => {
 
         {/* Sort controls */}
         {hasResults && jobs.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-text-tertiary text-xs">Sort by</span>
-              {sortBtn('desc', <><ArrowDown className="h-3 w-3" /> Highest Match</>)}
-              {sortBtn('asc', <><ArrowUp className="h-3 w-3" /> Lowest Match</>)}
-              {sortBtn('recent', <><Clock className="h-3 w-3" /> Most Recent</>)}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-5 border-b border-lp-border">
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary">Sort</span>
+              {sortBtn('desc', <><ArrowDown className="h-3 w-3" /> Highest</>)}
+              {sortBtn('asc', <><ArrowUp className="h-3 w-3" /> Lowest</>)}
+              {sortBtn('recent', <><Clock className="h-3 w-3" /> Recent</>)}
             </div>
-            <div className="flex items-center gap-2 text-xs text-text-tertiary">
+            <div className="flex items-center gap-2 font-mono text-[10px] text-text-tertiary">
               {fromCache && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                <span className="border border-lp-border px-1.5 py-0.5 text-text-secondary">
                   cached
                 </span>
               )}
@@ -575,8 +581,8 @@ const FindPage: React.FC = () => {
 
         {/* Debug — dev only */}
         {process.env.NODE_ENV === 'development' && (jobs.length > 0 || hasResults) && (
-          <div className="bg-surface border border-lp-border rounded-lg p-4 text-xs text-text-secondary space-y-1">
-            <p className="text-text-tertiary text-[10px] uppercase tracking-wider mb-2">Debug</p>
+          <div className="py-5 border-b border-lp-border bg-surface p-4 text-xs text-text-secondary space-y-1">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">Debug</p>
             <p>Has Results: {hasResults.toString()}</p>
             <p>Jobs Count: {jobs.length}</p>
             <p>Skills Found: {skillsFound.length}</p>
@@ -599,75 +605,82 @@ const FindPage: React.FC = () => {
 
         {/* Results */}
         {hasResults && (
-          <div className="space-y-6" id="results-section">
-            <div className="text-center border-t border-lp-border pt-8">
-              <h2 className="font-serif italic text-2xl md:text-3xl text-text-primary">
+          <div className="space-y-0" id="results-section">
+            <div className="py-8 border-b border-lp-border">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="block w-8 h-px bg-text-tertiary flex-shrink-0" />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+                  Results
+                </span>
+              </div>
+              <h2 className="font-serif text-2xl md:text-3xl text-text-primary">
                 {jobs.length > 0
-                  ? `${jobs.length} internship${jobs.length !== 1 ? 's' : ''} matched`
-                  : 'No Matches Found'}
+                  ? `${jobs.length} internship${jobs.length !== 1 ? 's' : ''} matched.`
+                  : 'No matches found.'}
               </h2>
-              <p className="text-text-secondary text-sm mt-1">
-                {jobs.length > 0
-                  ? 'Ranked by compatibility score'
-                  : 'Try updating your resume with more technical skills'}
-              </p>
+              {jobs.length > 0 && (
+                <p className="font-mono text-[11px] text-text-tertiary mt-1">
+                  Ranked by compatibility score
+                </p>
+              )}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-0 divide-y divide-lp-border">
               {jobs.length > 0 ? (
                 currentPageJobs.map((job, index) => (
-                  <JobCard
-                    key={`${job.company}-${job.title}-${(currentPage - 1) * itemsPerPage + index}`}
-                    job={job}
-                    isNewResult={isLoading && useStreaming}
-                    resumeFile={selectedFile}
-                    apiBaseUrl={API_BASE_URL}
-                    authToken={authToken}
-                  />
+                  <div key={`${job.company}-${job.title}-${(currentPage - 1) * itemsPerPage + index}`} className="py-4">
+                    <JobCard
+                      job={job}
+                      isNewResult={isLoading && useStreaming}
+                      resumeFile={selectedFile}
+                      apiBaseUrl={API_BASE_URL}
+                      authToken={authToken}
+                    />
+                  </div>
                 ))
               ) : isNoResultsError ? (
-                <div className="bg-surface border border-lp-border rounded-lg p-10 text-center">
-                  <h3 className="font-serif italic text-xl text-text-primary mb-2">
-                    No matches found yet
+                <div className="py-12 border-b border-lp-border">
+                  <h3 className="font-serif text-xl text-text-primary mb-2">
+                    No matches found yet.
                   </h3>
-                  <p className="text-text-secondary text-sm leading-relaxed mb-5 max-w-md mx-auto">
-                    We scanned our database but couldn't find a strong fit for your current resume.
-                    This usually means your resume is missing technical keywords or project details.
+                  <p className="text-sm text-text-secondary leading-relaxed mb-5 max-w-md">
+                    We scanned our database but couldn't find a strong fit. This usually means your
+                    resume is missing technical keywords or project details.
                   </p>
                   {skillsFound.length > 0 && (
                     <div className="mb-6">
-                      <p className="text-text-tertiary text-[10px] uppercase tracking-wider mb-2">
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
                         Skills we detected
                       </p>
-                      <div className="flex flex-wrap gap-1 justify-center">
+                      <div className="flex flex-wrap gap-1.5">
                         {skillsFound.map((skill, i) => (
-                          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                          <span key={i} className="font-mono text-[10px] px-1.5 py-0.5 border border-lp-border text-text-secondary">
                             {skill}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
-                  <ul className="text-sm text-text-secondary text-left max-w-xs mx-auto space-y-1.5 mb-6">
+                  <ul className="text-sm text-text-secondary space-y-1.5 mb-6 max-w-xs">
                     <li className="flex items-start gap-2">
-                      <span className="text-ia font-bold mt-0.5 shrink-0">·</span>
+                      <span className="text-text-tertiary mt-0.5 shrink-0">—</span>
                       Add specific tech stacks, languages, and frameworks
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-ia font-bold mt-0.5 shrink-0">·</span>
+                      <span className="text-text-tertiary mt-0.5 shrink-0">—</span>
                       Include project names with measurable outcomes
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-ia font-bold mt-0.5 shrink-0">·</span>
+                      <span className="text-text-tertiary mt-0.5 shrink-0">—</span>
                       List coursework or certifications relevant to your field
                     </li>
                   </ul>
                   <button
                     onClick={handleTryAgain}
-                    className={`inline-flex items-center gap-2 rounded-lg px-6 py-2.5 bg-ia hover:bg-ia-hover text-bg text-sm font-semibold transition-colors ${focusRing}`}
+                    className={`inline-flex items-center gap-2 px-6 py-2.5 bg-text-primary text-bg font-mono text-xs tracking-wide hover:opacity-80 transition-opacity ${focusRing}`}
                   >
                     <RefreshCcw className="h-4 w-4" />
-                    Try Again with a New Resume
+                    Try Again
                   </button>
                 </div>
               ) : null}
@@ -675,15 +688,15 @@ const FindPage: React.FC = () => {
 
             {/* Pagination */}
             {jobs.length > itemsPerPage && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-lp-border">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 border-t border-lp-border">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
+                    className={`inline-flex items-center gap-1 px-3 py-2 font-mono text-xs border border-lp-border text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
                   >
                     <ChevronLeft className="h-3.5 w-3.5" />
-                    Previous
+                    Prev
                   </button>
 
                   <div className="flex items-center gap-1">
@@ -705,14 +718,14 @@ const FindPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
+                    className={`inline-flex items-center gap-1 px-3 py-2 font-mono text-xs border border-lp-border text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
                   >
                     Next
                     <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
 
-                <span className="text-xs text-text-tertiary">
+                <span className="font-mono text-[10px] text-text-tertiary">
                   Page {currentPage} of {totalPages}
                 </span>
               </div>

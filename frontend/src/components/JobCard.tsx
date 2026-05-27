@@ -15,6 +15,14 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
   const [isTailoring, setIsTailoring] = useState(false);
   const [tailorError, setTailorError] = useState('');
 
+  const formatRelativeReset = (date: Date): string => {
+    const diffMs = date.getTime() - Date.now();
+    const diffDays = Math.ceil(diffMs / 86400000);
+    if (diffDays <= 0) return 'soon';
+    if (diffDays === 1) return 'tomorrow';
+    return `in ${diffDays} days`;
+  };
+
   const handleTailorResume = async () => {
     if (!resumeFile) return;
     setIsTailoring(true);
@@ -33,6 +41,15 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          let resetMsg = '';
+          try {
+            const body = await response.json();
+            const resetAt = body?.detail?.reset_at ? new Date(body.detail.reset_at) : null;
+            if (resetAt) resetMsg = ` Resets ${formatRelativeReset(resetAt)}.`;
+          } catch {}
+          throw new Error(`You've hit the weekly limit for tailor resumes.${resetMsg}`);
+        }
         const errText = await response.text();
         throw new Error(errText || `Server error ${response.status}`);
       }
@@ -129,7 +146,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
   const barColor = score >= 90 ? 'bg-emerald-400' : score >= 80 ? 'bg-ia' : 'bg-slate-500';
 
   return (
-    <div className="bg-surface border border-lp-border rounded-lg p-5">
+    <div className="bg-surface border border-lp-border p-5">
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
@@ -148,7 +165,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
 
         {/* Score */}
         <div className="shrink-0 text-right">
-          <div className={`font-serif italic text-2xl leading-none ${scoreColor}`}>{score}%</div>
+          <div className={`font-serif text-2xl leading-none ${scoreColor}`}>{score}%</div>
           <div className="text-text-tertiary text-[10px] mt-0.5">match</div>
           <div className="w-16 h-0.5 bg-lp-border rounded-full overflow-hidden mt-1.5 ml-auto">
             <div className={`h-full rounded-full ${barColor}`} style={{ width: `${score}%` }} />
@@ -221,7 +238,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                   <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-1">Your matching skills</div>
                   <div className="flex flex-wrap gap-1">
                     {job.ai_reasoning.skill_matches.map((s, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 bg-emerald-950/50 text-emerald-400 rounded font-mono">
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 bg-surface border border-lp-border text-text-secondary font-mono">
                         {s}
                       </span>
                     ))}
@@ -255,7 +272,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                   </div>
                   <ul className="space-y-1">
                     {job.ai_reasoning.red_flags.map((flag, i) => (
-                      <li key={i} className="text-sm text-red-300 flex items-start gap-2">
+                      <li key={i} className="text-sm text-red-500 flex items-start gap-2">
                         <span className="text-red-400 mt-1 shrink-0">·</span>
                         {flag}
                       </li>
@@ -274,7 +291,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
           {(job.apply_link || job.url) && (
             <button
               onClick={() => window.open(job.apply_link || job.url, '_blank', 'noopener,noreferrer')}
-              className="inline-flex items-center gap-1.5 bg-ia text-bg px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-ia-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              className="inline-flex items-center gap-1.5 bg-text-primary text-bg px-3 py-1.5 text-xs font-mono hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Apply Now
@@ -289,7 +306,11 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
               {isTailoring ? 'Tailoring...' : 'Tailor Resume for This Job'}
             </button>
           )}
-          {tailorError && <p className="text-xs text-red-400 w-full">{tailorError}</p>}
+          {tailorError && (
+              <div className="w-full border border-red-500/40 bg-red-500/5 px-3 py-2">
+                <p className="font-mono text-xs text-red-500">{tailorError}</p>
+              </div>
+            )}
         </div>
       )}
     </div>

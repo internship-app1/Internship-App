@@ -1,18 +1,22 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
 export function ClosingCTA() {
   return (
-    <section className="py-20 text-center border-t border-lp-border">
-      <h2 className="font-serif italic text-2xl md:text-3xl text-text-primary mb-3">
-        Upload your resume. See your top 10 matches in 30 seconds.
+    <section className="py-16 md:py-20">
+      <h2 className="font-serif text-3xl md:text-4xl text-text-primary leading-[1.15] mb-8 max-w-lg">
+        Upload your résumé. See your top ten in{' '}
+        <em className="italic">thirty seconds.</em>
       </h2>
-      <p className="text-sm text-text-secondary mb-6 max-w-md mx-auto leading-relaxed">
-        Free, no signup to try. Open-source on GitHub. Built by a student, used by ~100 students.
-      </p>
-      <a
-        href="/find"
-        className="inline-flex items-center gap-2 bg-ia text-bg px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-ia-hover transition-colors"
-      >
-        Upload resume →
-      </a>
+      <div className="flex items-center gap-5">
+        <Link
+          to="/find"
+          className="inline-block bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          Upload résumé →
+        </Link>
+        <span className="font-mono text-[11px] text-text-tertiary">free forever</span>
+      </div>
     </section>
   );
 }

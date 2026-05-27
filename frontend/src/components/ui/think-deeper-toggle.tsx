@@ -15,7 +15,7 @@ export const ThinkDeeperToggle: React.FC<ThinkDeeperToggleProps> = ({ checked, o
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        'w-full text-left rounded-lg border p-3.5 transition-colors cursor-pointer',
+        'w-full text-left border p-3.5 transition-colors cursor-pointer',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         checked
           ? 'border-ia bg-ia-subtle'
@@ -24,7 +24,7 @@ export const ThinkDeeperToggle: React.FC<ThinkDeeperToggleProps> = ({ checked, o
     >
       <div className="flex items-center gap-3">
         <div className={cn(
-          'flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center transition-colors',
+          'flex-shrink-0 h-8 w-8 flex items-center justify-center transition-colors',
           checked ? 'bg-ia text-bg' : 'bg-lp-border/20 text-text-tertiary'
         )}>
           <Brain className="h-4 w-4" />

@@ -47,25 +47,26 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        /* ── Landing page design tokens ── */
-        bg: '#0F172A',
-        surface: '#1E293B',
+        /* ── Landing page design tokens (CSS-variable driven for dark/light) ── */
+        bg: 'var(--lp-bg)',
+        surface: 'var(--lp-surface)',
         lp: {
-          border: 'rgba(148,163,184,0.15)',
+          border: 'var(--lp-border)',
         },
-        'text-primary': '#E2E8F0',
-        'text-secondary': '#94A3B8',
-        'text-tertiary': '#64748B',
+        'text-primary': 'var(--lp-text-primary)',
+        'text-secondary': 'var(--lp-text-secondary)',
+        'text-tertiary': 'var(--lp-text-tertiary)',
         ia: {
-          DEFAULT: '#818CF8',
-          hover: '#A5B4FC',
-          subtle: 'rgba(129,140,248,0.12)',
-          pill: '#C7D2FE',
+          DEFAULT: 'var(--lp-ia)',
+          hover: 'var(--lp-ia-hover)',
+          subtle: 'var(--lp-ia-subtle)',
+          pill: 'var(--lp-ia-pill)',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        serif: ['"Source Serif 4"', 'Georgia', 'serif'],
+        mono: ['"JetBrains Mono"', 'Fira Code', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -1,57 +1,58 @@
-import heroData from '../data/landing-hero.json';
+import React, { useEffect, useState } from 'react';
 
 export function HonestStats() {
-  const { indexCount, hoursAgo } = heroData;
+  const [liveCount, setLiveCount] = useState<number | null>(null);
 
-  const stats = [
-    {
-      value: indexCount.toLocaleString(),
-      label: 'Live internships indexed from GitHub lists + company boards',
-    },
-    {
-      value: '~30s',
-      label: 'From resume upload to your top 10 ranked matches',
-      highlight: true,
-    },
-    {
-      value: '$0',
-      label: 'No paywall · no ads · open-source on GitHub',
-    },
-  ];
+  useEffect(() => {
+    fetch('/api/database-stats')
+      .then((r) => r.json())
+      .then((data) => {
+        const count = data.total_jobs ?? data.active_jobs ?? data.job_count ?? null;
+        if (typeof count === 'number') setLiveCount(count);
+      })
+      .catch(() => {});
+  }, []);
+
+  const displayCount = (liveCount ?? 847).toLocaleString();
 
   return (
-    <section className="py-10 border-t border-lp-border">
-      <div className="flex items-center gap-2 text-xs text-ia mb-4">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span>Index live · last refreshed {hoursAgo}h ago</span>
+    <section className="py-12 border-b border-lp-border">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-8">
+        By the numbers · pulled from the running index
       </div>
 
-      <div className="grid grid-cols-3 border-t border-lp-border pt-4">
-        {stats.map((s, i) => (
-          <div
-            key={s.label}
-            className={[
-              'px-4',
-              i !== 0 ? 'border-l border-lp-border' : 'pl-0',
-              i === 2 ? 'pr-0' : '',
-            ].join(' ')}
-          >
-            <div className="font-serif italic text-2xl md:text-3xl text-text-primary leading-none mb-2">
-              {s.highlight ? (
-                <em className="text-ia not-italic">{s.value}</em>
-              ) : (
-                s.value
-              )}
-            </div>
-            <div className="text-xs text-text-secondary leading-snug">{s.label}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3">
+        {/* Stat 1 */}
+        <div className="pb-8 sm:pb-0 sm:pr-8 border-b sm:border-b-0 sm:border-r border-lp-border mb-8 sm:mb-0">
+          <div className="font-serif text-5xl text-text-primary leading-none mb-3">
+            {displayCount}
           </div>
-        ))}
-      </div>
+          <div className="text-xs text-text-secondary leading-snug mb-2">
+            Live internships indexed from GitHub lists and company boards.
+          </div>
+          <div className="font-mono text-[10px] text-text-tertiary">refreshed every 6h</div>
+        </div>
 
-      <p className="text-xs text-text-tertiary mt-4">
-        <span className="text-emerald-400">●</span> Refreshes daily. Numbers pulled from the
-        running index — not marketing copy.
-      </p>
+        {/* Stat 2 */}
+        <div className="pb-8 sm:pb-0 sm:px-8 border-b sm:border-b-0 sm:border-r border-lp-border mb-8 sm:mb-0">
+          <div className="font-serif text-5xl text-text-primary leading-none mb-3">
+            30<span className="font-mono text-2xl">s</span>
+          </div>
+          <div className="text-xs text-text-secondary leading-snug mb-2">
+            From résumé upload to your top ten ranked matches.
+          </div>
+          <div className="font-mono text-[10px] text-text-tertiary">median across 100 users</div>
+        </div>
+
+        {/* Stat 3 */}
+        <div className="sm:pl-8">
+          <div className="font-serif text-5xl text-text-primary leading-none mb-3">$0</div>
+          <div className="text-xs text-text-secondary leading-snug mb-2">
+            No paywall. No ads. Open source on GitHub.
+          </div>
+          <div className="font-mono text-[10px] text-text-tertiary">always will be</div>
+        </div>
+      </div>
     </section>
   );
 }

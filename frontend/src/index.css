@@ -1,9 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..900;1,8..60,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    /* Landing page editorial tokens — light (cream/ink) */
+    --lp-bg:            #E8E6DF;
+    --lp-surface:       #EFEDE6;
+    --lp-text-primary:  #1F1B16;
+    --lp-text-secondary:#5A5247;
+    --lp-text-tertiary: #8A8170;
+    --lp-border:        rgba(31, 27, 22, 0.12);
+    --lp-ia:            #1F1B16;
+    --lp-ia-hover:      #3D3930;
+    --lp-ia-subtle:     rgba(31, 27, 22, 0.08);
+    --lp-ia-pill:       #5A5247;
     /* Brand Colors */
     --brand-primary:       263 70% 58%;
     --brand-primary-light: 263 70% 70%;
@@ -39,6 +52,18 @@
   }
 
   .dark {
+    /* Landing page editorial tokens — dark (slate) */
+    --lp-bg:            #0F172A;
+    --lp-surface:       #1E293B;
+    --lp-text-primary:  #E2E8F0;
+    --lp-text-secondary:#94A3B8;
+    --lp-text-tertiary: #64748B;
+    --lp-border:        rgba(148, 163, 184, 0.15);
+    --lp-ia:            #818CF8;
+    --lp-ia-hover:      #A5B4FC;
+    --lp-ia-subtle:     rgba(129, 140, 248, 0.12);
+    --lp-ia-pill:       #C7D2FE;
+
     --background:          240 10% 4%;
     --foreground:          0 0% 98%;
     --card:                240 10% 7%;

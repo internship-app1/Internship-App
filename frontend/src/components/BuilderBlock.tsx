@@ -1,76 +1,84 @@
+import React from 'react';
 import heroData from '../data/landing-hero.json';
 
+const STAMP = [
+  { k: 'stack',   v: 'python · fastapi · react' },
+  { k: 'index',   v: `${heroData.indexCount.toLocaleString()} postings` },
+  { k: 'users',   v: '~100 students' },
+  { k: 'cost',    v: '$0 · open source' },
+  { k: 'refresh', v: 'every 6h' },
+];
+
 export function BuilderBlock() {
-  const { indexCount } = heroData;
-
   return (
-    <section className="py-12 border-t border-lp-border">
-      <div className="text-[11px] tracking-widest text-ia uppercase mb-4">Who built this</div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-[80px_1fr] gap-6 items-start">
-        <div className="w-20 h-20 rounded-full bg-ia-subtle border border-lp-border flex items-center justify-center font-serif italic text-4xl text-ia flex-shrink-0">
-          S
-        </div>
-
+    <section className="py-14 border-b border-lp-border">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px] gap-10 lg:gap-16 items-start">
+        {/* Left: signature */}
         <div>
-          <p className="font-serif italic text-xl md:text-2xl text-text-primary leading-[1.35] mb-4">
-            "I built this because I was sick of pasting my resume into job boards that ranked roles
-            by keyword density. The matcher reads what's actually in your resume and ranks live
-            postings against it — no recruiter middleware, no paywall, no ads."
-          </p>
-
-          <div className="flex flex-wrap items-baseline gap-2 mb-3">
-            <span className="text-sm font-semibold text-text-primary">Sujan Nandikol Sunilkumar</span>
-            <span className="text-xs text-text-secondary">
-              —{' '}
-              <span className="text-ia-pill font-medium">CS + Linguistics @ SJSU</span>
-              {' '}· prev. full-stack @ Burnt (YC S25)
+          {/* Kicker */}
+          <div className="flex items-center gap-3 mb-6">
+            <span className="block w-8 h-px bg-text-tertiary flex-shrink-0" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+              The builder
             </span>
           </div>
 
-          <div className="flex gap-4 text-xs mb-4">
+          <p className="font-serif text-xl text-text-primary leading-[1.55] mb-6 max-w-xl">
+            I built this because I was sick of pasting my résumé into job boards that ranked roles
+            by keyword density. The matcher reads what's actually in your résumé — and ranks live
+            postings against it.
+          </p>
+
+          <div className="font-mono text-[11px] text-text-secondary mb-4 leading-relaxed">
+            <strong className="text-text-primary font-semibold">
+              Sujan Nandikol Sunilkumar
+            </strong>
+            {' · '}CS + Linguistics @ SJSU{' · '}prev. full-stack @ Burnt (YC S25)
+          </div>
+
+          <div className="flex gap-1 font-mono text-[11px] text-text-secondary items-center">
             <a
-              className="text-ia hover:text-ia-hover transition-colors"
               href="https://github.com/Sujan30/jobbot"
               target="_blank"
               rel="noopener noreferrer"
+              className="hover:text-text-primary transition-colors"
             >
-              github ↗
+              github
             </a>
+            <span className="mx-1.5">·</span>
             <a
-              className="text-ia hover:text-ia-hover transition-colors"
               href="https://suqjan.com"
               target="_blank"
               rel="noopener noreferrer"
+              className="hover:text-text-primary transition-colors"
             >
-              portfolio ↗
+              portfolio
             </a>
+            <span className="mx-1.5">·</span>
             <a
-              className="text-ia hover:text-ia-hover transition-colors"
               href="https://tiktok.com/@suqjan"
               target="_blank"
               rel="noopener noreferrer"
+              className="hover:text-text-primary transition-colors"
             >
-              tiktok @suqjan ↗
+              tiktok @suqjan
             </a>
           </div>
+        </div>
 
-          <div className="flex flex-wrap gap-6 pt-3 border-t border-lp-border text-xs text-text-secondary">
-            <span>
-              <span className="font-serif italic text-base font-medium text-text-primary">~100</span>
-              {' '}active users
-            </span>
-            <span>
-              <span className="font-serif italic text-base font-medium text-text-primary">
-                {indexCount.toLocaleString()}
+        {/* Right: stamp table */}
+        <div className="border border-lp-border p-4 self-start">
+          {STAMP.map(({ k, v }, i) => (
+            <div
+              key={k}
+              className={`flex gap-3 py-2 ${i < STAMP.length - 1 ? 'border-b border-lp-border' : ''}`}
+            >
+              <span className="font-mono text-[10px] uppercase text-text-tertiary w-14 flex-shrink-0 tracking-wide">
+                {k}
               </span>
-              {' '}postings indexed
-            </span>
-            <span>
-              <span className="font-serif italic text-base font-medium text-text-primary">$0</span>
-              {' '}· open-source · no ads
-            </span>
-          </div>
+              <span className="font-mono text-[10px] text-text-secondary">{v}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
