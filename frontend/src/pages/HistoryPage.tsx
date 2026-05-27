@@ -110,7 +110,7 @@ const HistoryPage: React.FC = () => {
             have to re-upload.
           </p>
           <SignInButton mode="modal">
-            <button className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-7 py-3 text-sm font-semibold shadow-md shadow-violet-500/25 hover:shadow-violet-500/40 hover:-translate-y-0.5 transition-all">
+            <button className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg px-7 py-3 text-sm font-semibold shadow-md shadow-violet-500/25 hover:-translate-y-0.5 transition-all">
               Sign In
             </button>
           </SignInButton>
@@ -163,7 +163,7 @@ const HistoryPage: React.FC = () => {
               here automatically.
             </p>
             <Link to="/find">
-              <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-6">
+              <Button className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg px-6">
                 Upload Resume
               </Button>
             </Link>

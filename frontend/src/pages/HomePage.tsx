@@ -35,7 +35,6 @@ const HomePage: React.FC = () => {
   };
 
   const handleFileUploadStreaming = async (file: File) => {
-    console.log('🚀 Starting file upload:', file.name);
     setIsLoading(true);
     setError('');
     setHasResults(false);
@@ -108,31 +107,23 @@ const HomePage: React.FC = () => {
                 setProgress(100);
                 setIsLoading(false);
                 
-                console.log('🎉 Streaming complete! Final data:', data);
-                
                 if (data.final_results && Array.isArray(data.final_results)) {
-                  console.log(`📊 Setting ${data.final_results.length} final results:`, data.final_results);
                   setJobs(data.final_results);
                   setHasResults(true);
-                } else {
-                  console.warn('⚠️ No final_results in completion data:', data);
                 }
-                
+
                 if (data.matches_found === 0) {
                   setError('No matching opportunities found for your skills.');
-                } else if (data.total_results) {
-                  console.log(`✅ Successfully matched ${data.matches_found} jobs, showing ${data.total_results} results`);
                 }
                 break;
               }
             } catch (parseError) {
-              console.error('Error parsing SSE data:', parseError);
+              // ignore malformed SSE frames
             }
           }
         }
       }
     } catch (err: any) {
-      console.error('Streaming error:', err);
       setError(err.message || 'An error occurred while processing your resume.');
       setIsLoading(false);
     }

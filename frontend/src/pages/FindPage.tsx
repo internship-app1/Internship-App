@@ -169,7 +169,6 @@ const FindPage: React.FC = () => {
 
   const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean) => {
     const useThinkDeeper = thinkDeeperOverride ?? thinkDeeper;
-    console.log('Starting file upload:', file.name);
     setFromCache(false);
     const resumeHash = await hashFile(file);
 
@@ -216,8 +215,6 @@ const FindPage: React.FC = () => {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
-      console.log('SSE Response received, starting stream processing...');
-
       if (!response.ok) {
         if (response.status === 429) {
           // Rate limited — just start the cooldown, no error banner
@@ -243,10 +240,7 @@ const FindPage: React.FC = () => {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          console.log('Stream ended');
-          break;
-        }
+        if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
@@ -303,25 +297,20 @@ const FindPage: React.FC = () => {
                 if (data.final_results && Array.isArray(data.final_results)) {
                   setJobs(data.final_results);
                   setHasResults(true);
-                } else {
-                  console.warn('No final_results in completion data:', data);
                 }
 
                 if (data.matches_found === 0) {
                   setError('No matching opportunities found for your skills.');
-                } else if (data.total_results) {
-                  console.log(`Successfully matched ${data.matches_found} jobs, showing ${data.total_results} results`);
                 }
                 break;
               }
             } catch (parseError) {
-              console.error('Error parsing SSE data:', parseError);
+              // ignore malformed SSE frames
             }
           }
         }
       }
     } catch (err: any) {
-      console.error('Streaming error:', err);
       setError(err.message || 'An error occurred while processing your resume.');
       setIsLoading(false);
     }
@@ -347,9 +336,8 @@ const FindPage: React.FC = () => {
             thinkDeeper,
           }));
         } catch (e) {
-          // sessionStorage quota exceeded (very large file) — modal flow still works;
+          // sessionStorage quota exceeded — modal flow still works;
           // OAuth redirect won't restore the file, but that's better than blocking sign-in.
-          console.warn('Could not persist resume to sessionStorage:', e);
         }
       };
       reader.readAsDataURL(selectedFile);
@@ -420,7 +408,7 @@ const FindPage: React.FC = () => {
     error === 'No matching opportunities found for your skills.';
 
   return (
-    <div className="min-h-screen hero-bg">
+    <div className="min-h-screen bg-background">
       <Header forceSolid />
 
       <main className="container px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -511,7 +499,7 @@ const FindPage: React.FC = () => {
 
                 <Button
                   type="submit"
-                  className="w-full md:w-auto px-8 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full md:w-auto px-8 rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={!selectedFile || isLoading || cooldown > 0}
                 >
                   {isLoading ? (
@@ -853,7 +841,7 @@ const FindPage: React.FC = () => {
                   </ul>
                   <button
                     onClick={handleTryAgain}
-                    className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-500/20 transition-all hover:-translate-y-0.5"
+                    className="inline-flex items-center gap-2 rounded-lg px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-500/20 transition-all hover:-translate-y-0.5"
                   >
                     <RefreshCcw className="h-4 w-4" />
                     Try Again with a New Resume

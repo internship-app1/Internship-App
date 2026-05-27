@@ -253,7 +253,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
               </Button>
 
               {showAIReasoning && job.ai_reasoning && (
-                <div className="space-y-3 rounded-2xl border border-violet-100/50 bg-violet-50/30 dark:bg-violet-950/30 dark:border-violet-800/40 backdrop-blur-sm p-4">
+                <div className="space-y-3 rounded-2xl border border-violet-100/50 bg-violet-50/30 dark:bg-violet-950/30 dark:border-violet-800/40 p-4">
                   {/* Complexity Analysis */}
                   <div>
                     <h5 className="font-medium text-sm text-violet-900 dark:text-violet-200 mb-2">Resume Complexity Assessment</h5>
@@ -381,7 +381,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
         <CardFooter className="border-t flex flex-col gap-2">
           {(job.apply_link || job.url) && (
             <Button
-              className="w-full rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20"
+              className="w-full rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20"
               onClick={() => window.open(job.apply_link || job.url, '_blank', 'noopener,noreferrer')}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -391,7 +391,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
           {resumeFile && (
             <Button
               variant="outline"
-              className="w-full rounded-full"
+              className="w-full rounded-md"
               onClick={handleTailorResume}
               disabled={isTailoring}
             >

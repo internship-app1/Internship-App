@@ -42,7 +42,7 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
       <div className="container flex h-16 items-center justify-between mx-auto px-4 sm:px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 min-w-0 no-underline">
-          <div className="h-7 w-7 flex-shrink-0 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
+          <div className="h-7 w-7 flex-shrink-0 rounded-lg bg-violet-600 flex items-center justify-center">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <span
@@ -50,9 +50,6 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
             style={{ fontFamily: 'Sora, sans-serif' }}
           >
             internshipmatcher
-          </span>
-          <span className="text-xs font-bold text-cyan-500 align-super tracking-wide -ml-0.5 flex-shrink-0">
-            AI
           </span>
         </Link>
 
@@ -89,7 +86,7 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
             <UserButton />
           ) : (
             <SignInButton mode="modal">
-              <button className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-4 sm:px-5 py-2 text-sm font-semibold shadow-md shadow-violet-500/25 hover:shadow-violet-500/40 hover:-translate-y-0.5 transition-all min-h-[44px]">
+              <button className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg px-4 sm:px-5 py-2 text-sm font-semibold shadow-md shadow-violet-500/25 hover:-translate-y-0.5 transition-all min-h-[44px]">
                 Sign In
               </button>
             </SignInButton>
