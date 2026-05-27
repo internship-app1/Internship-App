@@ -39,7 +39,7 @@ from matching.metadata_matcher import extract_resume_metadata
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
-from job_database import get_resume_cache, set_resume_cache, get_user_resume_history
+from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db
 from auth import require_user
 
 # Base directory of this file (used for templates/static/uploads paths)
@@ -1342,7 +1342,7 @@ def _sanitize_filename(value: str) -> str:
 
 
 @app.post("/api/tailor-resume")
-@limiter.limit("5/10minutes")
+@limiter.limit("2/minute")
 async def tailor_resume_endpoint(
     request: Request,
     resume: UploadFile = File(...),
@@ -1351,9 +1351,28 @@ async def tailor_resume_endpoint(
     job_description: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
-    # Extract client IP for additional context
-    client_ip = request.client.host if request.client else "unknown"
-    
+    from quota import get_tailor_quota_status, record_tailor_request, WEEKLY_TAILOR_LIMIT
+
+    # Check Postgres-backed weekly quota before doing any work
+    db = get_db()
+    try:
+        status = get_tailor_quota_status(db, user_id)
+        if status["remaining"] <= 0:
+            reset_at = status["reset_at"]
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "weekly_quota_exceeded",
+                    "message": f"You've used all {WEEKLY_TAILOR_LIMIT} tailored resumes this week.",
+                    "limit": status["limit"],
+                    "used": status["used"],
+                    "remaining": 0,
+                    "reset_at": reset_at.isoformat() if reset_at else None,
+                },
+            )
+    finally:
+        close_db(db)
+
     logger.info(f"Tailor request: user={user_id} job='{job_title}' at '{company}' file={resume.filename}")
 
     if not resume.filename or not resume.filename.lower().endswith(".pdf"):
@@ -1393,6 +1412,17 @@ async def tailor_resume_endpoint(
     safe_title = _sanitize_filename(job_title)
     filename = f"resume_tailored_{safe_company}_{safe_title}.pdf"
 
+    # Record usage AFTER successful generation — failed attempts don't count against quota
+    db = get_db()
+    try:
+        record_tailor_request(db, user_id, job_title, company)
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to record tailor quota entry for user={user_id}: {e}")
+        db.rollback()
+    finally:
+        close_db(db)
+
     logger.info(f"Tailor complete: user={user_id} time={execution_time}s size={len(pdf_bytes)} bytes")
 
     return StreamingResponse(
@@ -1400,6 +1430,27 @@ async def tailor_resume_endpoint(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@app.get("/api/usage")
+@limiter.limit("20/minute")
+async def get_usage(request: Request, user_id: str = Depends(require_user)):
+    from quota import get_tailor_quota_status
+    db = get_db()
+    try:
+        status = get_tailor_quota_status(db, user_id)
+        reset_at = status["reset_at"]
+        return JSONResponse({
+            "tailor_resume": {
+                "limit": status["limit"],
+                "used": status["used"],
+                "remaining": status["remaining"],
+                "reset_at": reset_at.isoformat() if reset_at else None,
+                "window_days": 7,
+            }
+        })
+    finally:
+        db.close()
 
 
 # Catch-all: serve React app for any non-API route

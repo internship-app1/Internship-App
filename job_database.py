@@ -87,6 +87,16 @@ class ResumeCache(Base):
     expires_at = Column(DateTime, nullable=False)
     __table_args__ = (Index('idx_user_hash', 'user_id', 'resume_hash'),)
 
+class TailorRequestLog(Base):
+    """Append-only log of successful resume-tailoring requests, used for the weekly quota."""
+    __tablename__ = "tailor_request_log"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    requested_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    job_title = Column(String(500))
+    company = Column(String(500))
+    __table_args__ = (Index('idx_tailor_user_time', 'user_id', 'requested_at'),)
+
 # Database initialization
 def init_database():
     """Initialize database tables"""
