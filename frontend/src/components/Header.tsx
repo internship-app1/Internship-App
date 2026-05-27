@@ -77,13 +77,13 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
             <UserButton />
           ) : (
             <SignInButton mode="modal">
-              <button className="bg-ia text-bg px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ia-hover transition-colors min-h-[44px]">
+              <button className="bg-ia text-bg px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ia-hover transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
                 Sign In
               </button>
             </SignInButton>
           )}
           <button
-            className="md:hidden flex items-center justify-center rounded-lg p-2 text-text-secondary hover:text-text-primary hover:bg-surface transition-colors min-h-[44px] min-w-[44px]"
+            className="md:hidden flex items-center justify-center rounded-lg p-2 text-text-secondary hover:text-text-primary hover:bg-surface transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             onClick={() => setMobileMenuOpen((o) => !o)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >

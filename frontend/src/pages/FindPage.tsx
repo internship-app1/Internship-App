@@ -358,10 +358,12 @@ const FindPage: React.FC = () => {
 
   const isNoResultsError = error === 'No matching opportunities found for your skills.';
 
+  const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
+
   const sortBtn = (order: 'desc' | 'asc' | 'recent', label: React.ReactNode) => (
     <button
       onClick={() => handleSortChange(order)}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${focusRing} ${
         sortOrder === order
           ? 'bg-ia text-bg'
           : 'border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50'
@@ -375,7 +377,7 @@ const FindPage: React.FC = () => {
     <button
       key={page}
       onClick={() => handlePageChange(page)}
-      className={`w-9 h-9 rounded-md text-xs font-medium transition-colors ${
+      className={`w-9 h-9 rounded-md text-xs font-medium transition-colors ${focusRing} ${
         active
           ? 'bg-ia text-bg'
           : 'border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50'
@@ -461,7 +463,7 @@ const FindPage: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full md:w-auto px-8 py-2.5 rounded-lg bg-ia text-bg text-sm font-semibold hover:bg-ia-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full md:w-auto px-8 py-2.5 rounded-lg bg-ia text-bg text-sm font-semibold hover:bg-ia-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${focusRing}`}
               disabled={!selectedFile || isLoading || cooldown > 0}
             >
               {isLoading ? (
@@ -662,7 +664,7 @@ const FindPage: React.FC = () => {
                   </ul>
                   <button
                     onClick={handleTryAgain}
-                    className="inline-flex items-center gap-2 rounded-lg px-6 py-2.5 bg-ia hover:bg-ia-hover text-bg text-sm font-semibold transition-colors"
+                    className={`inline-flex items-center gap-2 rounded-lg px-6 py-2.5 bg-ia hover:bg-ia-hover text-bg text-sm font-semibold transition-colors ${focusRing}`}
                   >
                     <RefreshCcw className="h-4 w-4" />
                     Try Again with a New Resume
@@ -678,7 +680,7 @@ const FindPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
                   >
                     <ChevronLeft className="h-3.5 w-3.5" />
                     Previous
@@ -703,7 +705,7 @@ const FindPage: React.FC = () => {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
                   >
                     Next
                     <ChevronRight className="h-3.5 w-3.5" />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Job } from '../types';
-import { ExternalLink, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronUp, AlertTriangle, Target, CheckCircle2 } from 'lucide-react';
 
 interface JobCardProps {
   job: Job;
@@ -83,22 +83,43 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
   const timeAgo = getTimeAgo(job.first_seen);
   const showNewIndicator = isNewJob(job.first_seen);
 
-  const stripEmojis = (text: string) =>
-    text.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu, '').trim();
+  const CUE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+    '🎯': Target,
+    '✅': CheckCircle2,
+    '⚠️': AlertTriangle,
+    '⚠': AlertTriangle,
+  };
 
   const formatMatchDescription = (desc: string) => {
     if (!desc) return [];
     return desc
       .split('\n')
       .map((line, index) => {
-        const clean = stripEmojis(line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'));
-        if (!clean) return null;
+        const trimmed = line.trim();
+        if (!trimmed) return null;
+
+        // Detect leading status emoji and map to Lucide icon
+        const cueKey = Object.keys(CUE_ICONS).find(k => trimmed.startsWith(k));
+        const Icon = cueKey ? CUE_ICONS[cueKey] : null;
+        const text = cueKey ? trimmed.slice(cueKey.length).trimStart() : trimmed;
+
+        // Render **bold** spans as JSX — no dangerouslySetInnerHTML
+        const parts = text.split(/(\*\*.*?\*\*)/g);
+        const content = parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+          }
+          return part;
+        });
+
         return (
           <p
             key={index}
-            dangerouslySetInnerHTML={{ __html: clean }}
-            className={line.startsWith('•') ? 'text-sm text-text-secondary ml-2' : 'text-sm text-text-secondary'}
-          />
+            className={`text-sm text-text-secondary flex items-start gap-1.5${trimmed.startsWith('•') ? ' ml-2' : ''}`}
+          >
+            {Icon && <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-ia" />}
+            <span>{content}</span>
+          </p>
         );
       })
       .filter(Boolean);
@@ -168,7 +189,8 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
           <button
             type="button"
             onClick={() => setShowReasoning(!showReasoning)}
-            className="flex items-center gap-1.5 text-text-tertiary text-[10px] uppercase tracking-wider hover:text-text-secondary transition-colors w-full text-left"
+            aria-expanded={showReasoning}
+            className="flex items-center gap-1.5 text-text-tertiary text-[10px] uppercase tracking-wider hover:text-text-secondary transition-colors w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded"
           >
             <span>Reasoning</span>
             {showReasoning ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -252,7 +274,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
           {(job.apply_link || job.url) && (
             <button
               onClick={() => window.open(job.apply_link || job.url, '_blank', 'noopener,noreferrer')}
-              className="inline-flex items-center gap-1.5 bg-ia text-bg px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-ia-hover transition-colors"
+              className="inline-flex items-center gap-1.5 bg-ia text-bg px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-ia-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Apply Now
@@ -262,7 +284,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
             <button
               onClick={handleTailorResume}
               disabled={isTailoring}
-              className="text-ia hover:text-ia-hover text-xs font-medium transition-colors disabled:opacity-50"
+              className="text-ia hover:text-ia-hover text-xs font-medium transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded"
             >
               {isTailoring ? 'Tailoring...' : 'Tailor Resume for This Job'}
             </button>
