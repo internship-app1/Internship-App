@@ -931,26 +931,42 @@ def scrape_github_internships(keyword="intern", max_results=10000, incremental=F
         # Parse the markdown content directly
         markdown_content = response.text
         
-        # Parse the markdown table structure
+        # Parse the markdown table structure (skills deferred — no LLM yet)
         all_jobs = parse_internship_table(markdown_content, max_results)
-        
+
         # Apply date filter if specified
         if max_days_old is not None:
             all_jobs = filter_jobs_by_date(all_jobs, max_days_old)
-        
+
+        def _populate_skills(jobs_list):
+            """Run LLM skill extraction on jobs that don't already have skills."""
+            failures = 0
+            for job in jobs_list:
+                if job.get('required_skills'):
+                    continue
+                try:
+                    extracted = extract_skills_from_job(job)
+                    job['required_skills'] = extracted if extracted else ['Programming', 'Software Development']
+                except Exception:
+                    failures += 1
+                    job['required_skills'] = ['Programming', 'Software Development', 'Computer Science']
+            if failures:
+                logger.warning(f"[GitHub Internships] {failures} skill-extraction failures")
+            return jobs_list
+
         if incremental:
-            # Filter to only new jobs using database comparison
+            # Filter to only new jobs BEFORE paying for LLM extraction
             try:
                 from job_cache import get_new_jobs_only
                 filtered_jobs = get_new_jobs_only(all_jobs)
                 logger.info(f"[GitHub Internships] Incremental scrape: {len(filtered_jobs)} new jobs (from {len(all_jobs)} total)")
-                return filtered_jobs
+                return _populate_skills(filtered_jobs)
             except Exception as e:
                 logger.warning(f"[GitHub Internships] Incremental filtering failed: {e} — falling back to full scrape")
-                return all_jobs
+                return _populate_skills(all_jobs)
         else:
             logger.info(f"[GitHub Internships] Full scrape: {len(all_jobs)} total jobs")
-            return all_jobs
+            return _populate_skills(all_jobs)
 
     except Exception as e:
         logger.error(f"[GitHub Internships] Error during {scrape_type} scrape: {e}")
@@ -1347,23 +1363,14 @@ def parse_internship_table(content, max_results):
                     'days_since_posted': days_since_posted  # Normalized to days for filtering
                 }
                 
-                # Extract skills using LLM from the detailed description
-                try:
-                    extracted_skills = extract_skills_from_job(job)
-                    job['required_skills'] = extracted_skills if extracted_skills else ['Programming', 'Software Development']
-                    _jobs_added += 1
-                except Exception as e:
-                    _skill_failures += 1
-                    job['required_skills'] = ['Programming', 'Software Development', 'Computer Science']
-                    _jobs_added += 1
-
                 jobs.append(job)
+                _jobs_added += 1
 
             except Exception as e:
                 _parse_errors += 1
                 continue
 
-    logger.info(f"[GitHub] Scraped {len(jobs)} jobs ({_skill_failures} skill-extraction failures, {_parse_errors} parse errors)")
+    logger.info(f"[GitHub] Parsed {len(jobs)} jobs ({_parse_errors} parse errors) — skill extraction deferred")
     return jobs
 
 def generate_detailed_description(company, role, location):

@@ -3,12 +3,8 @@ import { useAuth, useClerk } from '@clerk/react';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Upload, AlertCircle, Sparkles, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
-import { cn } from '../lib/utils';
 import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
+import { Upload, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
 // because it buffers responses. In production, use relative URLs.
@@ -21,39 +17,35 @@ const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
     const { hostname } = window.location;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-
     const envUrl = process.env.REACT_APP_API_URL?.trim();
 
     if (isLocalhost) {
-      if (envUrl) {
-        // Normalize to avoid trailing slashes like "https://api.example.com/"
-        return envUrl.replace(/\/+$/, '');
-      }
+      if (envUrl) return envUrl.replace(/\/+$/, '');
       return 'http://localhost:8000';
     }
 
-    // In production (or any non-localhost host), use same-origin relative URLs
-    // so Nginx / reverse proxy can route /api to the backend.
     return '';
   }
 
-  // Fallback for non-browser environments (tests, SSR, etc.)
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:8000';
-  }
-
+  if (process.env.NODE_ENV === 'development') return 'http://localhost:8000';
   return '';
 };
 
 const API_BASE_URL = getApiBaseUrl();
 
 // sessionStorage keys — used to persist the pending resume across OAuth redirects
-// (Google/GitHub sign-in redirects away from the page, losing in-memory React state).
 const PENDING_RESUME_DATA_KEY = 'iam_pending_resume_data';
 const PENDING_RESUME_META_KEY = 'iam_pending_resume_meta';
 
+const PROGRESS_MILESTONES = [
+  { label: 'Started', threshold: 25 },
+  { label: 'Analyzing', threshold: 50 },
+  { label: 'Matching', threshold: 75 },
+  { label: 'Complete', threshold: 100 },
+];
+
 const FindPage: React.FC = () => {
-  const { userId, getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string>('');
@@ -73,11 +65,10 @@ const FindPage: React.FC = () => {
 
   // Auto-submit after sign-in — handles both paths:
   //   A) In-page modal (no redirect): isSignedIn flips true while pendingAnalysis is set
-  //   B) OAuth redirect (page reload):  sessionStorage has the saved file, isSignedIn is true on mount
+  //   B) OAuth redirect (page reload): sessionStorage has the saved file, isSignedIn is true on mount
   useEffect(() => {
     if (!isSignedIn) return;
 
-    // Path B: restore file from sessionStorage after an OAuth redirect
     const storedData = sessionStorage.getItem(PENDING_RESUME_DATA_KEY);
     if (storedData) {
       try {
@@ -85,7 +76,6 @@ const FindPage: React.FC = () => {
         sessionStorage.removeItem(PENDING_RESUME_DATA_KEY);
         sessionStorage.removeItem(PENDING_RESUME_META_KEY);
 
-        // Decode base64 data URL back into a File
         const base64 = storedData.split(',')[1];
         const byteString = atob(base64);
         const arr = new Uint8Array(byteString.length);
@@ -98,17 +88,14 @@ const FindPage: React.FC = () => {
 
         setSelectedFile(file);
         setThinkDeeper(restoredThinkDeeper);
-        // Pass thinkDeeperOverride directly so it's used before the state flush
         handleFileUploadStreaming(file, restoredThinkDeeper);
       } catch (e) {
-        // Corrupted storage — clear it and let the user re-upload
         sessionStorage.removeItem(PENDING_RESUME_DATA_KEY);
         sessionStorage.removeItem(PENDING_RESUME_META_KEY);
       }
       return;
     }
 
-    // Path A: in-page modal sign-in
     if (pendingAnalysis && selectedFile) {
       setPendingAnalysis(false);
       handleFileUploadStreaming(selectedFile);
@@ -116,25 +103,20 @@ const FindPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn, pendingAnalysis]);
 
-  // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'recent'>('desc');
   const itemsPerPage = 10;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
+    if (file) setSelectedFile(file);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
+    if (file) setSelectedFile(file);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
@@ -142,9 +124,7 @@ const FindPage: React.FC = () => {
     setIsDragging(true);
   };
 
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
+  const handleDragLeave = () => setIsDragging(false);
 
   const startCooldown = (seconds: number) => {
     setCooldown(seconds);
@@ -163,7 +143,6 @@ const FindPage: React.FC = () => {
       return Array.from(new Uint8Array(hashBuffer))
         .map(b => b.toString(16).padStart(2, '0')).join('');
     }
-    // Fallback for insecure contexts (HTTP on non-localhost) — crypto.subtle unavailable
     return `${file.name}-${file.size}-${file.lastModified}`;
   };
 
@@ -172,7 +151,6 @@ const FindPage: React.FC = () => {
     setFromCache(false);
     const resumeHash = await hashFile(file);
 
-    // Obtain a fresh Clerk JWT for this request
     const token = await getToken();
     setAuthToken(token);
 
@@ -187,10 +165,10 @@ const FindPage: React.FC = () => {
           setSkillsFound(data.skills);
           setHasResults(true);
           setFromCache(true);
-          return; // skip full pipeline
+          return;
         }
       } catch (e) {
-        // cache check failed silently — fall through to full pipeline
+        // cache check failed — fall through to full pipeline
       }
     }
 
@@ -208,7 +186,6 @@ const FindPage: React.FC = () => {
       formData.append('think_deeper', useThinkDeeper.toString());
       formData.append('resume_hash', resumeHash);
 
-      // Use direct backend URL to bypass CRA proxy buffering for SSE
       const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
         method: 'POST',
         body: formData,
@@ -217,7 +194,6 @@ const FindPage: React.FC = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
-          // Rate limited — just start the cooldown, no error banner
           startCooldown(120);
         } else {
           setError(`HTTP error! status: ${response.status}`);
@@ -226,17 +202,14 @@ const FindPage: React.FC = () => {
         return;
       }
 
-      // Start 60-second cooldown to prevent accidental re-submissions
       startCooldown(60);
 
       const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
+      if (!reader) throw new Error('No response body');
 
       const decoder = new TextDecoder();
       const processedJobs: Job[] = [];
-      let buffer = ''; // Buffer for incomplete lines
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -245,18 +218,15 @@ const FindPage: React.FC = () => {
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
         const lines = buffer.split('\n');
-
-        // Keep the last incomplete line in the buffer
         buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.trim().startsWith('data: ')) {
             try {
-              const jsonStr = line.trim().slice(6); // Remove 'data: ' prefix
+              const jsonStr = line.trim().slice(6);
               const data = JSON.parse(jsonStr);
 
               if (data.error) {
-                // "Server busy" means semaphore full — start a short cooldown silently
                 const isBusy = typeof data.error === 'string' &&
                   (data.error.toLowerCase().includes('busy') ||
                    data.error.toLowerCase().includes('rate limit') ||
@@ -270,17 +240,9 @@ const FindPage: React.FC = () => {
                 return;
               }
 
-              if (data.progress !== undefined) {
-                setProgress(data.progress);
-              }
-
-              if (data.message) {
-                setCurrentStep(data.message);
-              }
-
-              if (data.skills) {
-                setSkillsFound(data.skills);
-              }
+              if (data.progress !== undefined) setProgress(data.progress);
+              if (data.message) setCurrentStep(data.message);
+              if (data.skills) setSkillsFound(data.skills);
 
               if (data.job_result) {
                 processedJobs.push(data.job_result);
@@ -323,8 +285,6 @@ const FindPage: React.FC = () => {
     if (!isSignedIn) {
       setPendingAnalysis(true);
 
-      // Save the file to sessionStorage so it survives an OAuth (Google/GitHub) redirect.
-      // FileReader is async, but it completes well before the redirect happens.
       const reader = new FileReader();
       reader.onload = () => {
         try {
@@ -336,8 +296,7 @@ const FindPage: React.FC = () => {
             thinkDeeper,
           }));
         } catch (e) {
-          // sessionStorage quota exceeded — modal flow still works;
-          // OAuth redirect won't restore the file, but that's better than blocking sign-in.
+          // sessionStorage quota exceeded — modal flow still works
         }
       };
       reader.readAsDataURL(selectedFile);
@@ -362,25 +321,20 @@ const FindPage: React.FC = () => {
     setSelectedFile(null);
   };
 
-  // Reset pagination when new results come in
   React.useEffect(() => {
-    if (jobs.length > 0) {
-      setCurrentPage(1);
-    }
+    if (jobs.length > 0) setCurrentPage(1);
   }, [jobs.length]);
 
-  // Sorting and pagination logic
   const sortedJobs = React.useMemo(() => {
     const sorted = [...jobs].sort((a, b) => {
       if (sortOrder === 'recent') {
         const dateA = a.first_seen ? new Date(a.first_seen).getTime() : 0;
         const dateB = b.first_seen ? new Date(b.first_seen).getTime() : 0;
         return dateB - dateA;
-      } else {
-        const scoreA = a.match_score || a.score || 0;
-        const scoreB = b.match_score || b.score || 0;
-        return sortOrder === 'desc' ? scoreB - scoreA : scoreA - scoreB;
       }
+      const scoreA = a.match_score || a.score || 0;
+      const scoreB = b.match_score || b.score || 0;
+      return sortOrder === 'desc' ? scoreB - scoreA : scoreA - scoreB;
     });
     return sorted;
   }, [jobs, sortOrder]);
@@ -389,8 +343,7 @@ const FindPage: React.FC = () => {
 
   const currentPageJobs = React.useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return sortedJobs.slice(startIndex, endIndex);
+    return sortedJobs.slice(startIndex, startIndex + itemsPerPage);
   }, [sortedJobs, currentPage, itemsPerPage]);
 
   const handleSortChange = (newOrder: 'desc' | 'asc' | 'recent') => {
@@ -403,445 +356,313 @@ const FindPage: React.FC = () => {
     document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Determine if error is a "no results" error vs a real error
-  const isNoResultsError =
-    error === 'No matching opportunities found for your skills.';
+  const isNoResultsError = error === 'No matching opportunities found for your skills.';
+
+  const sortBtn = (order: 'desc' | 'asc' | 'recent', label: React.ReactNode) => (
+    <button
+      onClick={() => handleSortChange(order)}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+        sortOrder === order
+          ? 'bg-ia text-bg'
+          : 'border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  const pageBtn = (page: number, active: boolean) => (
+    <button
+      key={page}
+      onClick={() => handlePageChange(page)}
+      className={`w-9 h-9 rounded-md text-xs font-medium transition-colors ${
+        active
+          ? 'bg-ia text-bg'
+          : 'border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50'
+      }`}
+    >
+      {page}
+    </button>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-bg text-text-primary">
       <Header forceSolid />
 
-      <main className="container px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Header Section */}
-        <div className="text-center space-y-2 pt-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/50 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
-            AI Matching Ready
+      <main className="max-w-4xl mx-auto px-6 md:px-10 py-10 space-y-8">
+
+        {/* Hero */}
+        <div className="text-center pt-4 pb-2">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-text-tertiary text-xs">Live job database</span>
           </div>
-          <h1
-            className="text-3xl md:text-4xl font-bold tracking-tight"
-            style={{ fontFamily: 'Sora, sans-serif' }}
-          >
+          <h1 className="font-serif italic text-3xl md:text-4xl text-text-primary">
             Upload your resume to begin
           </h1>
-          <p className="text-base text-muted-foreground">
+          <p className="text-text-secondary text-sm mt-2">
             PDF or image — we'll handle the rest
           </p>
         </div>
 
-        {/* Upload Section */}
-        <div className="max-w-2xl mx-auto p-px rounded-2xl bg-gradient-to-br from-violet-400/30 via-transparent to-cyan-400/20 dark:from-violet-500/30 dark:to-cyan-500/20 shadow-lg shadow-violet-500/10">
-          <Card className="rounded-[calc(1rem-1px)] border-0 shadow-none bg-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5 text-violet-600" />
-              Upload Your Resume
-            </CardTitle>
-            <CardDescription>
-              Upload your resume (PDF or image) to get personalized internship recommendations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex flex-col items-center gap-4">
-                {/* Drop zone */}
-                <label
-                  className={cn(
-                    'flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200',
-                    isDragging
-                      ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/40 scale-[1.01]'
-                      : selectedFile
-                      ? 'border-violet-400 dark:border-violet-600 bg-violet-50/60 dark:bg-violet-950/30'
-                      : 'border-border hover:border-violet-300 hover:bg-violet-50/30 dark:hover:border-violet-700 dark:hover:bg-violet-950/20'
-                  )}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    {selectedFile ? (
-                      <>
-                        <CheckCircle2 className="h-8 w-8 mb-2 text-violet-600" />
-                        <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Click to change file</p>
-                      </>
-                    ) : isDragging ? (
-                      <>
-                        <Upload className="h-8 w-8 mb-2 text-violet-600" />
-                        <p className="text-sm font-medium text-violet-700">Drop it here</p>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
-                        <p className="text-sm font-medium text-foreground">
-                          Tap to upload
-                          <span className="hidden sm:inline"> or drag and drop</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
-                      </>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={handleFileChange}
-                  />
-                </label>
-
-                {/* Think Deeper toggle */}
-                <div className="w-full max-w-sm">
-                  <ThinkDeeperToggle
-                    checked={thinkDeeper}
-                    onChange={setThinkDeeper}
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full md:w-auto px-8 rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={!selectedFile || isLoading || cooldown > 0}
-                >
-                  {isLoading ? (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : cooldown > 0 ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-2" />
-                      Please wait {cooldown}s
-                    </>
-                  ) : selectedFile && !isSignedIn ? (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Sign in to analyze
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Find Matches
-                    </>
-                  )}
-                </Button>
+        {/* Upload card */}
+        <div className="max-w-2xl mx-auto bg-surface border border-lp-border rounded-lg p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <Upload className="h-4 w-4 text-text-secondary" />
+            <span className="text-text-primary text-sm font-semibold">Upload Your Resume</span>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Drop zone */}
+            <label
+              className={`flex flex-col items-center justify-center w-full h-32 border border-dashed rounded-lg cursor-pointer transition-colors ${
+                isDragging
+                  ? 'border-ia bg-ia-subtle'
+                  : selectedFile
+                  ? 'border-ia/60 bg-ia-subtle'
+                  : 'border-lp-border hover:border-ia/50'
+              }`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            >
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                {selectedFile ? (
+                  <>
+                    <CheckCircle2 className="h-7 w-7 mb-2 text-ia" />
+                    <p className="text-sm font-medium text-text-primary">{selectedFile.name}</p>
+                    <p className="text-xs text-text-tertiary mt-0.5">Click to change file</p>
+                  </>
+                ) : isDragging ? (
+                  <>
+                    <Upload className="h-7 w-7 mb-2 text-ia" />
+                    <p className="text-sm font-medium text-ia">Drop it here</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-7 w-7 mb-2 text-text-tertiary" />
+                    <p className="text-sm font-medium text-text-secondary">
+                      Tap to upload
+                      <span className="hidden sm:inline"> or drag and drop</span>
+                    </p>
+                    <p className="text-xs text-text-tertiary mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
+                  </>
+                )}
               </div>
-            </form>
-          </CardContent>
-          </Card>
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={handleFileChange}
+              />
+            </label>
+
+            {/* Think Deeper toggle */}
+            <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
+
+            <button
+              type="submit"
+              className="w-full md:w-auto px-8 py-2.5 rounded-lg bg-ia text-bg text-sm font-semibold hover:bg-ia-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!selectedFile || isLoading || cooldown > 0}
+            >
+              {isLoading ? (
+                'Analyzing...'
+              ) : cooldown > 0 ? (
+                <span className="inline-flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Please wait {cooldown}s
+                </span>
+              ) : selectedFile && !isSignedIn ? (
+                'Sign in to analyze'
+              ) : (
+                'Find Matches'
+              )}
+            </button>
+          </form>
         </div>
 
-        {/* Enhanced Progress Section */}
+        {/* Progress */}
         {isLoading && (
-          <Card className="max-w-2xl mx-auto border-2 border-violet-200/60 shadow-lg shadow-violet-500/5">
-            <CardContent className="pt-6 pb-6">
-              <div className="space-y-5">
-                {/* Progress Header */}
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center">
-                      <Sparkles className="h-5 w-5 text-white animate-pulse" />
-                    </div>
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500 to-violet-700 animate-ping opacity-20"></div>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-lg font-semibold text-foreground leading-tight">
-                      {currentStep || 'Processing...'}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Please wait while we analyze your resume
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className="text-2xl font-bold"
-                      style={{
-                        background: 'linear-gradient(135deg,#7C3AED,#22D3EE)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                      }}
-                    >
-                      {progress}%
-                    </div>
-                    <p className="text-xs text-muted-foreground">Complete</p>
-                  </div>
-                </div>
-
-                {/* Enhanced Progress Bar */}
-                <div className="relative">
-                  <div className="w-full bg-violet-100 dark:bg-violet-950/60 rounded-full h-3 overflow-hidden shadow-inner">
-                    <div
-                      className={cn(
-                        'h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden',
-                        'bg-gradient-to-r from-violet-500 via-violet-600 to-cyan-500',
-                        'shadow-lg'
-                      )}
-                      style={{
-                        width: `${progress}%`,
-                        backgroundSize: '200% 100%',
-                        animation: 'gradient-shift 2s ease-in-out infinite',
-                      }}
-                    >
-                      <div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                        style={{ animation: 'shimmer 1.5s ease-in-out infinite' }}
-                      />
-                    </div>
-                  </div>
-                  {/* Progress milestones */}
-                  <div className="grid grid-cols-2 sm:flex sm:justify-between mt-2 px-1 gap-y-1">
-                    {[
-                      { label: 'Started', threshold: 25 },
-                      { label: 'Analyzing', threshold: 50 },
-                      { label: 'Matching', threshold: 75 },
-                      { label: 'Complete', threshold: 100 },
-                    ].map(({ label, threshold }) => (
-                      <span
-                        key={label}
-                        className={cn(
-                          'text-xs font-medium transition-colors duration-300',
-                          progress >= threshold ? 'text-violet-600' : 'text-muted-foreground'
-                        )}
-                      >
-                        {progress >= threshold ? '✓' : '○'} {label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+          <div className="max-w-2xl mx-auto bg-surface border border-lp-border rounded-lg p-6">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="flex-1">
+                <p className="text-text-primary text-sm font-medium leading-tight">
+                  {currentStep || 'Processing...'}
+                </p>
+                <p className="text-text-tertiary text-xs mt-0.5">
+                  Please wait while we analyze your resume
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Add keyframe animations */}
-        <style>{`
-          @keyframes gradient-shift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-          }
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-        `}</style>
-
-        {/* Error Message — only for real (non-zero-results) errors */}
-        {error && !isNoResultsError && (
-          <Card className="max-w-2xl mx-auto border-destructive">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-destructive">Error</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{error}</p>
-                </div>
+              <div className="text-right shrink-0">
+                <div className="font-serif italic text-3xl text-text-primary leading-none">{progress}%</div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Skills Section */}
-        {skillsFound.length > 0 && (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-violet-600" />
-                Skills Detected in Your Resume
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {skillsFound.map((skill, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="px-3 py-1 font-mono text-xs bg-violet-50 text-violet-700 border border-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/50"
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Filter Controls */}
-        {hasResults && jobs.length > 0 && (
-          <Card className="max-w-4xl mx-auto">
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Sort by:</span>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      variant={sortOrder === 'desc' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleSortChange('desc')}
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                      Highest Match
-                    </Button>
-                    <Button
-                      variant={sortOrder === 'asc' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleSortChange('asc')}
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                      Lowest Match
-                    </Button>
-                    <Button
-                      variant={sortOrder === 'recent' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleSortChange('recent')}
-                      className="flex items-center gap-2"
-                    >
-                      <Clock className="h-4 w-4" />
-                      Most Recent
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>
-                    Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedJobs.length)}–
-                    {Math.min(currentPage * itemsPerPage, sortedJobs.length)} of {sortedJobs.length} results
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Debug Section - Remove in production */}
-        {process.env.NODE_ENV === 'development' && (jobs.length > 0 || hasResults) && (
-          <Card className="max-w-4xl mx-auto bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <p><strong>Has Results:</strong> {hasResults.toString()}</p>
-              <p><strong>Jobs Count:</strong> {jobs.length}</p>
-              <p><strong>Skills Found:</strong> {skillsFound.length}</p>
-              <p><strong>Current Step:</strong> {currentStep}</p>
-              <p><strong>Progress:</strong> {progress}%</p>
-              {jobs.length > 0 && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer font-medium">Job Scores</summary>
-                  <div className="mt-2 space-y-1">
-                    {jobs.map((job, index) => (
-                      <p key={index} className="text-xs">
-                        {index + 1}. {job.company} - {job.title}: {job.match_score || job.score || 0}%
-                      </p>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Results Section */}
-        {hasResults && (
-          <div className="space-y-6" id="results-section">
-            <div className="text-center">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold" style={{ fontFamily: 'Sora, sans-serif' }}>
-                {jobs.length > 0
-                  ? `You matched ${jobs.length} internships — here are your best fits`
-                  : 'No Matches Found'}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {jobs.length > 0
-                  ? 'AI-powered career fit analysis · Sorted by compatibility score'
-                  : 'Try updating your resume with more technical skills'}
-              </p>
-              {jobs.length > 0 && (
-                <div className="flex justify-center gap-4 mt-4 flex-wrap">
-                  <Badge
-                    variant="secondary"
-                    className="px-3 py-1 bg-violet-50 text-violet-700 border border-violet-100"
-                  >
-                    <Sparkles className="h-4 w-4 mr-1" />
-                    Intelligent Matching
-                  </Badge>
-                  <Badge variant="outline" className="px-3 py-1">
-                    All {jobs.length} Results
-                  </Badge>
-                  {fromCache && (
-                    <Badge
-                      variant="secondary"
-                      className="px-3 py-1 bg-cyan-50 text-cyan-700 border border-cyan-100"
-                    >
-                      Loaded from cache
-                    </Badge>
-                  )}
-                </div>
-              )}
             </div>
 
-            <div className="grid gap-4 max-w-4xl mx-auto">
+            <div className="w-full h-1 bg-lp-border rounded-full overflow-hidden">
+              <div
+                className="h-full bg-ia rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
+            <div className="flex justify-between mt-2 px-0.5">
+              {PROGRESS_MILESTONES.map(({ label, threshold }) => (
+                <span
+                  key={label}
+                  className={`text-[10px] transition-colors ${
+                    progress >= threshold ? 'text-ia' : 'text-text-tertiary'
+                  }`}
+                >
+                  {progress >= threshold ? '✓' : '○'} {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !isNoResultsError && (
+          <div className="max-w-2xl mx-auto bg-surface border border-red-500/30 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-300 text-sm font-medium">Error</p>
+                <p className="text-text-secondary text-sm mt-0.5">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Detected skills */}
+        {skillsFound.length > 0 && (
+          <div className="bg-surface border border-lp-border rounded-lg p-5">
+            <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-2">
+              Skills detected in your resume
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {skillsFound.map((skill, i) => (
+                <span key={i} className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sort controls */}
+        {hasResults && jobs.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-text-tertiary text-xs">Sort by</span>
+              {sortBtn('desc', <><ArrowDown className="h-3 w-3" /> Highest Match</>)}
+              {sortBtn('asc', <><ArrowUp className="h-3 w-3" /> Lowest Match</>)}
+              {sortBtn('recent', <><Clock className="h-3 w-3" /> Most Recent</>)}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-text-tertiary">
+              {fromCache && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                  cached
+                </span>
+              )}
+              <span>
+                {Math.min((currentPage - 1) * itemsPerPage + 1, sortedJobs.length)}–
+                {Math.min(currentPage * itemsPerPage, sortedJobs.length)} of {sortedJobs.length}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Debug — dev only */}
+        {process.env.NODE_ENV === 'development' && (jobs.length > 0 || hasResults) && (
+          <div className="bg-surface border border-lp-border rounded-lg p-4 text-xs text-text-secondary space-y-1">
+            <p className="text-text-tertiary text-[10px] uppercase tracking-wider mb-2">Debug</p>
+            <p>Has Results: {hasResults.toString()}</p>
+            <p>Jobs Count: {jobs.length}</p>
+            <p>Skills Found: {skillsFound.length}</p>
+            <p>Current Step: {currentStep}</p>
+            <p>Progress: {progress}%</p>
+            {jobs.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-text-secondary">Job Scores</summary>
+                <div className="mt-2 space-y-1">
+                  {jobs.map((job, index) => (
+                    <p key={index} className="text-[10px] font-mono">
+                      {index + 1}. {job.company} — {job.title}: {job.match_score || job.score || 0}%
+                    </p>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+        )}
+
+        {/* Results */}
+        {hasResults && (
+          <div className="space-y-6" id="results-section">
+            <div className="text-center border-t border-lp-border pt-8">
+              <h2 className="font-serif italic text-2xl md:text-3xl text-text-primary">
+                {jobs.length > 0
+                  ? `${jobs.length} internship${jobs.length !== 1 ? 's' : ''} matched`
+                  : 'No Matches Found'}
+              </h2>
+              <p className="text-text-secondary text-sm mt-1">
+                {jobs.length > 0
+                  ? 'Ranked by compatibility score'
+                  : 'Try updating your resume with more technical skills'}
+              </p>
+            </div>
+
+            <div className="space-y-3">
               {jobs.length > 0 ? (
                 currentPageJobs.map((job, index) => (
-                  <div
+                  <JobCard
                     key={`${job.company}-${job.title}-${(currentPage - 1) * itemsPerPage + index}`}
-                    className="transition-all duration-300 hover:-translate-y-1"
-                  >
-                    <JobCard
-                      job={job}
-                      isNewResult={isLoading && useStreaming}
-                      resumeFile={selectedFile}
-                      apiBaseUrl={API_BASE_URL}
-                      authToken={authToken}
-                    />
-                  </div>
+                    job={job}
+                    isNewResult={isLoading && useStreaming}
+                    resumeFile={selectedFile}
+                    apiBaseUrl={API_BASE_URL}
+                    authToken={authToken}
+                  />
                 ))
               ) : isNoResultsError ? (
-                /* ── Helpful empty state ── */
-                <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
-                  <div className="h-14 w-14 rounded-2xl bg-violet-50 border border-violet-100 dark:bg-violet-950/50 dark:border-violet-800/50 flex items-center justify-center mx-auto mb-5">
-                    <Sparkles className="h-7 w-7 text-violet-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+                <div className="bg-surface border border-lp-border rounded-lg p-10 text-center">
+                  <h3 className="font-serif italic text-xl text-text-primary mb-2">
                     No matches found yet
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-5 max-w-md mx-auto">
+                  <p className="text-text-secondary text-sm leading-relaxed mb-5 max-w-md mx-auto">
                     We scanned our database but couldn't find a strong fit for your current resume.
                     This usually means your resume is missing technical keywords or project details.
                   </p>
                   {skillsFound.length > 0 && (
                     <div className="mb-6">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      <p className="text-text-tertiary text-[10px] uppercase tracking-wider mb-2">
                         Skills we detected
                       </p>
-                      <div className="flex flex-wrap gap-1.5 justify-center">
+                      <div className="flex flex-wrap gap-1 justify-center">
                         {skillsFound.map((skill, i) => (
-                          <span
-                            key={i}
-                            className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800/50"
-                          >
+                          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
                             {skill}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
-                  <ul className="text-sm text-muted-foreground text-left max-w-xs mx-auto space-y-1.5 mb-6">
+                  <ul className="text-sm text-text-secondary text-left max-w-xs mx-auto space-y-1.5 mb-6">
                     <li className="flex items-start gap-2">
-                      <span className="text-violet-400 font-bold mt-0.5">·</span>
+                      <span className="text-ia font-bold mt-0.5 shrink-0">·</span>
                       Add specific tech stacks, languages, and frameworks
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-violet-400 font-bold mt-0.5">·</span>
+                      <span className="text-ia font-bold mt-0.5 shrink-0">·</span>
                       Include project names with measurable outcomes
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-violet-400 font-bold mt-0.5">·</span>
+                      <span className="text-ia font-bold mt-0.5 shrink-0">·</span>
                       List coursework or certifications relevant to your field
                     </li>
                   </ul>
                   <button
                     onClick={handleTryAgain}
-                    className="inline-flex items-center gap-2 rounded-lg px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md shadow-violet-500/20 transition-all hover:-translate-y-0.5"
+                    className="inline-flex items-center gap-2 rounded-lg px-6 py-2.5 bg-ia hover:bg-ia-hover text-bg text-sm font-semibold transition-colors"
                   >
                     <RefreshCcw className="h-4 w-4" />
                     Try Again with a New Resume
@@ -850,68 +671,49 @@ const FindPage: React.FC = () => {
               ) : null}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination */}
             {jobs.length > itemsPerPage && (
-              <Card className="max-w-4xl mx-auto">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="flex items-center gap-2"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
-                      </Button>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-lp-border">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                    Previous
+                  </button>
 
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                          let pageNum: number;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-
-                          return (
-                            <Button
-                              key={pageNum}
-                              variant={currentPage === pageNum ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => handlePageChange(pageNum)}
-                              className="w-11 h-11 min-w-[44px] min-h-[44px]"
-                            >
-                              {pageNum}
-                            </Button>
-                          );
-                        })}
-                      </div>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="flex items-center gap-2"
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages}
-                    </div>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return pageBtn(pageNum, currentPage === pageNum);
+                    })}
                   </div>
-                </CardContent>
-              </Card>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-lp-border text-text-secondary hover:text-text-primary hover:border-ia/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Next
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <span className="text-xs text-text-tertiary">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </div>
             )}
           </div>
         )}

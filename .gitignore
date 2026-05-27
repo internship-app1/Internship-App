@@ -23,3 +23,8 @@ jobs.db
 
 # Local changes / docs folder
 changes/
+
+.agents/
+.claude/
+.mcp.json
+skills-lock.json

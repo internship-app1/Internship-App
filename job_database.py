@@ -39,7 +39,7 @@ class Job(Base):
     job_hash = Column(String(64), unique=True, index=True, nullable=False)
     company = Column(String(255), nullable=False, index=True)
     title = Column(String(500), nullable=False, index=True)
-    location = Column(String(255), nullable=False)
+    location = Column(Text, nullable=False)
     apply_link = Column(Text, nullable=False)
     description = Column(Text)
     required_skills = Column(Text)  # JSON string

@@ -91,6 +91,10 @@ async def lifespan(app: FastAPI):
                 should_refresh = True
                 logger.info("No cached jobs found — initializing cache...")
 
+        if should_refresh and os.getenv("SKIP_STARTUP_SCRAPE", "").lower() in ("1", "true", "yes"):
+            logger.info("SKIP_STARTUP_SCRAPE is set — skipping startup scrape")
+            should_refresh = False
+
         if should_refresh:
             async def _background_scrape():
                 try:

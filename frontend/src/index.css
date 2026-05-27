@@ -67,9 +67,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2, h3, h4 {
-    font-family: 'Sora', 'Inter', -apple-system, sans-serif;
-  }
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
   }
@@ -90,17 +87,6 @@
 
 .animate-slide-in-up {
   animation: slideInUp 0.4s ease-out;
-}
-
-/* Progress bar animations */
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 /* Markdown formatting for job descriptions */

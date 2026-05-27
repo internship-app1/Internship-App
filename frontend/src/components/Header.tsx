@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUser, UserButton, SignInButton } from '@clerk/react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ThemeToggle } from './theme-toggle';
 import { Sparkles, Menu, X } from 'lucide-react';
 
 const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
@@ -22,78 +21,69 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
   };
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 12);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const solid = scrolled || forceSolid || mobileMenuOpen;
 
   return (
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-        scrolled || forceSolid || mobileMenuOpen
-          ? 'bg-white/90 dark:bg-neutral-950/90 backdrop-blur-md shadow-sm border-b border-neutral-200/60 dark:border-neutral-800/60'
-          : 'bg-transparent'
+        solid ? 'bg-bg/95 backdrop-blur-md border-b border-lp-border' : 'bg-transparent'
       }`}
     >
-      <div className="container flex h-16 items-center justify-between mx-auto px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto flex h-14 items-center justify-between px-6 md:px-10">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 min-w-0 no-underline">
-          <div className="h-7 w-7 flex-shrink-0 rounded-lg bg-violet-600 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-white" />
+          <div className="h-7 w-7 flex-shrink-0 rounded-lg bg-ia flex items-center justify-center">
+            <Sparkles className="h-4 w-4 text-bg" />
           </div>
-          <span
-            className="text-lg sm:text-xl font-bold text-neutral-950 dark:text-neutral-50 truncate"
-            style={{ fontFamily: 'Sora, sans-serif' }}
-          >
+          <span className="text-base font-semibold text-text-primary truncate">
             internshipmatcher
           </span>
         </Link>
 
-        {/* Desktop nav links */}
+        {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
           <a
             href="/#how-it-works"
             onClick={handleSectionNav('how-it-works')}
-            className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors"
+            className="text-sm text-text-secondary hover:text-text-primary transition-colors"
           >
             How It Works
           </a>
           <a
             href="/#features"
             onClick={handleSectionNav('features')}
-            className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors"
+            className="text-sm text-text-secondary hover:text-text-primary transition-colors"
           >
             Features
           </a>
           {isSignedIn && (
             <Link
               to="/history"
-              className="text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-50 transition-colors"
+              className="text-sm text-text-secondary hover:text-text-primary transition-colors"
             >
               My History
             </Link>
           )}
         </nav>
 
-        {/* Right side actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
+        {/* Right side */}
+        <div className="flex items-center gap-3">
           {isSignedIn ? (
             <UserButton />
           ) : (
             <SignInButton mode="modal">
-              <button className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg px-4 sm:px-5 py-2 text-sm font-semibold shadow-md shadow-violet-500/25 hover:-translate-y-0.5 transition-all min-h-[44px]">
+              <button className="bg-ia text-bg px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ia-hover transition-colors min-h-[44px]">
                 Sign In
               </button>
             </SignInButton>
           )}
-          {/* Hamburger button — mobile only */}
           <button
-            className="md:hidden flex items-center justify-center rounded-lg p-2 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors min-h-[44px] min-w-[44px]"
+            className="md:hidden flex items-center justify-center rounded-lg p-2 text-text-secondary hover:text-text-primary hover:bg-surface transition-colors min-h-[44px] min-w-[44px]"
             onClick={() => setMobileMenuOpen((o) => !o)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
@@ -102,28 +92,28 @@ const Header: React.FC<{ forceSolid?: boolean }> = ({ forceSolid = false }) => {
         </div>
       </div>
 
-      {/* Mobile nav drawer */}
+      {/* Mobile drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-neutral-200/60 dark:border-neutral-800/60 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md px-4 py-4 space-y-1">
+        <div className="md:hidden border-t border-lp-border bg-bg/95 backdrop-blur-md px-6 py-4 space-y-1">
           <a
             href="/#how-it-works"
             onClick={handleSectionNav('how-it-works')}
-            className="flex items-center py-3 px-3 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors min-h-[44px]"
+            className="flex items-center py-3 px-3 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-surface transition-colors min-h-[44px]"
           >
             How It Works
           </a>
           <a
             href="/#features"
             onClick={handleSectionNav('features')}
-            className="flex items-center py-3 px-3 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors min-h-[44px]"
+            className="flex items-center py-3 px-3 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-surface transition-colors min-h-[44px]"
           >
             Features
           </a>
           {isSignedIn && (
             <Link
               to="/history"
-              onClick={closeMobileMenu}
-              className="flex items-center py-3 px-3 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors min-h-[44px]"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center py-3 px-3 rounded-lg text-sm text-text-secondary hover:text-text-primary hover:bg-surface transition-colors min-h-[44px]"
             >
               My History
             </Link>
