@@ -975,34 +975,11 @@ def scrape_github_internships(keyword="intern", max_results=10000, incremental=F
 def extract_skills_from_job(job):
     """
     Extract skills from job title and description.
-    Uses AGGRESSIVE role inference from job title combined with LLM extraction.
+    Uses AGGRESSIVE role inference from job title. 
+    (LLM extraction deferred to matching phase for efficiency)
     """
     job_title = job.get('title', '')
-    job_description = job.get('description', '')
-    company = job.get('company', '')
-    
-    # STEP 1: Aggressively infer role-specific skills from title FIRST
-    title_skills = infer_skills_from_title_aggressive(job_title)
-    
-    # STEP 2: Try LLM extraction to enhance/refine
-    try:
-        from matching.llm_skill_extractor import extract_job_skills_with_llm
-        llm_skills = extract_job_skills_with_llm(job_title, job_description, company)
-        
-        if llm_skills and len(llm_skills) > 2:
-            # Merge title skills with LLM skills, removing duplicates
-            combined = title_skills.copy()
-            for skill in llm_skills:
-                if skill not in combined and skill.lower() not in [s.lower() for s in combined]:
-                    combined.append(skill)
-            return combined[:8]  # Limit to 8 skills
-        else:
-            # LLM didn't find much, use title-inferred skills
-            return title_skills
-            
-    except Exception as e:
-        logger.warning(f"LLM extraction failed, using title-based inference: {e}")
-        return title_skills
+    return infer_skills_from_title_aggressive(job_title)
 
 def infer_skills_from_title_aggressive(job_title):
     """
