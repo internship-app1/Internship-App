@@ -24,9 +24,9 @@ export function BuilderBlock() {
           </div>
 
           <p className="font-serif text-xl text-text-primary leading-[1.55] mb-6 max-w-xl">
-            I built this because I was sick of pasting my résumé into job boards that ranked roles
-            by keyword density. The matcher reads what's actually in your résumé — and ranks live
-            postings against it.
+            I built this because I was sick of randomly applying to jobs without knowing whether or not I was a good fit.
+            Beyond applying to jobs that I saw were best fit, it's also important to tailor your resume to pass the ATS, so 
+            we even added a tailor resume feature to help you get the best results!
           </p>
 
           <div className="font-mono text-[11px] text-text-secondary mb-4 leading-relaxed">
@@ -38,7 +38,7 @@ export function BuilderBlock() {
 
           <div className="flex gap-1 font-mono text-[11px] text-text-secondary items-center">
             <a
-              href="https://github.com/Sujan30/jobbot"
+              href="https://github.com/Sujan30"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-text-primary transition-colors"

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, useClerk } from '@clerk/react';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
@@ -49,6 +50,7 @@ const FindPage: React.FC = () => {
   const { openSignIn } = useClerk();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string>('');
+  const [quotaError, setQuotaError] = useState<{ message: string; reset_at: string | null } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasResults, setHasResults] = useState(false);
   const [skillsFound, setSkillsFound] = useState<string[]>([]);
@@ -174,6 +176,7 @@ const FindPage: React.FC = () => {
 
     setIsLoading(true);
     setError('');
+    setQuotaError(null);
     setHasResults(false);
     setJobs([]);
     setSkillsFound([]);
@@ -194,6 +197,14 @@ const FindPage: React.FC = () => {
 
       if (!response.ok) {
         if (response.status === 429) {
+          try {
+            const body = await response.json();
+            if (body?.detail?.error === 'weekly_quota_exceeded') {
+              setQuotaError({ message: body.detail.message, reset_at: body.detail.reset_at ?? null });
+              setIsLoading(false);
+              return;
+            }
+          } catch {}
           startCooldown(120);
         } else {
           setError(`HTTP error! status: ${response.status}`);
@@ -523,6 +534,29 @@ const FindPage: React.FC = () => {
                   {progress >= threshold ? '—' : '·'} {label}
                 </span>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quota exceeded error */}
+        {quotaError && (
+          <div className="py-8 border-b border-lp-border max-w-2xl">
+            <div className="border border-red-500/40 bg-red-500/5 p-4">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-red-500 mb-1">Weekly limit reached</p>
+              <p className="text-sm text-text-secondary mb-2">{quotaError.message}</p>
+              {quotaError.reset_at && (
+                <p className="font-mono text-xs text-text-tertiary mb-3">
+                  Resets {(() => {
+                    const d = new Date(quotaError.reset_at.endsWith('Z') ? quotaError.reset_at : quotaError.reset_at + 'Z');
+                    const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+                    const abs = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                    return days <= 0 ? `today · ${abs}` : days === 1 ? `tomorrow · ${abs}` : `in ${days} days · ${abs}`;
+                  })()}
+                </p>
+              )}
+              <Link to="/usage" className="font-mono text-xs text-red-500 hover:opacity-70 transition-opacity">
+                View usage →
+              </Link>
             </div>
           </div>
         )}

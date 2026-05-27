@@ -2,14 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/react';
 import { API_BASE_URL } from '../lib/api';
 
+export interface QuotaMetric {
+  limit: number;
+  used: number;
+  remaining: number;
+  reset_at: string | null;
+  window_days: number;
+}
+
 export interface UsageData {
-  tailor_resume: {
-    limit: number;
-    used: number;
-    remaining: number;
-    reset_at: string | null;
-    window_days: number;
-  };
+  tailor_resume: QuotaMetric;
+  think_deeper: QuotaMetric;
 }
 
 export function useUsage() {
@@ -35,7 +38,8 @@ export function useUsage() {
     } finally {
       setLoading(false);
     }
-  }, [isSignedIn, getToken]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
 
   useEffect(() => {
     fetchUsage();

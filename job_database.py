@@ -97,6 +97,17 @@ class TailorRequestLog(Base):
     company = Column(String(500))
     __table_args__ = (Index('idx_tailor_user_time', 'user_id', 'requested_at'),)
 
+
+class ThinkDeeperRequestLog(Base):
+    """Append-only log of successful deep-match requests, used for the weekly quota."""
+    __tablename__ = "think_deeper_request_log"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    requested_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    resume_hash = Column(String(255), nullable=True)
+    __table_args__ = (Index('idx_think_deeper_user_time', 'user_id', 'requested_at'),)
+
+
 # Database initialization
 def init_database():
     """Initialize database tables"""
@@ -466,7 +477,7 @@ def get_database_stats() -> Dict:
             'new_jobs_24h': new_last_24h,
             'latest_cache': {
                 'type': latest_cache.cache_type if latest_cache else None,
-                'updated': latest_cache.last_updated if latest_cache else None,
+                'updated': latest_cache.last_updated.isoformat() if latest_cache and latest_cache.last_updated else None,
                 'job_count': latest_cache.job_count if latest_cache else 0
             }
         }

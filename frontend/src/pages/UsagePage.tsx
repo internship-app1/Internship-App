@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth, SignInButton } from '@clerk/react';
 import Header from '../components/Header';
-import { useUsage } from '../hooks/useUsage';
+import { useUsage, QuotaMetric } from '../hooks/useUsage';
 
 function formatReset(resetAt: string | null): string {
   if (!resetAt) return '—';
@@ -10,12 +10,64 @@ function formatReset(resetAt: string | null): string {
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / 86400000);
-
   const abs = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-
   if (diffDays <= 0) return `today · ${abs}`;
   if (diffDays === 1) return `tomorrow · ${abs}`;
   return `in ${diffDays} days · ${abs}`;
+}
+
+interface QuotaCardProps {
+  label: string;
+  metric: QuotaMetric;
+}
+
+function QuotaCard({ label, metric }: QuotaCardProps) {
+  const pct = Math.min((metric.used / metric.limit) * 100, 100);
+  const atLimit = metric.remaining === 0;
+
+  return (
+    <div className="border border-lp-border bg-surface p-6">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
+        {label}
+      </div>
+
+      {/* Counter */}
+      <div className="flex items-baseline gap-1.5 mb-5">
+        <span className={`font-serif text-4xl leading-none ${atLimit ? 'text-red-500' : 'text-text-primary'}`}>
+          {metric.used}
+        </span>
+        <span className="font-mono text-sm text-text-tertiary">/ {metric.limit}</span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full h-px bg-lp-border mb-5 overflow-hidden">
+        <div
+          className={`h-full transition-all duration-500 ${atLimit ? 'bg-red-500' : 'bg-text-primary'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {/* Three-column metadata */}
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-1">Used</div>
+          <div className="font-serif text-lg text-text-primary leading-none">{metric.used}</div>
+        </div>
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-1">Remaining</div>
+          <div className={`font-serif text-lg leading-none ${atLimit ? 'text-red-500' : 'text-text-primary'}`}>
+            {metric.remaining}
+          </div>
+        </div>
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-1">Renews</div>
+          <div className="font-mono text-xs text-text-secondary leading-snug">
+            {formatReset(metric.reset_at)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const UsagePage: React.FC = () => {
@@ -60,10 +112,6 @@ const UsagePage: React.FC = () => {
     );
   }
 
-  const tr = data?.tailor_resume;
-  const pct = tr ? Math.min((tr.used / tr.limit) * 100, 100) : 0;
-  const atLimit = tr ? tr.remaining === 0 : false;
-
   return (
     <div className="min-h-screen bg-bg text-text-primary">
       <Header forceSolid />
@@ -96,70 +144,32 @@ const UsagePage: React.FC = () => {
           </div>
         )}
 
-        {/* Usage card */}
-        {!loading && !error && tr && (
+        {/* Usage cards */}
+        {!loading && !error && data && (
           <div className="flex flex-col gap-4">
-            {/* Primary meter card */}
-            <div className="border border-lp-border bg-surface p-6">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-                Tailored resumes
-              </div>
+            <QuotaCard label="Tailored resumes" metric={data.tailor_resume} />
+            <QuotaCard label="Think Deeper matches" metric={data.think_deeper} />
 
-              {/* Counter */}
-              <div className="flex items-baseline gap-1.5 mb-5">
-                <span className={`font-serif text-4xl leading-none ${atLimit ? 'text-red-500' : 'text-text-primary'}`}>
-                  {tr.used}
-                </span>
-                <span className="font-mono text-sm text-text-tertiary">/ {tr.limit}</span>
-              </div>
-
-              {/* Progress bar */}
-              <div className="w-full h-px bg-lp-border mb-5 overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${atLimit ? 'bg-red-500' : 'bg-text-primary'}`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-
-              {/* Three-column metadata */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-1">
-                    Used
-                  </div>
-                  <div className="font-serif text-lg text-text-primary leading-none">{tr.used}</div>
-                </div>
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-1">
-                    Remaining
-                  </div>
-                  <div className={`font-serif text-lg leading-none ${atLimit ? 'text-red-500' : 'text-text-primary'}`}>
-                    {tr.remaining}
-                  </div>
-                </div>
-                <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-1">
-                    Renews
-                  </div>
-                  <div className="font-mono text-xs text-text-secondary leading-snug">
-                    {formatReset(tr.reset_at)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Explainer card */}
+            {/* Explainer */}
             <div className="border border-lp-border bg-surface p-6">
               <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
-                About this limit
+                About these limits
               </div>
-              <p className="text-sm text-text-secondary leading-relaxed">
-                Tailoring a resume calls a Claude Sonnet model and compiles a
-                fresh LaTeX PDF — it's the most compute-heavy action in the
-                app. The weekly cap of {tr.limit} keeps the lights on.
-                Quick matches and Think Deeper analyses are{' '}
-                <span className="font-medium text-text-primary">unlimited</span>.
+              <p className="text-sm text-text-secondary leading-relaxed mb-5">
+                Resume tailoring is capped at{' '}
+                <span className="font-medium text-text-primary">5/week</span> and Think
+                Deeper matches at{' '}
+                <span className="font-medium text-text-primary">20/week</span> per account.
+                Quick matches remain{' '}
+                <span className="font-medium text-text-primary">unlimited</span>. Counters
+                reset 7 days after each individual use.
               </p>
+              <a
+                href="mailto:nandikolsujan@gmail.com?subject=Usage%20Limit%20Request&body=Hi%2C%0A%0AI%27d%20like%20to%20request%20higher%20usage%20limits%20for%20my%20account.%0A%0AThanks"
+                className="inline-block bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              >
+                Need higher limits? Contact us →
+              </a>
             </div>
           </div>
         )}
