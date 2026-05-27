@@ -21,3 +21,5 @@ uploads/
 jobs.db
 *.db
 
+# Local changes / docs folder
+changes/
