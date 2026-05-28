@@ -47,6 +47,26 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /* ── Landing page design tokens (CSS-variable driven for dark/light) ── */
+        bg: 'var(--lp-bg)',
+        surface: 'var(--lp-surface)',
+        lp: {
+          border: 'var(--lp-border)',
+        },
+        'text-primary': 'var(--lp-text-primary)',
+        'text-secondary': 'var(--lp-text-secondary)',
+        'text-tertiary': 'var(--lp-text-tertiary)',
+        ia: {
+          DEFAULT: 'var(--lp-ia)',
+          hover: 'var(--lp-ia-hover)',
+          subtle: 'var(--lp-ia-subtle)',
+          pill: 'var(--lp-ia-pill)',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Source Serif 4"', 'Georgia', 'serif'],
+        mono: ['"JetBrains Mono"', 'Fira Code', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",

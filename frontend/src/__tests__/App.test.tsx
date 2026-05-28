@@ -34,6 +34,8 @@ jest.mock('react-router-dom', () => ({
 // Pages — stub heavy pages so we only test routing wiring
 jest.mock('../pages/LandingPage', () => () => <div data-testid="landing-page">Landing</div>);
 jest.mock('../pages/FindPage', () => () => <div data-testid="find-page">Find</div>);
+jest.mock('../pages/HistoryPage', () => () => <div data-testid="history-page">History</div>);
+jest.mock('../pages/UsagePage', () => () => <div data-testid="usage-page">Usage</div>);
 jest.mock('../pages/LoginPage', () => () => <div data-testid="login-page">Login</div>);
 jest.mock('../components/TestJobDisplay', () => () => <div data-testid="test-page">Test</div>);
 

@@ -1,16 +1,16 @@
 # llm_processing_node.py
 
-from matching.matcher import match_job_to_resume
+from matching.matcher import match_resume_to_jobs
 
-def llm_processing_node(profile, jobs):
+def llm_processing_node(profile, jobs, resume_text="", use_llm=False):
     """
-    Matches jobs to the user's profile using your existing matcher.
-    Returns a list of jobs with match scores.
+    Matches jobs to the user's profile using the efficient batch matcher.
+    Returns a list of jobs with match scores and AI reasoning.
+    Pass use_llm=True to enable deep LLM re-ranking (Think Deeper mode).
     """
-    results = []
-    for job in jobs:
-        score = match_job_to_resume(job, profile["skills"])
-        job_with_score = job.copy()
-        job_with_score["match_score"] = score
-        results.append(job_with_score)
-    return results
+    return match_resume_to_jobs(
+        profile.get("skills", []),
+        jobs,
+        resume_text=resume_text,
+        use_llm=use_llm,
+    )

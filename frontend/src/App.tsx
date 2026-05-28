@@ -5,6 +5,7 @@ import { ThemeProvider } from './components/theme-provider';
 import LandingPage from './pages/LandingPage';
 import FindPage from './pages/FindPage';
 import HistoryPage from './pages/HistoryPage';
+import UsagePage from './pages/UsagePage';
 import LoginPage from './pages/LoginPage';
 import TestJobDisplay from './components/TestJobDisplay';
 
@@ -35,6 +36,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/find" element={<FindPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/usage" element={<UsagePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/test" element={<TestJobDisplay />} />
             </Routes>

@@ -931,62 +931,51 @@ def scrape_github_internships(keyword="intern", max_results=10000, incremental=F
         # Parse the markdown content directly
         markdown_content = response.text
         
-        # Parse the markdown table structure
+        # Parse the markdown table structure (skills deferred — no LLM yet)
         all_jobs = parse_internship_table(markdown_content, max_results)
-        
+
         # Apply date filter if specified
         if max_days_old is not None:
             all_jobs = filter_jobs_by_date(all_jobs, max_days_old)
-        
+
+        def _populate_skills(jobs_list):
+            """Run LLM skill extraction on jobs that don't already have skills."""
+            failures = 0
+            for job in jobs_list:
+                if job.get('required_skills'):
+                    continue
+                try:
+                    extracted = extract_skills_from_job(job)
+                    job['required_skills'] = extracted if extracted else ['Programming', 'Software Development']
+                except Exception:
+                    failures += 1
+                    job['required_skills'] = ['Programming', 'Software Development', 'Computer Science']
+            if failures:
+                logger.warning(f"[GitHub Internships] {failures} skill-extraction failures")
+            return jobs_list
+
         if incremental:
-            # Filter to only new jobs using database comparison
+            # Filter to only new jobs BEFORE paying for LLM extraction
             try:
                 from job_cache import get_new_jobs_only
                 filtered_jobs = get_new_jobs_only(all_jobs)
                 logger.info(f"[GitHub Internships] Incremental scrape: {len(filtered_jobs)} new jobs (from {len(all_jobs)} total)")
-                return filtered_jobs
+                return _populate_skills(filtered_jobs)
             except Exception as e:
                 logger.warning(f"[GitHub Internships] Incremental filtering failed: {e} — falling back to full scrape")
-                return all_jobs
+                return _populate_skills(all_jobs)
         else:
             logger.info(f"[GitHub Internships] Full scrape: {len(all_jobs)} total jobs")
-            return all_jobs
+            return _populate_skills(all_jobs)
 
     except Exception as e:
         logger.error(f"[GitHub Internships] Error during {scrape_type} scrape: {e}")
         return []
 
 def extract_skills_from_job(job):
-    """
-    Extract skills from job title and description.
-    Uses AGGRESSIVE role inference from job title combined with LLM extraction.
-    """
+    """Infer skills from job title only. LLM re-ranking happens at match time, not scrape time."""
     job_title = job.get('title', '')
-    job_description = job.get('description', '')
-    company = job.get('company', '')
-    
-    # STEP 1: Aggressively infer role-specific skills from title FIRST
-    title_skills = infer_skills_from_title_aggressive(job_title)
-    
-    # STEP 2: Try LLM extraction to enhance/refine
-    try:
-        from matching.llm_skill_extractor import extract_job_skills_with_llm
-        llm_skills = extract_job_skills_with_llm(job_title, job_description, company)
-        
-        if llm_skills and len(llm_skills) > 2:
-            # Merge title skills with LLM skills, removing duplicates
-            combined = title_skills.copy()
-            for skill in llm_skills:
-                if skill not in combined and skill.lower() not in [s.lower() for s in combined]:
-                    combined.append(skill)
-            return combined[:8]  # Limit to 8 skills
-        else:
-            # LLM didn't find much, use title-inferred skills
-            return title_skills
-            
-    except Exception as e:
-        logger.warning(f"LLM extraction failed, using title-based inference: {e}")
-        return title_skills
+    return infer_skills_from_title_aggressive(job_title)
 
 def infer_skills_from_title_aggressive(job_title):
     """
@@ -1347,23 +1336,14 @@ def parse_internship_table(content, max_results):
                     'days_since_posted': days_since_posted  # Normalized to days for filtering
                 }
                 
-                # Extract skills using LLM from the detailed description
-                try:
-                    extracted_skills = extract_skills_from_job(job)
-                    job['required_skills'] = extracted_skills if extracted_skills else ['Programming', 'Software Development']
-                    _jobs_added += 1
-                except Exception as e:
-                    _skill_failures += 1
-                    job['required_skills'] = ['Programming', 'Software Development', 'Computer Science']
-                    _jobs_added += 1
-
                 jobs.append(job)
+                _jobs_added += 1
 
             except Exception as e:
                 _parse_errors += 1
                 continue
 
-    logger.info(f"[GitHub] Scraped {len(jobs)} jobs ({_skill_failures} skill-extraction failures, {_parse_errors} parse errors)")
+    logger.info(f"[GitHub] Parsed {len(jobs)} jobs ({_parse_errors} parse errors) — skill extraction deferred")
     return jobs
 
 def generate_detailed_description(company, role, location):

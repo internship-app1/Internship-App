@@ -1,0 +1,13 @@
+{
+  "indexCount": 847,
+  "hoursAgo": 6,
+  "sampleRole": {
+    "title": "Software Engineer Intern",
+    "company": "Ramp",
+    "location": "New York, NY",
+    "term": "Summer 2026",
+    "score": 94,
+    "matchedSkills": ["Python", "React", "TypeScript", "REST APIs"],
+    "explanation": "Strong match — your React and Python experience aligns directly with Ramp's fintech stack. 4 of 5 required skills detected in your resume."
+  }
+}

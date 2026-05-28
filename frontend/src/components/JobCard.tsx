@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { Job } from '../types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { MapPin, ExternalLink, Building2, TrendingUp, Brain, ChevronDown, ChevronUp, AlertTriangle, Clock } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { ExternalLink, ChevronDown, ChevronUp, AlertTriangle, Target, CheckCircle2 } from 'lucide-react';
 
 interface JobCardProps {
   job: Job;
@@ -15,9 +11,17 @@ interface JobCardProps {
 }
 
 const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile, apiBaseUrl = '', authToken }) => {
-  const [showAIReasoning, setShowAIReasoning] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(false);
   const [isTailoring, setIsTailoring] = useState(false);
   const [tailorError, setTailorError] = useState('');
+
+  const formatRelativeReset = (date: Date): string => {
+    const diffMs = date.getTime() - Date.now();
+    const diffDays = Math.ceil(diffMs / 86400000);
+    if (diffDays <= 0) return 'soon';
+    if (diffDays === 1) return 'tomorrow';
+    return `in ${diffDays} days`;
+  };
 
   const handleTailorResume = async () => {
     if (!resumeFile) return;
@@ -37,6 +41,15 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          let resetMsg = '';
+          try {
+            const body = await response.json();
+            const resetAt = body?.detail?.reset_at ? new Date(body.detail.reset_at) : null;
+            if (resetAt) resetMsg = ` Resets ${formatRelativeReset(resetAt)}.`;
+          } catch {}
+          throw new Error(`You've hit the weekly limit for tailor resumes.${resetMsg}`);
+        }
         const errText = await response.text();
         throw new Error(errText || `Server error ${response.status}`);
       }
@@ -58,13 +71,10 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
   };
 
   const score = job.match_score || job.score || 0;
-  const hasAIReasoning = job.ai_reasoning && job.ai_reasoning.reasoning;
-  const isHighScore = score >= 70;
+  const hasReasoning = job.ai_reasoning && job.ai_reasoning.reasoning;
 
-  // Calculate time ago from first_seen
   const getTimeAgo = (dateString?: string): string => {
     if (!dateString) return '';
-
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -72,336 +82,238 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 60) {
-      return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays} days ago`;
-    } else if (diffDays < 30) {
-      const weeks = Math.floor(diffDays / 7);
-      return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
-    } else {
-      const months = Math.floor(diffDays / 30);
-      return `${months} month${months !== 1 ? 's' : ''} ago`;
-    }
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    const weeks = Math.floor(diffDays / 7);
+    if (diffDays < 30) return `${weeks}w ago`;
+    const months = Math.floor(diffDays / 30);
+    return `${months}mo ago`;
   };
 
-  // Check if job is new (posted within last 48 hours)
   const isNewJob = (dateString?: string): boolean => {
     if (!dateString) return false;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffHours = (now.getTime() - date.getTime()) / 3600000;
-    return diffHours <= 48;
+    return (new Date().getTime() - new Date(dateString).getTime()) / 3600000 <= 48;
   };
 
   const timeAgo = getTimeAgo(job.first_seen);
-  const showNewBadge = isNewJob(job.first_seen);
+  const showNewIndicator = isNewJob(job.first_seen);
 
-  // Parse the match_description which contains our enhanced format
+  const CUE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+    '🎯': Target,
+    '✅': CheckCircle2,
+    '⚠️': AlertTriangle,
+    '⚠': AlertTriangle,
+  };
+
   const formatMatchDescription = (desc: string) => {
     if (!desc) return [];
-
     return desc
       .split('\n')
       .map((line, index) => {
-        if (!line.trim()) return null;
+        const trimmed = line.trim();
+        if (!trimmed) return null;
 
-        let formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Detect leading status emoji and map to Lucide icon
+        const cueKey = Object.keys(CUE_ICONS).find(k => trimmed.startsWith(k));
+        const Icon = cueKey ? CUE_ICONS[cueKey] : null;
+        const text = cueKey ? trimmed.slice(cueKey.length).trimStart() : trimmed;
 
-        if (line.includes('🎯')) {
-          return <p key={index} dangerouslySetInnerHTML={{ __html: formatted }} className="text-sm font-semibold text-primary" />;
-        } else if (line.includes('✨') || line.includes('🚀') || line.includes('📍')) {
-          return <p key={index} dangerouslySetInnerHTML={{ __html: formatted }} className="text-sm font-medium text-foreground mt-2" />;
-        } else if (line.startsWith('•')) {
-          return <p key={index} dangerouslySetInnerHTML={{ __html: formatted }} className="text-sm text-muted-foreground ml-2" />;
-        } else {
-          return <p key={index} dangerouslySetInnerHTML={{ __html: formatted }} className="text-sm text-muted-foreground" />;
-        }
+        // Render **bold** spans as JSX — no dangerouslySetInnerHTML
+        const parts = text.split(/(\*\*.*?\*\*)/g);
+        const content = parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+          }
+          return part;
+        });
+
+        return (
+          <p
+            key={index}
+            className={`text-sm text-text-secondary flex items-start gap-1.5${trimmed.startsWith('•') ? ' ml-2' : ''}`}
+          >
+            {Icon && <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-ia" />}
+            <span>{content}</span>
+          </p>
+        );
       })
       .filter(Boolean);
   };
 
-  return (
-    <Card
-      className={cn(
-        'transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-violet-500/10',
-        isNewResult && 'animate-slide-in-up border-violet-300'
-      )}
-    >
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <CardTitle className="text-base sm:text-xl leading-snug">{job.title}</CardTitle>
-              {showNewBadge && (
-                <Badge
-                  className="text-xs px-2 py-0.5 bg-gradient-to-r from-violet-500 to-cyan-500 text-white border-0 hover:opacity-90"
-                >
-                  NEW
-                </Badge>
-              )}
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Building2 className="h-4 w-4" />
-                <span className="font-medium">{job.company}</span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                <span className="text-sm">{job.location}</span>
-              </div>
-              {timeAgo && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm">Posted {timeAgo}</span>
-                </div>
-              )}
-            </div>
-          </div>
+  const scoreColor = score >= 90 ? 'text-emerald-400' : score >= 80 ? 'text-ia' : 'text-text-secondary';
+  const barColor = score >= 90 ? 'bg-emerald-400' : score >= 80 ? 'bg-ia' : 'bg-slate-500';
 
-          {/* Match score badge */}
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <div className="flex items-center gap-1.5 rounded-full border border-violet-100 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-900/40 px-3 py-1.5">
-              <TrendingUp className="h-4 w-4 text-violet-500" />
-              <span
-                className={cn(
-                  "text-base font-bold font-mono",
-                  isHighScore ? "text-violet-700 dark:text-violet-300" : "text-muted-foreground"
-                )}
-              >
-                {score}%
-              </span>
-              <span className="text-xs text-neutral-400">Match</span>
-            </div>
+  return (
+    <div className="bg-surface border border-lp-border p-5">
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-text-primary text-base font-semibold leading-snug">{job.title}</span>
+            {showNewIndicator && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+            )}
+          </div>
+          <div className="text-text-secondary text-sm">{job.company}</div>
+          <div className="flex items-center gap-2 mt-1 text-text-tertiary text-xs">
+            {job.location && <span>{job.location}</span>}
+            {timeAgo && <span>· {timeAgo}</span>}
           </div>
         </div>
-      </CardHeader>
 
-      {job.description && (
-        <CardContent className="border-t pt-4">
-          <div className="text-sm text-muted-foreground line-clamp-2">
-            {job.description}
+        {/* Score */}
+        <div className="shrink-0 text-right">
+          <div className={`font-serif text-2xl leading-none ${scoreColor}`}>{score}%</div>
+          <div className="text-text-tertiary text-[10px] mt-0.5">match</div>
+          <div className="w-16 h-0.5 bg-lp-border rounded-full overflow-hidden mt-1.5 ml-auto">
+            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${score}%` }} />
           </div>
-        </CardContent>
+        </div>
+      </div>
+
+      {/* Required skills */}
+      {job.required_skills && job.required_skills.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-lp-border">
+          <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-1.5">Required skills</div>
+          <div className="flex flex-wrap gap-1">
+            {job.required_skills.slice(0, 8).map((skill, i) => (
+              <span key={i} className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                {skill}
+              </span>
+            ))}
+            {job.required_skills.length > 8 && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-surface text-text-tertiary rounded font-mono border border-lp-border">
+                +{job.required_skills.length - 8}
+              </span>
+            )}
+          </div>
+        </div>
       )}
 
-      <CardContent className="border-t pt-4">
-        <div className="space-y-4">
-          {/* Required Skills */}
-          {job.required_skills && job.required_skills.length > 0 && (
-            <div>
-              <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                <span className="text-violet-500">•</span>
-                Required Skills
-              </h4>
-              <div className="flex flex-wrap gap-1">
-                {job.required_skills.slice(0, 6).map((skill, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="text-xs font-mono bg-violet-50 text-violet-700 border-violet-100"
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-                {job.required_skills.length > 6 && (
-                  <Badge variant="outline" className="text-xs font-mono">
-                    +{job.required_skills.length - 6} more
-                  </Badge>
-                )}
-              </div>
-            </div>
-          )}
+      {/* Why it fits */}
+      {job.match_description && (
+        <div className="mt-3 pt-3 border-t border-lp-border">
+          <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-1.5">Why it fits</div>
+          <div className="space-y-1">{formatMatchDescription(job.match_description)}</div>
+        </div>
+      )}
 
-          {/* Match Analysis */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-violet-500" />
-              <h4 className="font-semibold text-sm">AI Career Fit Analysis</h4>
-            </div>
-            <div className="space-y-1">
-              {formatMatchDescription(job.match_description)}
-            </div>
-          </div>
+      {/* Reasoning (Think Deeper) */}
+      {hasReasoning && (
+        <div className="mt-3 pt-3 border-t border-lp-border">
+          <button
+            type="button"
+            onClick={() => setShowReasoning(!showReasoning)}
+            aria-expanded={showReasoning}
+            className="flex items-center gap-1.5 text-text-tertiary text-[10px] uppercase tracking-wider hover:text-text-secondary transition-colors w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded"
+          >
+            <span>Reasoning</span>
+            {showReasoning ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
 
-          {/* AI Reasoning Section */}
-          {hasAIReasoning && (
-            <div className="space-y-3 border-t pt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAIReasoning(!showAIReasoning)}
-                className="flex items-center gap-2 h-auto p-2 justify-start w-full text-left"
-              >
-                <Brain className="h-4 w-4 text-violet-600" />
-                <span className="font-semibold text-sm">AI Reasoning</span>
-                <Badge
-                  variant="outline"
-                  className="text-xs ml-auto bg-violet-50 text-violet-700 border-violet-100"
-                >
-                  Think Deeper
-                </Badge>
-                {showAIReasoning ? (
-                  <ChevronUp className="h-4 w-4 ml-1" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 ml-1" />
-                )}
-              </Button>
-
-              {showAIReasoning && job.ai_reasoning && (
-                <div className="space-y-3 rounded-2xl border border-violet-100/50 bg-violet-50/30 dark:bg-violet-950/30 dark:border-violet-800/40 backdrop-blur-sm p-4">
-                  {/* Complexity Analysis */}
-                  <div>
-                    <h5 className="font-medium text-sm text-violet-900 dark:text-violet-200 mb-2">Resume Complexity Assessment</h5>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        variant={
-                          job.ai_reasoning.resume_complexity === 'ADVANCED'
-                            ? 'default'
-                            : job.ai_reasoning.resume_complexity === 'INTERMEDIATE'
-                            ? 'secondary'
-                            : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {job.ai_reasoning.resume_complexity}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        ({job.ai_reasoning.complexity_score}/100)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Experience Match */}
-                  <div>
-                    <h5 className="font-medium text-sm text-violet-900 dark:text-violet-200 mb-1">Experience Level Match</h5>
-                    <Badge
-                      variant={
-                        job.ai_reasoning.experience_match === 'excellent'
-                          ? 'default'
-                          : job.ai_reasoning.experience_match === 'good'
-                          ? 'secondary'
-                          : 'outline'
-                      }
-                      className="text-xs"
-                    >
-                      {job.ai_reasoning.experience_match}
-                    </Badge>
-                  </div>
-
-                  {/* AI Reasoning */}
-                  <div>
-                    <h5 className="font-medium text-sm text-violet-900 dark:text-violet-200 mb-2">AI Analysis</h5>
-                    <p className="text-sm text-violet-800 dark:text-violet-300 leading-relaxed">
-                      {job.ai_reasoning.reasoning}
-                    </p>
-                  </div>
-
-                  {/* Skill Matches */}
-                  <div>
-                    <h5 className="font-medium text-sm text-green-900 dark:text-green-300 mb-2">Your Matching Skills</h5>
-                    {job.ai_reasoning.skill_matches && job.ai_reasoning.skill_matches.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {job.ai_reasoning.skill_matches.map((skill, index) => (
-                          <Badge
-                            key={index}
-                            variant="default"
-                            className="text-xs font-mono bg-green-100 text-green-800 border-green-300"
-                          >
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground italic bg-muted p-2 rounded border">
-                        No skills matched to this job
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Skill Gaps */}
-                  <div>
-                    <h5 className="font-medium text-sm text-orange-900 dark:text-orange-300 mb-2">Skills to Develop</h5>
-                    {job.ai_reasoning.skill_gaps && job.ai_reasoning.skill_gaps.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {job.ai_reasoning.skill_gaps.slice(0, 5).map((skill, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs font-mono border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300"
-                          >
-                            {skill}
-                          </Badge>
-                        ))}
-                        {job.ai_reasoning.skill_gaps.length > 5 && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs font-mono border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300"
-                          >
-                            +{job.ai_reasoning.skill_gaps.length - 5} more
-                          </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground italic bg-muted p-2 rounded border">
-                        No additional skills required
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Red Flags */}
-                  {job.ai_reasoning.red_flags && job.ai_reasoning.red_flags.length > 0 && (
-                    <div>
-                      <h5 className="font-medium text-sm text-red-900 dark:text-red-300 mb-2 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        Considerations
-                      </h5>
-                      <ul className="space-y-1">
-                        {job.ai_reasoning.red_flags.map((flag, index) => (
-                          <li key={index} className="text-sm text-red-800 dark:text-red-400 flex items-start gap-2">
-                            <span className="text-red-500 mt-1">•</span>
-                            {flag}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+          {showReasoning && job.ai_reasoning && (
+            <div className="mt-3 space-y-3">
+              {(job.ai_reasoning.resume_complexity || job.ai_reasoning.experience_match) && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {job.ai_reasoning.resume_complexity && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                      {job.ai_reasoning.resume_complexity}
+                      {job.ai_reasoning.complexity_score !== undefined && ` (${job.ai_reasoning.complexity_score}/100)`}
+                    </span>
+                  )}
+                  {job.ai_reasoning.experience_match && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-ia-subtle text-ia-pill rounded font-mono">
+                      {job.ai_reasoning.experience_match} fit
+                    </span>
                   )}
                 </div>
               )}
+
+              <p className="text-sm text-text-secondary leading-relaxed">{job.ai_reasoning.reasoning}</p>
+
+              {job.ai_reasoning.skill_matches && job.ai_reasoning.skill_matches.length > 0 && (
+                <div>
+                  <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-1">Your matching skills</div>
+                  <div className="flex flex-wrap gap-1">
+                    {job.ai_reasoning.skill_matches.map((s, i) => (
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 bg-surface border border-lp-border text-text-secondary font-mono">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {job.ai_reasoning.skill_gaps && job.ai_reasoning.skill_gaps.length > 0 && (
+                <div>
+                  <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-1">Skills to develop</div>
+                  <div className="flex flex-wrap gap-1">
+                    {job.ai_reasoning.skill_gaps.slice(0, 5).map((s, i) => (
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 bg-surface text-text-tertiary rounded font-mono border border-lp-border">
+                        {s}
+                      </span>
+                    ))}
+                    {job.ai_reasoning.skill_gaps.length > 5 && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-surface text-text-tertiary rounded font-mono border border-lp-border">
+                        +{job.ai_reasoning.skill_gaps.length - 5}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {job.ai_reasoning.red_flags && job.ai_reasoning.red_flags.length > 0 && (
+                <div>
+                  <div className="text-text-tertiary text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Considerations
+                  </div>
+                  <ul className="space-y-1">
+                    {job.ai_reasoning.red_flags.map((flag, i) => (
+                      <li key={i} className="text-sm text-red-500 flex items-start gap-2">
+                        <span className="text-red-400 mt-1 shrink-0">·</span>
+                        {flag}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
-      </CardContent>
+      )}
 
+      {/* Actions */}
       {((job.apply_link || job.url) || resumeFile) && (
-        <CardFooter className="border-t flex flex-col gap-2">
+        <div className="mt-4 pt-4 border-t border-lp-border flex flex-wrap gap-3 items-center">
           {(job.apply_link || job.url) && (
-            <Button
-              className="w-full rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20"
+            <button
               onClick={() => window.open(job.apply_link || job.url, '_blank', 'noopener,noreferrer')}
+              className="inline-flex items-center gap-1.5 bg-text-primary text-bg px-3 py-1.5 text-xs font-mono hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
+              <ExternalLink className="h-3.5 w-3.5" />
               Apply Now
-            </Button>
+            </button>
           )}
           {resumeFile && (
-            <Button
-              variant="outline"
-              className="w-full rounded-full"
+            <button
               onClick={handleTailorResume}
               disabled={isTailoring}
+              className="text-ia hover:text-ia-hover text-xs font-medium transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ia focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded"
             >
-              {isTailoring ? 'Tailoring Resume...' : 'Tailor Resume for This Job'}
-            </Button>
+              {isTailoring ? 'Tailoring...' : 'Tailor Resume for This Job'}
+            </button>
           )}
-          {tailorError && <p className="text-xs text-destructive">{tailorError}</p>}
-        </CardFooter>
+          {tailorError && (
+              <div className="w-full border border-red-500/40 bg-red-500/5 px-3 py-2">
+                <p className="font-mono text-xs text-red-500">{tailorError}</p>
+              </div>
+            )}
+        </div>
       )}
-    </Card>
+    </div>
   );
 };
 

@@ -39,7 +39,7 @@ from matching.metadata_matcher import extract_resume_metadata
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
-from job_database import get_resume_cache, set_resume_cache, get_user_resume_history
+from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db
 from auth import require_user
 
 # Base directory of this file (used for templates/static/uploads paths)
@@ -90,6 +90,10 @@ async def lifespan(app: FastAPI):
             else:
                 should_refresh = True
                 logger.info("No cached jobs found — initializing cache...")
+
+        if should_refresh and os.getenv("SKIP_STARTUP_SCRAPE", "").lower() in ("1", "true", "yes"):
+            logger.info("SKIP_STARTUP_SCRAPE is set — skipping startup scrape")
+            should_refresh = False
 
         if should_refresh:
             async def _background_scrape():
@@ -518,8 +522,32 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
             raise HTTPException(status_code=500, detail=f"Failed to process resume: {str(e)}")
 
         # Parse resume using selected method (returns skills, text, and metadata)
+        _req_user_id = None
         try:
             use_llm = think_deeper.lower() == "true"
+
+            # Think Deeper requires authentication — propagate 401 for unauthenticated callers
+            if use_llm:
+                _req_user_id = await require_user(request)
+                from quota import get_think_deeper_quota_status, WEEKLY_THINK_DEEPER_LIMIT
+                _qdb = get_db()
+                try:
+                    _qstatus = get_think_deeper_quota_status(_qdb, _req_user_id)
+                    if _qstatus["remaining"] <= 0:
+                        raise HTTPException(
+                            status_code=429,
+                            detail={
+                                "error": "weekly_quota_exceeded",
+                                "message": f"You've used all {WEEKLY_THINK_DEEPER_LIMIT} Think Deeper analyses this week.",
+                                "limit": _qstatus["limit"],
+                                "used": _qstatus["used"],
+                                "remaining": 0,
+                                "reset_at": _qstatus["reset_at"].isoformat() if _qstatus["reset_at"] else None,
+                            },
+                        )
+                finally:
+                    close_db(_qdb)
+
             resume_skills, resume_text, resume_metadata = parse_resume(downloaded_content, original_filename, use_llm)
             if not resume_skills:
                 raise HTTPException(
@@ -578,6 +606,23 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
             
             # Use jobs with matches for the success response
             matched_jobs = jobs_with_matches
+
+            # Record Think Deeper usage after a successful deep match
+            if use_llm and _req_user_id:
+                try:
+                    from quota import record_think_deeper_request
+                    _rdb = get_db()
+                    try:
+                        record_think_deeper_request(_rdb, _req_user_id)
+                        _rdb.commit()
+                    except Exception as _re:
+                        logger.warning(f"Failed to record think_deeper quota for user={_req_user_id}: {_re}")
+                        _rdb.rollback()
+                    finally:
+                        close_db(_rdb)
+                except Exception as _re:
+                    logger.warning(f"Think Deeper quota recording import error: {_re}")
+
         except Exception as e:
             logger.error(f"Error matching jobs: {e}")
             raise HTTPException(status_code=500, detail=f"Error matching your resume to jobs: {str(e)}")
@@ -693,6 +738,27 @@ async def stream_match_resume(
                     return EventSourceResponse(cached_response())
             except Exception as cache_err:
                 logger.warning(f"Pre-S3 cache check failed, proceeding normally: {cache_err}")
+
+        # Enforce Think Deeper weekly quota (only when no cache hit + user authenticated)
+        if user_id and think_deeper.lower() == "true":
+            from quota import get_think_deeper_quota_status, WEEKLY_THINK_DEEPER_LIMIT
+            _qdb = get_db()
+            try:
+                _qstatus = get_think_deeper_quota_status(_qdb, user_id)
+                if _qstatus["remaining"] <= 0:
+                    raise HTTPException(
+                        status_code=429,
+                        detail={
+                            "error": "weekly_quota_exceeded",
+                            "message": f"You've used all {WEEKLY_THINK_DEEPER_LIMIT} Think Deeper analyses this week.",
+                            "limit": _qstatus["limit"],
+                            "used": _qstatus["used"],
+                            "remaining": 0,
+                            "reset_at": _qstatus["reset_at"].isoformat() if _qstatus["reset_at"] else None,
+                        },
+                    )
+            finally:
+                close_db(_qdb)
 
         # Upload file to S3 ONCE, before the generator
         try:
@@ -974,6 +1040,22 @@ async def stream_match_resume(
                         logger.info(f"Saved results to resume cache for user {user_id}")
                     except Exception as cache_err:
                         logger.warning(f"Failed to save resume cache: {cache_err}")
+
+                # Record Think Deeper usage after a successful deep match (never on cache hits)
+                if user_id and use_llm:
+                    try:
+                        from quota import record_think_deeper_request
+                        _rdb = get_db()
+                        try:
+                            record_think_deeper_request(_rdb, user_id, resume_hash or None)
+                            _rdb.commit()
+                        except Exception as _re:
+                            logger.warning(f"Failed to record think_deeper quota for user={user_id}: {_re}")
+                            _rdb.rollback()
+                        finally:
+                            close_db(_rdb)
+                    except Exception as _re:
+                        logger.warning(f"Think Deeper quota recording import error: {_re}")
 
                 current_step[0] += 1
                 _elapsed = _time.monotonic() - _request_start
@@ -1338,7 +1420,7 @@ def _sanitize_filename(value: str) -> str:
 
 
 @app.post("/api/tailor-resume")
-@limiter.limit("5/10minutes")
+@limiter.limit("2/minute")
 async def tailor_resume_endpoint(
     request: Request,
     resume: UploadFile = File(...),
@@ -1347,9 +1429,28 @@ async def tailor_resume_endpoint(
     job_description: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
-    # Extract client IP for additional context
-    client_ip = request.client.host if request.client else "unknown"
-    
+    from quota import get_tailor_quota_status, record_tailor_request, WEEKLY_TAILOR_LIMIT
+
+    # Check Postgres-backed weekly quota before doing any work
+    db = get_db()
+    try:
+        status = get_tailor_quota_status(db, user_id)
+        if status["remaining"] <= 0:
+            reset_at = status["reset_at"]
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "weekly_quota_exceeded",
+                    "message": f"You've used all {WEEKLY_TAILOR_LIMIT} tailored resumes this week.",
+                    "limit": status["limit"],
+                    "used": status["used"],
+                    "remaining": 0,
+                    "reset_at": reset_at.isoformat() if reset_at else None,
+                },
+            )
+    finally:
+        close_db(db)
+
     logger.info(f"Tailor request: user={user_id} job='{job_title}' at '{company}' file={resume.filename}")
 
     if not resume.filename or not resume.filename.lower().endswith(".pdf"):
@@ -1389,6 +1490,17 @@ async def tailor_resume_endpoint(
     safe_title = _sanitize_filename(job_title)
     filename = f"resume_tailored_{safe_company}_{safe_title}.pdf"
 
+    # Record usage AFTER successful generation — failed attempts don't count against quota
+    db = get_db()
+    try:
+        record_tailor_request(db, user_id, job_title, company)
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to record tailor quota entry for user={user_id}: {e}")
+        db.rollback()
+    finally:
+        close_db(db)
+
     logger.info(f"Tailor complete: user={user_id} time={execution_time}s size={len(pdf_bytes)} bytes")
 
     return StreamingResponse(
@@ -1396,6 +1508,32 @@ async def tailor_resume_endpoint(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@app.get("/api/usage")
+@limiter.limit("20/minute")
+async def get_usage(request: Request, user_id: str = Depends(require_user)):
+    from quota import get_tailor_quota_status, get_think_deeper_quota_status
+    db = get_db()
+    try:
+        tailor = get_tailor_quota_status(db, user_id)
+        deep = get_think_deeper_quota_status(db, user_id)
+    finally:
+        db.close()
+
+    def _shape(q):
+        return {
+            "limit": q["limit"],
+            "used": q["used"],
+            "remaining": q["remaining"],
+            "reset_at": q["reset_at"].isoformat() if q["reset_at"] else None,
+            "window_days": 7,
+        }
+
+    return JSONResponse({
+        "tailor_resume": _shape(tailor),
+        "think_deeper": _shape(deep),
+    })
 
 
 # Catch-all: serve React app for any non-API route
