@@ -400,7 +400,7 @@ const FindPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg text-text-primary">
-      <Header forceSolid />
+      <Header />
 
       <main className="max-w-[860px] mx-auto px-6 py-12 space-y-0">
 

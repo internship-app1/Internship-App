@@ -77,7 +77,7 @@ const UsagePage: React.FC = () => {
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-bg text-text-primary">
-        <Header forceSolid />
+        <Header />
         <div className="flex items-center justify-center h-64">
           <div className="h-8 w-8 border-2 border-text-primary border-t-transparent animate-spin" />
         </div>
@@ -88,7 +88,7 @@ const UsagePage: React.FC = () => {
   if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-bg text-text-primary">
-        <Header forceSolid />
+        <Header />
         <div className="max-w-[860px] mx-auto px-6 py-24">
           <div className="flex flex-col gap-2 mb-6">
             <span className="block w-8 h-px bg-text-tertiary" />
@@ -114,7 +114,7 @@ const UsagePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg text-text-primary">
-      <Header forceSolid />
+      <Header />
       <main className="max-w-[860px] mx-auto px-6 py-12">
         {/* Page header */}
         <div className="mb-10 pb-6 border-b border-lp-border">

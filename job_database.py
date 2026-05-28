@@ -6,7 +6,7 @@ import logging
 import os
 import hashlib
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 from typing import List, Dict, Optional, Set
@@ -87,12 +87,17 @@ class ResumeCache(Base):
     expires_at = Column(DateTime, nullable=False)
     __table_args__ = (Index('idx_user_hash', 'user_id', 'resume_hash'),)
 
+def _utcnow() -> datetime:
+    """Naive UTC datetime — matches the DateTime column type used by both quota tables."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class TailorRequestLog(Base):
     """Append-only log of successful resume-tailoring requests, used for the weekly quota."""
     __tablename__ = "tailor_request_log"
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String(255), nullable=False, index=True)
-    requested_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    requested_at = Column(DateTime, default=_utcnow, nullable=False, index=True)
     job_title = Column(String(500))
     company = Column(String(500))
     __table_args__ = (Index('idx_tailor_user_time', 'user_id', 'requested_at'),)
@@ -103,7 +108,7 @@ class ThinkDeeperRequestLog(Base):
     __tablename__ = "think_deeper_request_log"
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String(255), nullable=False, index=True)
-    requested_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    requested_at = Column(DateTime, default=_utcnow, nullable=False, index=True)
     resume_hash = Column(String(255), nullable=True)
     __table_args__ = (Index('idx_think_deeper_user_time', 'user_id', 'requested_at'),)
 

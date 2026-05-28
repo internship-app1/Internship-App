@@ -67,6 +67,9 @@ OPTIONS:
     --help              Show this help message
 
 EXAMPLES:
+    # Start both backend and frontend (no cache reset)
+    ./start.sh --all
+
     # Start everything with cache refresh
     ./start.sh --all --refresh
 
@@ -249,18 +252,28 @@ if [ "$START_BACKEND" = true ]; then
 
         # Run backend in background or foreground based on if frontend is also starting
         if [ "$START_FRONTEND" = true ]; then
-            print_warning "Starting backend in background (logs in backend.log)"
-            nohup python "$PROJECT_DIR/app.py" > "$PROJECT_DIR/backend.log" 2>&1 &
+            print_info "Starting backend in background on port 8000 (logs in backend.log)"
+            nohup uvicorn app:app --host 0.0.0.0 --port 8000 --reload > "$PROJECT_DIR/backend.log" 2>&1 &
             BACKEND_PID=$!
             print_success "Backend started (PID: $BACKEND_PID)"
 
-            # Wait a bit for backend to start
-            print_info "Waiting for backend to initialize..."
-            sleep 5
+            # Wait for backend to be ready before starting frontend
+            print_info "Waiting for backend to be ready..."
+            RETRIES=0
+            MAX_RETRIES=30
+            while ! curl -s http://localhost:8000/api/cache-status > /dev/null 2>&1; do
+                sleep 1
+                RETRIES=$((RETRIES + 1))
+                if [ $RETRIES -ge $MAX_RETRIES ]; then
+                    print_warning "Backend taking longer than expected — check backend.log"
+                    break
+                fi
+            done
+            print_success "Backend is ready"
         else
-            print_info "Starting backend in foreground (Ctrl+C to stop)"
+            print_info "Starting backend in foreground on port 8000 (Ctrl+C to stop)"
             echo ""
-            python "$PROJECT_DIR/app.py" 2>&1
+            uvicorn app:app --host 0.0.0.0 --port 8000 --reload
             exit 0
         fi
     fi
@@ -295,11 +308,10 @@ if [ "$REFRESH_CACHE" = true ]; then
     print_success "Cache refresh completed"
 fi
 
-# Step 7: Display cache status
-if [ "$START_BACKEND" = true ]; then
+# Step 7: Display cache status — only when starting backend alone (not blocking the frontend)
+if [ "$START_BACKEND" = true ] && [ "$START_FRONTEND" = false ]; then
     print_header "Current Cache Status"
 
-    # Ensure backend is ready
     RETRIES=0
     MAX_RETRIES=30
     while ! curl -s http://localhost:8000/api/cache-status > /dev/null 2>&1; do
@@ -327,36 +339,31 @@ if [ "$START_FRONTEND" = true ]; then
         print_info "  kill \$(lsof -t -i:3000)"
     else
         print_info "Starting frontend on port 3000..."
-        cd "$FRONTEND_DIR"
 
         if [ "$START_BACKEND" = true ]; then
-            print_warning "Starting frontend in background (logs in frontend.log)"
-            nohup npm start > "$PROJECT_DIR/frontend.log" 2>&1 &
-            FRONTEND_PID=$!
-            cd "$PROJECT_DIR"
-            print_success "Frontend started (PID: $FRONTEND_PID)"
+            # Backend is already running in background — run frontend in foreground
+            # so React output is visible and Ctrl+C stops only the frontend.
+            print_success "Backend running on: http://localhost:8000 (logs: tail -f backend.log)"
+            print_info "Starting frontend in foreground — Ctrl+C to stop (backend keeps running)"
+            print_info "  To stop backend: kill \$(lsof -t -i:8000)"
+            echo ""
+            cd "$FRONTEND_DIR"
+            npm start
+            exit 0
         else
             print_info "Starting frontend in foreground (Ctrl+C to stop)"
             echo ""
+            cd "$FRONTEND_DIR"
             npm start
             exit 0
         fi
     fi
 fi
 
-# Final summary
+# Final summary (only reached when frontend was already running on port 3000)
 if [ "$START_BACKEND" = true ] && [ "$START_FRONTEND" = true ]; then
-    print_header "Startup Complete"
-    print_success "Backend running on: http://localhost:8000"
-    print_success "Frontend running on: http://localhost:3000"
-    echo ""
-    print_info "Logs:"
-    print_info "  Backend:  tail -f backend.log"
-    print_info "  Frontend: tail -f frontend.log"
-    echo ""
-    print_info "To stop services:"
-    print_info "  kill \$(lsof -t -i:8000)  # Stop backend"
-    print_info "  kill \$(lsof -t -i:3000)  # Stop frontend"
+    print_success "Backend running on: http://localhost:8000 (logs: tail -f backend.log)"
+    print_info "To stop backend: kill \$(lsof -t -i:8000)"
     echo ""
 fi
 

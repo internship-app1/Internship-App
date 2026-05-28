@@ -973,11 +973,7 @@ def scrape_github_internships(keyword="intern", max_results=10000, incremental=F
         return []
 
 def extract_skills_from_job(job):
-    """
-    Extract skills from job title and description.
-    Uses AGGRESSIVE role inference from job title. 
-    (LLM extraction deferred to matching phase for efficiency)
-    """
+    """Infer skills from job title only. LLM re-ranking happens at match time, not scrape time."""
     job_title = job.get('title', '')
     return infer_skills_from_title_aggressive(job_title)
 

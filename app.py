@@ -522,34 +522,31 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
             raise HTTPException(status_code=500, detail=f"Failed to process resume: {str(e)}")
 
         # Parse resume using selected method (returns skills, text, and metadata)
+        _req_user_id = None
         try:
             use_llm = think_deeper.lower() == "true"
 
-            # Enforce Think Deeper weekly quota for authenticated users
+            # Think Deeper requires authentication — propagate 401 for unauthenticated callers
             if use_llm:
+                _req_user_id = await require_user(request)
+                from quota import get_think_deeper_quota_status, WEEKLY_THINK_DEEPER_LIMIT
+                _qdb = get_db()
                 try:
-                    _req_user_id = await require_user(request)
-                except Exception:
-                    _req_user_id = None
-                if _req_user_id:
-                    from quota import get_think_deeper_quota_status, WEEKLY_THINK_DEEPER_LIMIT
-                    _qdb = get_db()
-                    try:
-                        _qstatus = get_think_deeper_quota_status(_qdb, _req_user_id)
-                        if _qstatus["remaining"] <= 0:
-                            raise HTTPException(
-                                status_code=429,
-                                detail={
-                                    "error": "weekly_quota_exceeded",
-                                    "message": f"You've used all {WEEKLY_THINK_DEEPER_LIMIT} Think Deeper analyses this week.",
-                                    "limit": _qstatus["limit"],
-                                    "used": _qstatus["used"],
-                                    "remaining": 0,
-                                    "reset_at": _qstatus["reset_at"].isoformat() if _qstatus["reset_at"] else None,
-                                },
-                            )
-                    finally:
-                        close_db(_qdb)
+                    _qstatus = get_think_deeper_quota_status(_qdb, _req_user_id)
+                    if _qstatus["remaining"] <= 0:
+                        raise HTTPException(
+                            status_code=429,
+                            detail={
+                                "error": "weekly_quota_exceeded",
+                                "message": f"You've used all {WEEKLY_THINK_DEEPER_LIMIT} Think Deeper analyses this week.",
+                                "limit": _qstatus["limit"],
+                                "used": _qstatus["used"],
+                                "remaining": 0,
+                                "reset_at": _qstatus["reset_at"].isoformat() if _qstatus["reset_at"] else None,
+                            },
+                        )
+                finally:
+                    close_db(_qdb)
 
             resume_skills, resume_text, resume_metadata = parse_resume(downloaded_content, original_filename, use_llm)
             if not resume_skills:
@@ -611,7 +608,7 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
             matched_jobs = jobs_with_matches
 
             # Record Think Deeper usage after a successful deep match
-            if use_llm and '_req_user_id' in locals() and _req_user_id:
+            if use_llm and _req_user_id:
                 try:
                     from quota import record_think_deeper_request
                     _rdb = get_db()

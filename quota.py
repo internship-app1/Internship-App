@@ -1,6 +1,11 @@
 """Weekly per-user quota for the resume-tailoring feature, backed by Postgres."""
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+
+
+def _utcnow() -> datetime:
+    """Return the current UTC time as a naive datetime (matches DB column type)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 from sqlalchemy.orm import Session
 from job_database import TailorRequestLog, ThinkDeeperRequestLog
 
@@ -19,7 +24,7 @@ def get_tailor_quota_status(db: Session, user_id: str) -> dict:
       remaining  — slots left
       reset_at   — ISO datetime string when the oldest slot frees up (None if nothing used)
     """
-    window_start = datetime.utcnow() - WEEKLY_WINDOW
+    window_start = _utcnow() - WEEKLY_WINDOW
     rows = (
         db.query(TailorRequestLog)
         .filter(
@@ -45,7 +50,7 @@ def get_tailor_quota_status(db: Session, user_id: str) -> dict:
 
 def get_think_deeper_quota_status(db: Session, user_id: str) -> dict:
     """Return the current Think Deeper quota state for a user."""
-    window_start = datetime.utcnow() - WEEKLY_WINDOW
+    window_start = _utcnow() - WEEKLY_WINDOW
     rows = (
         db.query(ThinkDeeperRequestLog)
         .filter(
