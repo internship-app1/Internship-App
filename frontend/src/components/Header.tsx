@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useUser, UserButton, SignInButton } from '@clerk/react';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 import { useTheme } from './theme-provider';
+import Logo from './Logo';
 
 const Header: React.FC = () => {
   const { isSignedIn } = useUser();
@@ -44,7 +45,8 @@ const Header: React.FC = () => {
       <div className="max-w-[860px] mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Masthead */}
-          <Link to="/" className="no-underline">
+          <Link to="/" className="no-underline flex items-center gap-2">
+            <Logo size={24} className="shrink-0 relative top-px" />
             <div className="font-serif text-xl text-text-primary leading-none">
               internshipmatcher<em className="not-italic text-text-secondary">.</em>
             </div>

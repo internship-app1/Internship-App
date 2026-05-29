@@ -72,3 +72,23 @@ export const useTheme = () => {
   return context
 }
 
+/** Resolves 'system' to the concrete 'dark' | 'light' the app is currently using.
+ *  Tracks both the explicit theme setting and OS-level prefers-color-scheme changes.
+ *  Use this wherever you need to swap UI based on the active theme (e.g. <Logo />).
+ */
+export function useResolvedTheme(): 'dark' | 'light' {
+  const { theme } = useTheme()
+  const [resolved, setResolved] = useState<'dark' | 'light'>(() =>
+    theme === 'dark' || (theme === 'system' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const update = () =>
+      setResolved(theme === 'dark' || (theme === 'system' && mq.matches) ? 'dark' : 'light')
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [theme])
+  return resolved
+}
