@@ -138,19 +138,28 @@ def close_db(db: Session):
 
 def generate_job_hash(company: str, title: str, location: str, apply_link: str) -> str:
     """
-    Generate unique hash for job deduplication
-    Uses company + title + location + domain from apply_link
+    Generate unique hash for job deduplication.
+    Uses company + title + location + domain+path from apply_link.
+    The URL path is included (but not query string) so distinct postings at the
+    same job board no longer collide. Query-string params like ?utm_source= are
+    intentionally excluded because they are volatile and carry no identity signal.
     """
-    # Extract domain from apply_link for more stable hashing
     try:
         from urllib.parse import urlparse
-        domain = urlparse(apply_link).netloc
-    except:
-        domain = apply_link[:50]  # Fallback
-    
+        parsed = urlparse(apply_link)
+        # netloc + path, strip trailing slash for normalisation
+        domain_path = (parsed.netloc + parsed.path).rstrip("/")
+    except Exception:
+        domain_path = apply_link[:100]  # Fallback
+
     # Create normalized string for hashing
-    hash_string = f"{company.lower().strip()}|{title.lower().strip()}|{location.lower().strip()}|{domain.lower()}"
-    
+    hash_string = (
+        f"{company.lower().strip()}|"
+        f"{title.lower().strip()}|"
+        f"{location.lower().strip()}|"
+        f"{domain_path.lower()}"
+    )
+
     # Generate SHA-256 hash
     return hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
 
@@ -206,114 +215,172 @@ def mark_old_jobs_inactive(max_days_old: int = 30, db: Session = None) -> int:
 
 def bulk_insert_jobs(jobs: List[Dict], db: Session = None) -> Dict:
     """
-    Bulk insert jobs with deduplication
-    Returns summary of operations
+    Upsert jobs with full deduplication and conflict resilience.
+
+    Design:
+    - Within-batch dedup (keep-last) before touching the DB, so two scraped rows
+      with the same hash never reach the INSERT layer.
+    - Dialect-aware ON CONFLICT DO UPDATE (works with both Postgres prod and
+      SQLite dev/test via their respective dialect inserts).
+    - Chunked execution wrapped in SAVEPOINTs so one bad chunk cannot abort the
+      whole batch.
+    - Existing rows: last_seen, updated_at, is_active, and mutable content are
+      refreshed; first_seen/created_at are preserved.
+    - Inactive sweeps run AFTER upserts so freshly refreshed last_seen values
+      are evaluated correctly.
+
+    Returns a summary dict with new_jobs, updated_jobs, duplicates_collapsed,
+    failed_rows, inactive_jobs, date_based_inactive_jobs, total_processed.
+    On catastrophic failure returns {'error': str(e)}.
     """
     if db is None:
         db = get_db()
         should_close = True
     else:
         should_close = False
-    
-    try:
-        new_jobs = 0
-        updated_jobs = 0
-        existing_hashes = set()
-        
-        # Get existing job hashes for deduplication
-        existing_jobs = db.query(Job.job_hash).all()
-        existing_hashes = {job.job_hash for job in existing_jobs}
-        
-        jobs_to_add = []
-        jobs_to_update = {}  # Change to dict to store job_hash -> job_data mapping
 
+    try:
+        if not jobs:
+            db.commit()
+            return {
+                'new_jobs': 0, 'updated_jobs': 0, 'duplicates_collapsed': 0,
+                'failed_rows': 0, 'inactive_jobs': 0, 'date_based_inactive_jobs': 0,
+                'total_processed': 0,
+            }
+
+        # ------------------------------------------------------------------
+        # Step 1: Within-batch dedup (keep-last occurrence wins).
+        # Using an ordered dict: iterating jobs in order means a later item
+        # with the same hash overwrites the earlier one.
+        # ------------------------------------------------------------------
+        deduped: dict = {}  # job_hash -> job_data
         for job_data in jobs:
-            # Generate hash for this job
-            job_hash = generate_job_hash(
+            h = generate_job_hash(
                 job_data.get('company', ''),
                 job_data.get('title', ''),
                 job_data.get('location', ''),
-                job_data.get('apply_link', '')
+                job_data.get('apply_link', ''),
             )
+            deduped[h] = job_data
 
-            if job_hash not in existing_hashes:
-                # New job - store date information in metadata
-                metadata = job_data.get('metadata', {})
-                # Add date information to metadata for tracking
-                metadata['days_since_posted'] = job_data.get('days_since_posted')
-                metadata['date_posted'] = job_data.get('date_posted')
-                metadata['date_posted_raw'] = job_data.get('date_posted_raw')
+        duplicates_collapsed = len(jobs) - len(deduped)
 
-                job = Job(
-                    job_hash=job_hash,
-                    company=job_data.get('company', ''),
-                    title=job_data.get('title', ''),
-                    location=job_data.get('location', ''),
-                    apply_link=job_data.get('apply_link', ''),
-                    description=job_data.get('description', ''),
-                    required_skills=json.dumps(job_data.get('required_skills', [])),
-                    job_requirements=job_data.get('job_requirements', ''),
-                    source=job_data.get('source', 'github_internships'),
-                    job_metadata=json.dumps(metadata)
-                )
-                jobs_to_add.append(job)
-                new_jobs += 1
-            else:
-                # Existing job - store for updating with fresh metadata
-                jobs_to_update[job_hash] = job_data
-                updated_jobs += 1
-        
-        # Bulk insert new jobs
-        if jobs_to_add:
-            db.bulk_save_objects(jobs_to_add)
+        # ------------------------------------------------------------------
+        # Step 2: Build plain row dicts for the Core upsert.
+        # Timestamps are stamped once so all rows in a batch share the same
+        # effective scrape time.
+        # ------------------------------------------------------------------
+        now = datetime.utcnow()
+        rows: List[Dict] = []
+        for job_hash, job_data in deduped.items():
+            metadata = dict(job_data.get('metadata') or {})
+            metadata['days_since_posted'] = job_data.get('days_since_posted')
+            metadata['date_posted']       = job_data.get('date_posted')
+            metadata['date_posted_raw']   = job_data.get('date_posted_raw')
 
-        # Update existing jobs with fresh metadata and last_seen
-        # IMPORTANT: This updates the days_since_posted so old jobs get marked correctly
-        if jobs_to_update:
-            for job_hash, job_data in jobs_to_update.items():
-                # Prepare fresh metadata with updated posting date
-                metadata = job_data.get('metadata', {})
-                metadata['days_since_posted'] = job_data.get('days_since_posted')
-                metadata['date_posted'] = job_data.get('date_posted')
-                metadata['date_posted_raw'] = job_data.get('date_posted_raw')
+            rows.append({
+                'job_hash':        job_hash,
+                'company':         job_data.get('company', ''),
+                'title':           job_data.get('title', ''),
+                'location':        job_data.get('location', ''),
+                'apply_link':      job_data.get('apply_link', ''),
+                'description':     job_data.get('description', ''),
+                'required_skills': json.dumps(job_data.get('required_skills', [])),
+                'job_requirements':job_data.get('job_requirements', ''),
+                'source':          job_data.get('source', 'github_internships'),
+                'job_metadata':    json.dumps(metadata),
+                'first_seen':      now,   # preserved on conflict (not in set_)
+                'last_seen':       now,
+                'created_at':      now,   # preserved on conflict (not in set_)
+                'updated_at':      now,   # must be explicit — onupdate= won't fire on Core upsert
+                'is_active':       True,
+            })
 
-                # Update both last_seen AND metadata
-                db.query(Job).filter(Job.job_hash == job_hash).update(
-                    {
-                        Job.last_seen: datetime.utcnow(),
-                        Job.job_metadata: json.dumps(metadata)
-                    },
-                    synchronize_session=False
-                )
-        
-        # Mark jobs not seen in this scrape as inactive (older than 3 days)
+        # ------------------------------------------------------------------
+        # Step 3: Lightweight pre-read for accurate new/updated counts.
+        # This is reporting-only and not load-bearing for correctness.
+        # ------------------------------------------------------------------
+        all_incoming_hashes = [r['job_hash'] for r in rows]
+        existing_hashes: Set[str] = {
+            h for (h,) in db.query(Job.job_hash)
+                              .filter(Job.job_hash.in_(all_incoming_hashes))
+                              .all()
+        }
+        new_jobs     = sum(1 for r in rows if r['job_hash'] not in existing_hashes)
+        updated_jobs = sum(1 for r in rows if r['job_hash'] in existing_hashes)
+
+        # ------------------------------------------------------------------
+        # Step 4: Dialect-aware chunked upsert with per-chunk SAVEPOINTs.
+        # Each chunk is isolated; a failure in one chunk rolls back only that
+        # chunk and increments failed_rows; the outer transaction continues.
+        # ------------------------------------------------------------------
+        dialect = db.bind.dialect.name
+        if dialect == 'postgresql':
+            from sqlalchemy.dialects.postgresql import insert as _insert
+        else:
+            # sqlite (dev / tests) — same API shape in SQLAlchemy 1.4
+            from sqlalchemy.dialects.sqlite import insert as _insert
+
+        CHUNK = 200
+        failed_rows = 0
+
+        for i in range(0, len(rows), CHUNK):
+            chunk = rows[i:i + CHUNK]
+            try:
+                with db.begin_nested():   # SAVEPOINT — rolls back only this chunk on error
+                    stmt = _insert(Job.__table__).values(chunk)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=['job_hash'],
+                        set_={
+                            # Refresh mutable content and timestamps
+                            'last_seen':        stmt.excluded.last_seen,
+                            'updated_at':       stmt.excluded.updated_at,
+                            'is_active':        True,   # reactivate jobs that reappear
+                            'job_metadata':     stmt.excluded.job_metadata,
+                            'description':      stmt.excluded.description,
+                            'required_skills':  stmt.excluded.required_skills,
+                            'job_requirements': stmt.excluded.job_requirements,
+                            'apply_link':       stmt.excluded.apply_link,
+                            # first_seen / created_at intentionally omitted → preserved
+                        },
+                    )
+                    db.execute(stmt)
+            except Exception as chunk_err:
+                # Savepoint already rolled back this chunk; log and continue.
+                failed_rows += len(chunk)
+                logger.error(f"Upsert chunk [{i}:{i+CHUNK}] failed ({len(chunk)} rows): {chunk_err}")
+
+        # ------------------------------------------------------------------
+        # Step 5: Inactive sweeps — run AFTER upserts so refreshed last_seen
+        # values are evaluated correctly.
+        # ------------------------------------------------------------------
         cutoff_date = datetime.utcnow() - timedelta(days=3)
         inactive_count = db.query(Job).filter(
             Job.last_seen < cutoff_date,
-            Job.is_active == True
-        ).update(
-            {Job.is_active: False},
-            synchronize_session=False
-        )
+            Job.is_active == True,
+        ).update({Job.is_active: False}, synchronize_session=False)
 
-        # IMPORTANT: Also mark jobs inactive based on posting date (>30 days old)
-        # This ensures old jobs don't persist even if they're still in the GitHub repo
         date_based_inactive_count = mark_old_jobs_inactive(max_days_old=30, db=db)
 
         db.commit()
-        
-        summary = {
-            'new_jobs': new_jobs,
-            'updated_jobs': updated_jobs,
-            'inactive_jobs': inactive_count,
-            'date_based_inactive_jobs': date_based_inactive_count,
-            'total_processed': len(jobs)
-        }
 
         total_inactive = inactive_count + date_based_inactive_count
-        logger.info(f"Database: {new_jobs} new, {updated_jobs} updated, {total_inactive} marked inactive")
-        return summary
-        
+        logger.info(
+            f"Database: {new_jobs} new, {updated_jobs} updated, "
+            f"{total_inactive} marked inactive, "
+            f"{duplicates_collapsed} within-batch dups collapsed, "
+            f"{failed_rows} rows failed"
+        )
+        return {
+            'new_jobs':                new_jobs,
+            'updated_jobs':            updated_jobs,
+            'duplicates_collapsed':    duplicates_collapsed,
+            'failed_rows':             failed_rows,
+            'inactive_jobs':           inactive_count,
+            'date_based_inactive_jobs':date_based_inactive_count,
+            'total_processed':         len(jobs),
+        }
+
     except Exception as e:
         db.rollback()
         logger.error(f"Database error during bulk insert: {e}")

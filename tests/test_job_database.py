@@ -17,6 +17,7 @@ from job_database import (
     SessionLocal,
     bulk_insert_jobs,
     engine,
+    generate_job_hash,
     get_active_jobs,
     get_database_stats,
     get_resume_cache,
@@ -81,6 +82,172 @@ class TestBulkInsertJobs:
             assert "SWE Intern" in job.title
         finally:
             db.close()
+
+    # ------------------------------------------------------------------
+    # Regression: within-batch duplicate must not crash or drop good rows
+    # ------------------------------------------------------------------
+
+    def test_within_batch_duplicate_no_error(self):
+        """Two identical dicts in one call must not raise UniqueViolation.
+        This is the exact production failure: scraper emits two rows with the
+        same hash in a single batch → bulk_save_objects → UniqueViolation →
+        rollback → 0 new jobs. The fix (dedup + ON CONFLICT upsert) must
+        handle this silently."""
+        job = _job(n=42)
+        stats = bulk_insert_jobs([job, job])  # same job twice
+        assert "error" not in stats, f"Unexpected error: {stats.get('error')}"
+        assert stats["new_jobs"] == 1
+        assert stats["duplicates_collapsed"] == 1
+        # Exactly one row should exist in the DB
+        db = SessionLocal()
+        try:
+            assert db.query(Job).count() == 1
+        finally:
+            db.close()
+
+    def test_within_batch_duplicate_keep_last(self):
+        """When two dicts share the same hash, the last one's content wins."""
+        first  = dict(_job(n=10), description="first version")
+        second = dict(_job(n=10), description="last version")  # same n → same hash
+        stats = bulk_insert_jobs([first, second])
+        assert stats["new_jobs"] == 1
+        assert stats["duplicates_collapsed"] == 1
+        db = SessionLocal()
+        try:
+            row = db.query(Job).first()
+            assert row.description == "last version"
+        finally:
+            db.close()
+
+    def test_cross_batch_upsert_preserves_first_seen(self):
+        """Re-inserting an existing hash must preserve first_seen / created_at
+        and advance last_seen / updated_at."""
+        job = _job(n=7)
+        bulk_insert_jobs([job])
+
+        db = SessionLocal()
+        try:
+            original = db.query(Job).first()
+            original_first_seen = original.first_seen
+            original_created_at = original.created_at
+        finally:
+            db.close()
+
+        # Second call with same job (simulates the next daily scrape)
+        import time; time.sleep(0.05)  # ensure clock advances slightly
+        stats2 = bulk_insert_jobs([job])
+        assert stats2["new_jobs"] == 0
+        assert stats2["updated_jobs"] == 1
+
+        db = SessionLocal()
+        try:
+            updated = db.query(Job).first()
+            assert updated.first_seen == original_first_seen, "first_seen must be preserved"
+            assert updated.created_at == original_created_at, "created_at must be preserved"
+            assert updated.last_seen  >= original_first_seen, "last_seen must advance"
+            assert updated.updated_at >= original_first_seen, "updated_at must advance"
+        finally:
+            db.close()
+
+    def test_upsert_reactivates_inactive_job(self):
+        """A job previously marked is_active=False must flip back to True when
+        it reappears in a scrape batch."""
+        job = _job(n=5)
+        bulk_insert_jobs([job])
+
+        # Manually deactivate
+        db = SessionLocal()
+        try:
+            row = db.query(Job).first()
+            row.is_active = False
+            # backdate last_seen so the sweep won't immediately flip it back
+            row.last_seen = datetime.utcnow() - timedelta(days=10)
+            db.commit()
+        finally:
+            db.close()
+
+        # Re-scrape the same job
+        bulk_insert_jobs([job])
+
+        db = SessionLocal()
+        try:
+            row = db.query(Job).first()
+            assert row.is_active is True, "Reappearing job must be reactivated"
+        finally:
+            db.close()
+
+    def test_inactive_sweep_commits_after_upsert(self):
+        """Jobs not seen in the latest scrape for >3 days must be marked inactive.
+        This was previously lost because the whole transaction rolled back."""
+        stale = _job(n=1)
+        fresh = _job(n=2)
+        bulk_insert_jobs([stale, fresh])
+
+        # Backdate stale job's last_seen to simulate it not appearing in the new scrape
+        db = SessionLocal()
+        try:
+            row = db.query(Job).filter(Job.title.like("%1%")).first()
+            row.last_seen = datetime.utcnow() - timedelta(days=10)
+            db.commit()
+        finally:
+            db.close()
+
+        # New scrape only contains the fresh job
+        stats = bulk_insert_jobs([fresh])
+        assert "error" not in stats
+
+        db = SessionLocal()
+        try:
+            stale_row = db.query(Job).filter(Job.title.like("%1%")).first()
+            assert stale_row.is_active is False, "Stale job must be swept inactive"
+        finally:
+            db.close()
+
+    def test_summary_has_expected_keys(self):
+        stats = bulk_insert_jobs([_job(n=0)])
+        for key in ("new_jobs", "updated_jobs", "duplicates_collapsed",
+                    "failed_rows", "inactive_jobs", "date_based_inactive_jobs",
+                    "total_processed"):
+            assert key in stats, f"Missing key: {key}"
+
+
+# ---------------------------------------------------------------------------
+# generate_job_hash — path-widening regression
+# ---------------------------------------------------------------------------
+
+class TestGenerateJobHash:
+    """Verify the widened hash (domain+path, no query string)."""
+
+    def test_same_domain_different_path_differ(self):
+        """Two postings at the same job board with different paths must not collide."""
+        h1 = generate_job_hash("Acme", "SWE Intern", "Remote",
+                               "https://board.com/jobs/req-001")
+        h2 = generate_job_hash("Acme", "SWE Intern", "Remote",
+                               "https://board.com/jobs/req-002")
+        assert h1 != h2, "Different paths must yield different hashes"
+
+    def test_query_string_ignored(self):
+        """utm_source and other query params must not affect the hash."""
+        base = "https://board.com/jobs/req-001"
+        with_utm = base + "?utm_source=Simplify&ref=Simplify"
+        h1 = generate_job_hash("Acme", "SWE Intern", "Remote", base)
+        h2 = generate_job_hash("Acme", "SWE Intern", "Remote", with_utm)
+        assert h1 == h2, "Query string differences must not change the hash"
+
+    def test_trailing_slash_normalised(self):
+        """Trailing slash must not produce a different hash."""
+        h1 = generate_job_hash("Acme", "SWE Intern", "Remote",
+                               "https://board.com/jobs/req-001")
+        h2 = generate_job_hash("Acme", "SWE Intern", "Remote",
+                               "https://board.com/jobs/req-001/")
+        assert h1 == h2, "Trailing slash must be normalised away"
+
+    def test_same_inputs_deterministic(self):
+        h1 = generate_job_hash("TikTok", "SWE Intern", "San Jose, CA",
+                               "https://lifeattiktok.com/search/123456")
+        h2 = generate_job_hash("TikTok", "SWE Intern", "San Jose, CA",
+                               "https://lifeattiktok.com/search/123456")
+        assert h1 == h2
 
 
 # ---------------------------------------------------------------------------
