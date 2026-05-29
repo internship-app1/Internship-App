@@ -1,4 +1,5 @@
 import React from 'react';
+import Logo from '../components/Logo';
 
 interface LoginPageProps {
   error?: string;
@@ -28,7 +29,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ error }) => {
 
   return (
     <div className="login-container">
-      <div className="logo">🎯 Internship Matcher</div>
+      <div className="logo flex items-center gap-2 justify-center">
+        <Logo size={28} />
+        Internship Matcher
+      </div>
       <p className="tagline">Find your perfect internship match</p>
 
       {error && (

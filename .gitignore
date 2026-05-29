@@ -24,6 +24,9 @@ jobs.db
 # Local changes / docs folder
 changes/
 
+# Logo design-source archive (canonical copies live in frontend/src/assets & frontend/public)
+/favicons/
+
 .agents/
 .claude/
 .mcp.json
