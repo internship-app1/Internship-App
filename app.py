@@ -85,11 +85,13 @@ async def lifespan(app: FastAPI):
                 should_refresh = True
                 logger.info("No cached jobs found — initializing cache...")
         else:
+            # Production: always scrape on startup so every deploy gets fresh data.
+            # The scrape runs in the background — server is available immediately.
+            should_refresh = True
             if cached_jobs:
-                logger.info(f"Using existing cache: {len(cached_jobs)} jobs available")
+                logger.info(f"Production startup: {len(cached_jobs)} cached jobs available, scraping for fresh data...")
             else:
-                should_refresh = True
-                logger.info("No cached jobs found — initializing cache...")
+                logger.info("Production startup: no cached jobs — initializing cache...")
 
         if should_refresh and os.getenv("SKIP_STARTUP_SCRAPE", "").lower() in ("1", "true", "yes"):
             logger.info("SKIP_STARTUP_SCRAPE is set — skipping startup scrape")
@@ -994,15 +996,21 @@ async def stream_match_resume(
                     first_seen = job.get('first_seen')
                     last_seen = job.get('last_seen')
 
-                    if first_seen and hasattr(first_seen, 'isoformat'):
-                        first_seen = first_seen.isoformat()
-                    elif first_seen and not isinstance(first_seen, str):
-                        first_seen = str(first_seen)
+                    def _to_utc_iso(ts):
+                        if not ts:
+                            return None
+                        if hasattr(ts, 'isoformat'):
+                            # Naive datetime from DB — mark as UTC so JS parses correctly
+                            return ts.isoformat() + 'Z'
+                        if isinstance(ts, str):
+                            # String from Redis/cache — normalize to proper UTC ISO
+                            if not ts.endswith('Z') and '+' not in ts:
+                                ts = ts.replace(' ', 'T') + 'Z'
+                            return ts
+                        return str(ts)
 
-                    if last_seen and hasattr(last_seen, 'isoformat'):
-                        last_seen = last_seen.isoformat()
-                    elif last_seen and not isinstance(last_seen, str):
-                        last_seen = str(last_seen)
+                    first_seen = _to_utc_iso(first_seen)
+                    last_seen = _to_utc_iso(last_seen)
 
                     formatted_jobs.append({
                         'company': job.get('company', 'Unknown'),
