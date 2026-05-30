@@ -197,7 +197,7 @@ class TestLLMSemaphore:
 
 
 # ---------------------------------------------------------------------------
-# /api/cache-status — 10/minute, no auth required
+# /api/cache-status — 10/minute, requires API key
 # ---------------------------------------------------------------------------
 
 class TestCacheStatusRateLimit:
@@ -211,7 +211,8 @@ class TestCacheStatusRateLimit:
              patch("job_cache.is_redis_available", return_value=False), \
              patch("job_cache.is_database_available", return_value=True):
             statuses = [
-                self.client.get("/api/cache-status").status_code
+                self.client.get("/api/cache-status",
+                                headers={"X-API-Key": "test-api-key"}).status_code
                 for _ in range(11)
             ]
 
