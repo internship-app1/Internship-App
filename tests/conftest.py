@@ -16,7 +16,7 @@ os.environ.setdefault("AWS_BUCKET_NAME", "test-bucket")
 os.environ.setdefault("AWS_REGION", "us-east-1")
 # Use in-memory rate limit storage so tests never need a real Redis server
 os.environ.setdefault("REDIS_URL", "memory://")
-os.environ.setdefault("CACHE_REFRESH_API_KEY", "test-api-key")
+os.environ.setdefault("INTERNSHIP_MATCHER_API_KEY", "test-api-key")
 
 
 @pytest.fixture()

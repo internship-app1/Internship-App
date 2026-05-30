@@ -13,10 +13,10 @@ except ImportError:
     pass
 
 API_URL = os.environ.get("API_URL", "https://internshipmatcher.com")
-API_KEY = os.environ.get("CACHE_REFRESH_API_KEY")
+API_KEY = os.environ.get("INTERNSHIP_MATCHER_API_KEY")
 
 if not API_KEY:
-    print("ERROR: CACHE_REFRESH_API_KEY must be set", file=sys.stderr)
+    print("ERROR: INTERNSHIP_MATCHER_API_KEY must be set", file=sys.stderr)
     sys.exit(1)
 
 resp = requests.post(

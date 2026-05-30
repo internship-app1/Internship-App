@@ -24,4 +24,4 @@ jobs:
       - name: Trigger incremental job sync
         run: python pipeline/sync_jobs.py
         env:
-          CACHE_REFRESH_API_KEY: ${{ secrets.CACHE_REFRESH_API_KEY }}
+          INTERNSHIP_MATCHER_API_KEY: ${{ secrets.INTERNSHIP_MATCHER_API_KEY }}
