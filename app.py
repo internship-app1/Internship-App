@@ -177,7 +177,8 @@ limiter = Limiter(key_func=_get_rate_limit_key, storage_uri=_REDIS_URL)
 LLM_SEMAPHORE = asyncio.Semaphore(2)
 
 # Create FastAPI app
-app = FastAPI(title="Internship Matcher", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Internship Matcher", version="1.0.0", lifespan=lifespan,
+              docs_url=None, redoc_url=None, openapi_url=None)
 app.state.limiter = limiter
 
 def _log_rate_limit_exceeded(request: Request, exc: RateLimitExceeded):
@@ -1124,7 +1125,7 @@ async def stream_match_resume(
 
 @app.get("/api/cache-status")
 @limiter.limit("10/minute")
-async def cache_status(request: Request):
+async def cache_status(request: Request, _: None = Depends(require_api_key)):
     """Get comprehensive hybrid cache status and information"""
     cache_info = job_cache.get_cache_info()
     
@@ -1299,7 +1300,7 @@ async def refresh_cache_incremental(request: Request, max_days_old: int = 30,
 
 @app.get("/api/database-stats")
 @limiter.limit("10/minute")
-async def database_stats(request: Request):
+async def database_stats(request: Request, _: None = Depends(require_api_key)):
     """Get detailed database statistics"""
     try:
         from job_database import get_database_stats
