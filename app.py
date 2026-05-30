@@ -217,10 +217,10 @@ app.add_middleware(
 # Add session middleware for basic session support
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "your-secret-key-here"))
 
-_CACHE_REFRESH_API_KEY = os.getenv("CACHE_REFRESH_API_KEY")
+_INTERNSHIP_MATCHER_API_KEY = os.getenv("INTERNSHIP_MATCHER_API_KEY")
 
 async def require_api_key(x_api_key: str = Header(None)):
-    if not _CACHE_REFRESH_API_KEY or x_api_key != _CACHE_REFRESH_API_KEY:
+    if not _INTERNSHIP_MATCHER_API_KEY or x_api_key != _INTERNSHIP_MATCHER_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 # Setup templates and static files using absolute paths

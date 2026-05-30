@@ -13,6 +13,7 @@ An AI-powered web app that matches students to software internships. Upload your
 - [Quick Start](#quick-start)
 - [API Routes](#api-routes)
 - [AI & Matching Pipeline](#ai--matching-pipeline)
+- [Hourly Job Sync Pipeline](#hourly-job-sync-pipeline)
 - [Authentication](#authentication)
 - [Database](#database)
 - [Caching](#caching)
@@ -74,6 +75,13 @@ An AI-powered web app that matches students to software internships. Upload your
 │   └── template.tex          # LaTeX template
 │
 ├── tests/                    # pytest test suite
+│
+├── pipeline/
+│   ├── sync_jobs.py          # GitHub Actions sync script — calls /api/refresh-cache-incremental
+│   └── requirements.txt      # Minimal deps for the pipeline (requests, python-dotenv)
+│
+├── .github/workflows/
+│   └── poll-internships.yml  # Hourly cron job (37 * * * *) that runs sync_jobs.py
 │
 └── frontend/
     └── src/
@@ -137,6 +145,10 @@ An AI-powered web app that matches students to software internships. Upload your
    SECRET_KEY=...
    CLERK_PUBLISHABLE_KEY=pk_...
 
+   # Admin API key — protects cache refresh and stats endpoints
+   # Generate: python -c "import secrets; print(secrets.token_hex(32))"
+   INTERNSHIP_MATCHER_API_KEY=...
+
    # Frontend (React, baked in at build time)
    REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY=pk_...
    REACT_APP_SUPABASE_URL=...
@@ -172,10 +184,10 @@ An AI-powered web app that matches students to software internships. Upload your
 | GET | `/api/user-history` | Required | User's past resume analyses |
 | POST | `/api/tailor-resume` | Required | Generate tailored PDF resume for a job |
 | GET | `/api/usage` | Required | Weekly quota status for all AI features |
-| GET | `/api/cache-status` | None | Redis + DB cache health |
-| POST | `/api/refresh-cache` | None | Trigger full job scrape |
-| POST | `/api/refresh-cache-incremental` | None | Incremental scrape |
-| GET | `/api/database-stats` | None | DB statistics |
+| GET | `/api/cache-status` | API key | Redis + DB cache health |
+| POST | `/api/refresh-cache` | API key | Trigger full job scrape |
+| POST | `/api/refresh-cache-incremental` | API key | Incremental scrape |
+| GET | `/api/database-stats` | API key | DB statistics |
 
 ---
 
@@ -202,7 +214,31 @@ Claude Sonnet 4.5 rewrites your resume JSON for a target job, then `pdflatex` co
 
 ### Job data source
 
-GitHub: [`SimplifyJobs/Summer2026-Internships`](https://github.com/SimplifyJobs/Summer2026-Internships) — parsed via BeautifulSoup. Scrapes run on startup and refresh every 24h in the background.
+GitHub: [`SimplifyJobs/Summer2026-Internships`](https://github.com/SimplifyJobs/Summer2026-Internships) — parsed via BeautifulSoup. Scrapes run on startup, refresh every 24h in the background, and are also triggered hourly by the GitHub Actions pipeline.
+
+---
+
+## Hourly Job Sync Pipeline
+
+A GitHub Actions workflow (`.github/workflows/poll-internships.yml`) runs every hour at `:37` and keeps job listings current without requiring a live server.
+
+**How it works:**
+1. The workflow calls `python pipeline/sync_jobs.py`
+2. The script POSTs to `https://internshipmatcher.com/api/refresh-cache-incremental` with an `X-API-Key` header
+3. The production server scrapes SimplifyJobs, upserts new jobs to Supabase, and refreshes Redis
+4. The workflow completes — no git commits, no state stored in the repo
+
+**Setup (one-time):**
+1. Generate a secret key:
+   ```bash
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+2. Add `INTERNSHIP_MATCHER_API_KEY=<key>` to Railway project Variables
+3. Add `INTERNSHIP_MATCHER_API_KEY=<key>` to GitHub repo Secrets (Settings → Secrets and variables → Actions)
+
+**Manual trigger:** Go to Actions tab → "Sync SimplifyJobs → Supabase" → Run workflow.
+
+**Admin endpoints** (`/api/refresh-cache`, `/api/refresh-cache-incremental`, `/api/cache-status`, `/api/database-stats`) all require the `X-API-Key` header — requests without it return `401`.
 
 ---
 
