@@ -13,7 +13,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query, Depends
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query, Depends, Header
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -215,6 +215,12 @@ app.add_middleware(
 
 # Add session middleware for basic session support
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "your-secret-key-here"))
+
+_CACHE_REFRESH_API_KEY = os.getenv("CACHE_REFRESH_API_KEY")
+
+async def require_api_key(x_api_key: str = Header(None)):
+    if not _CACHE_REFRESH_API_KEY or x_api_key != _CACHE_REFRESH_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 # Setup templates and static files using absolute paths
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -1198,7 +1204,8 @@ async def test_matching():
 
 @app.post("/api/refresh-cache")
 @limiter.limit("1/5minutes")
-async def refresh_cache(request: Request, force_full: bool = False, max_days_old: int = 30):
+async def refresh_cache(request: Request, force_full: bool = False, max_days_old: int = 30,
+                        _: None = Depends(require_api_key)):
     """
     Manually refresh the hybrid cache system (admin endpoint)
 
@@ -1259,7 +1266,8 @@ async def refresh_cache(request: Request, force_full: bool = False, max_days_old
 
 @app.post("/api/refresh-cache-incremental")
 @limiter.limit("2/5minutes")
-async def refresh_cache_incremental(request: Request, max_days_old: int = 30):
+async def refresh_cache_incremental(request: Request, max_days_old: int = 30,
+                                    _: None = Depends(require_api_key)):
     """
     Force incremental cache refresh (only new jobs)
 

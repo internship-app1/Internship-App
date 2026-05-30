@@ -21,8 +21,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r pipeline/requirements.txt
 
-      - name: Sync jobs to Supabase
+      - name: Trigger incremental job sync
         run: python pipeline/sync_jobs.py
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CACHE_REFRESH_API_KEY: ${{ secrets.CACHE_REFRESH_API_KEY }}
