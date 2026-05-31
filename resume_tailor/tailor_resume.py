@@ -28,21 +28,44 @@ def tailor_resume_to_json(
     client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
     response = client.messages.create(
         model="claude-sonnet-4-5-20250929",
-        max_tokens=2500,
+        max_tokens=8192,
         system=(
-            "You are a resume tailoring specialist. Given a resume and a target job, "
-            "extract the candidate's information and reword the experience bullet points "
-            "to better highlight relevance for the role. "
+            "You are an expert resume strategist and ATS optimization specialist. "
+            "Your job is to tailor a candidate's resume to maximally match a specific job posting "
+            "while keeping every claim truthful to the original resume.\n\n"
+            "ATS OPTIMIZATION RULES:\n"
+            "- Mirror exact keywords and phrases from the job description naturally in bullet points\n"
+            "- Use strong action verbs (Built, Designed, Optimized, Led, Implemented, Reduced, Increased)\n"
+            "- Quantify achievements wherever the original resume provides numbers — preserve them exactly\n"
+            "- Never invent numbers. Only use metrics present in the source resume.\n"
+            "- Prioritize skills in the skills section that appear in the job description\n\n"
+            "PERSONALIZATION RULES:\n"
+            "- Identify the candidate's strongest relevant experiences and lead with those\n"
+            "- Reframe bullet points using the job's own language without fabricating new claims\n"
+            "- Only include a skill if the source resume supports it. If a required skill is missing, omit it — do not substitute.\n"
+            "- Tailor the project bullets to emphasize tech and outcomes relevant to this specific role\n"
+            "- Max 4 bullets per job entry, 3 bullets per project, each bullet ≤ 30 words\n\n"
             "Return ONLY valid JSON matching the schema exactly — no markdown fences, no commentary."
         ),
         messages=[
             {
                 "role": "user",
                 "content": (
-                    f"Target role: {job_title} at {company}\n"
-                    f"Job description:\n{job_description}\n\n"
-                    f"Resume:\n{resume_text}\n\n"
-                    "Return JSON with this exact structure:\n"
+                    f"## Target Role\n"
+                    f"{job_title} at {company}\n\n"
+                    f"## Job Description\n"
+                    f"{job_description}\n\n"
+                    f"## Candidate's Current Resume\n"
+                    f"{resume_text}\n\n"
+                    f"## Your Task\n"
+                    f"Step 1 — Extract the top 8-10 ATS keywords and required skills from the job description.\n"
+                    f"Step 2 — Identify which of the candidate's experiences and projects are most relevant to this role.\n"
+                    f"Step 3 — Rewrite the experience and project bullet points to:\n"
+                    f"  • Naturally incorporate the ATS keywords identified in Step 1\n"
+                    f"  • Use strong action verbs and quantified impact (only using metrics from the source resume)\n"
+                    f"  • Stay within 4 bullets per job, 3 bullets per project, each ≤ 30 words\n"
+                    f"Step 4 — Reorder the skills section so job-relevant skills appear first.\n\n"
+                    f"Return the result as JSON with this exact structure (no extra keys, no markdown):\n"
                     "{\n"
                     '  "name": "Full Name",\n'
                     '  "email": "email@example.com",\n'

@@ -1444,6 +1444,7 @@ async def tailor_resume_endpoint(
     job_title: str = Form(...),
     company: str = Form(...),
     job_description: str = Form(default=""),
+    apply_link: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
     from quota import get_tailor_quota_status, record_tailor_request, WEEKLY_TAILOR_LIMIT
@@ -1482,8 +1483,24 @@ async def tailor_resume_endpoint(
     import time
     start_time = time.time()
 
+    # Scrape real job description from apply_link; fall back to synthetic if it fails
+    real_jd = job_description
+    if apply_link:
+        try:
+            from job_scrapers.scrape_github_internships import scrape_job_details_from_apply_link
+            loop = asyncio.get_event_loop()
+            scraped = await loop.run_in_executor(None, scrape_job_details_from_apply_link, apply_link)
+            if scraped:
+                parts = [scraped.get("description", ""), scraped.get("job_requirements", "")]
+                combined = "\n\n".join(p for p in parts if p and p != "Requirements not available")
+                if combined.strip():
+                    real_jd = combined
+                    logger.info(f"Tailor: scraped real JD from {apply_link} ({len(real_jd)} chars)")
+        except Exception as e:
+            logger.warning(f"Tailor: JD scrape failed for {apply_link} — {e}, using fallback")
+
     try:
-        pdf_bytes = _tailor_resume(file_content, job_title, company, job_description)
+        pdf_bytes = _tailor_resume(file_content, job_title, company, real_jd)
     except ValueError as e:
         logger.error(f"Tailor error (user={user_id}): {e}")
         raise HTTPException(status_code=400, detail=str(e))

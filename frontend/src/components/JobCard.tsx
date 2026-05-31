@@ -33,6 +33,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
       formData.append('job_title', job.title || '');
       formData.append('company', job.company || '');
       formData.append('job_description', job.description || '');
+      formData.append('apply_link', job.apply_link || job.url || '');
 
       const response = await fetch(`${apiBaseUrl}/api/tailor-resume`, {
         method: 'POST',
