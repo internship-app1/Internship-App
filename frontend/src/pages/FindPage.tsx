@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
 import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
+import JobFilters, { JobFilterState, EMPTY_FILTERS, isFilterActive, filterSignature } from '../components/JobFilters';
 import { Upload, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
@@ -45,6 +46,22 @@ const PROGRESS_MILESTONES = [
   { label: 'Complete', threshold: 100 },
 ];
 
+// Convert the frontend filter state into the snake_case payload the backend expects.
+const buildFiltersPayload = (f: JobFilterState) => ({
+  locations: f.locations,
+  positions: f.positions,
+  company_sizes: f.companySizes,
+  citizenship: f.citizenship,
+  avoid_companies: f.avoidCompanies,
+});
+
+// Small, URL-safe string hash (djb2) used to namespace the result cache per filter set.
+const cheapHash = (s: string): string => {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+};
+
 const FindPage: React.FC = () => {
   const { getToken, isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
@@ -58,6 +75,7 @@ const FindPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState('');
   const [useStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
+  const [filters, setFilters] = useState<JobFilterState>(EMPTY_FILTERS);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -87,10 +105,12 @@ const FindPage: React.FC = () => {
           lastModified: meta.lastModified || Date.now(),
         });
         const restoredThinkDeeper: boolean = meta.thinkDeeper ?? true;
+        const restoredFilters: JobFilterState = meta.filters ?? EMPTY_FILTERS;
 
         setSelectedFile(file);
         setThinkDeeper(restoredThinkDeeper);
-        handleFileUploadStreaming(file, restoredThinkDeeper);
+        setFilters(restoredFilters);
+        handleFileUploadStreaming(file, restoredThinkDeeper, restoredFilters);
       } catch (e) {
         sessionStorage.removeItem(PENDING_RESUME_DATA_KEY);
         sessionStorage.removeItem(PENDING_RESUME_META_KEY);
@@ -148,10 +168,15 @@ const FindPage: React.FC = () => {
     return `${file.name}-${file.size}-${file.lastModified}`;
   };
 
-  const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean) => {
+  const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean, filtersOverride?: JobFilterState) => {
     const useThinkDeeper = thinkDeeperOverride ?? thinkDeeper;
+    const activeFilters = filtersOverride ?? filters;
+    const filtersActive = isFilterActive(activeFilters);
     setFromCache(false);
-    const resumeHash = await hashFile(file);
+    const baseHash = await hashFile(file);
+    // Namespace the cache key by filter combination so a filtered search never
+    // returns the unfiltered (or differently-filtered) cached result.
+    const resumeHash = filtersActive ? `${baseHash}-${cheapHash(filterSignature(activeFilters))}` : baseHash;
 
     const token = await getToken();
     setAuthToken(token);
@@ -188,6 +213,9 @@ const FindPage: React.FC = () => {
       formData.append('resume', file);
       formData.append('think_deeper', useThinkDeeper.toString());
       formData.append('resume_hash', resumeHash);
+      if (filtersActive) {
+        formData.append('filters', JSON.stringify(buildFiltersPayload(activeFilters)));
+      }
 
       const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
         method: 'POST',
@@ -305,6 +333,7 @@ const FindPage: React.FC = () => {
             type: selectedFile.type,
             lastModified: selectedFile.lastModified,
             thinkDeeper,
+            filters,
           }));
         } catch (e) {
           // sessionStorage quota exceeded — modal flow still works
@@ -476,6 +505,9 @@ const FindPage: React.FC = () => {
 
               {/* Think Deeper toggle */}
               <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
+
+              {/* Search filters */}
+              <JobFilters value={filters} onChange={setFilters} disabled={isLoading} />
 
               <button
                 type="submit"
