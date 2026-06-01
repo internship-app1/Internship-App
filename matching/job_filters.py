@@ -2,7 +2,7 @@
 Deterministic, user-controlled job filters applied BEFORE the LLM matching stage.
 
 These filters are hard constraints supplied by the user on the frontend (location,
-position, company size, U.S. citizenship eligibility, companies to avoid). Applying
+position, company size, U.S. citizenship requirement, companies to avoid). Applying
 them before scoring keeps results relevant and avoids paying for LLM analysis on jobs
 the user has explicitly excluded.
 
@@ -18,36 +18,46 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Position categories — map a user-facing category to title keywords.
-# A job passes the position filter if its title matches ANY selected category.
+# Position categories — map a user-facing category to keywords matched against
+# the job title AND description. A job passes the position filter if it matches
+# ANY selected category.
+#
+# Keywords are surrounded by word boundaries at match time, so short tokens like
+# "ai" / "ml" / "qa" don't produce false positives inside larger words.
 # ---------------------------------------------------------------------------
 POSITION_KEYWORDS: Dict[str, List[str]] = {
     "software_engineer": ["software engineer", "swe", "software development", "software developer", "programmer"],
     "frontend": ["frontend", "front-end", "front end", "ui engineer", "web developer"],
     "backend": ["backend", "back-end", "back end", "api"],
     "fullstack": ["full stack", "fullstack", "full-stack"],
-    "data_science": ["data scien", "data analy", "analytics", "analyst"],
-    "data_engineering": ["data engineer", "etl", "data platform"],
-    "machine_learning": ["machine learning", "ml engineer", " ml ", "artificial intelligence", " ai ", "deep learning", "nlp", "computer vision"],
-    "mobile": ["mobile", "ios", "android", "react native", "flutter"],
-    "devops": ["devops", "sre", "site reliability", "infrastructure", "platform engineer"],
-    "security": ["security", "cyber", "infosec"],
-    "qa": ["qa", "sdet", "test", "quality"],
-    "hardware": ["hardware", "embedded", "firmware", "fpga", "asic"],
+    "data_science": ["data science", "data scientist", "data analyst", "data analytics", "analytics", "analyst"],
+    "data_engineering": ["data engineer", "data engineering", "etl", "data platform"],
+    "machine_learning": ["machine learning", "ml engineer", "ml", "artificial intelligence", "ai", "deep learning", "nlp", "computer vision", "llm"],
+    "mobile": ["mobile", "ios", "android", "react native", "flutter", "kotlin", "swift"],
+    "cloud": ["cloud", "cloud engineer", "aws", "azure", "gcp", "google cloud"],
+    "devops": ["devops", "sre", "site reliability", "infrastructure", "platform engineer", "ci/cd"],
+    "security": ["security", "cyber", "cybersecurity", "infosec", "appsec"],
+    "qa": ["qa", "sdet", "test", "testing", "quality assurance", "quality engineer"],
+    "hardware": ["hardware", "embedded", "firmware", "fpga", "asic", "verilog", "vhdl"],
 }
 
 
 # ---------------------------------------------------------------------------
-# Company size — we don't scrape headcount, so "large/enterprise" is identified
-# via a curated set of well-known large companies. Everything else is treated as
-# "startup / mid-size". This is a best-effort heuristic surfaced as such in the UI.
+# Company size — we don't scrape headcount, so the only bucket we can identify
+# with confidence is "large / enterprise" via a curated set of well-known large
+# employers. Everything else is treated as "not large" (startup / mid-size).
+# This is a best-effort heuristic surfaced as such in the UI.
+#
+# Names here are CANONICAL: lowercased, with legal suffixes stripped. Matching is
+# an O(1) set lookup after normalizing the job's company the same way (plus an
+# alias table for common brand/legal-name differences).
 # ---------------------------------------------------------------------------
 LARGE_COMPANIES = {
     "google", "alphabet", "meta", "facebook", "amazon", "aws", "apple", "microsoft",
     "netflix", "nvidia", "intel", "ibm", "oracle", "salesforce", "adobe", "cisco",
     "qualcomm", "broadcom", "amd", "dell", "hp", "hewlett packard", "hpe", "sap",
     "vmware", "uber", "lyft", "airbnb", "tesla", "spacex", "paypal", "block", "square",
-    "stripe", "snap", "snapchat", "pinterest", "twitter", "x", "linkedin", "tiktok",
+    "stripe", "snap", "snapchat", "pinterest", "twitter", "linkedin", "tiktok",
     "bytedance", "tencent", "alibaba", "samsung", "sony", "spotify", "atlassian",
     "servicenow", "workday", "snowflake", "databricks", "palantir", "twilio", "shopify",
     "doordash", "instacart", "robinhood", "coinbase", "datadog", "cloudflare",
@@ -66,22 +76,69 @@ LARGE_COMPANIES = {
     "activision", "blizzard", "nintendo", "siemens", "bosch", "philips", "schneider electric",
 }
 
+# Brand/legal-name aliases → canonical name present in LARGE_COMPANIES.
+COMPANY_ALIASES = {
+    "x": "twitter",                 # rebrand; bare "x" would otherwise be unmatchable/ambiguous
+    "x corp": "twitter",
+    "google llc": "google",
+    "meta platforms": "meta",
+    "amazon web services": "aws",
+    "alphabet inc": "alphabet",
+    "jp morgan": "jpmorgan",
+    "jpmorgan chase & co": "jpmorgan chase",
+    "j.p. morgan": "jpmorgan",
+    "walt disney": "disney",
+    "the walt disney": "disney",
+}
+
+# Legal/structural suffixes stripped before lookup so "Google LLC", "Amazon.com Inc"
+# and "Stripe, Inc." all collapse to their canonical names.
+_LEGAL_SUFFIX_RE = re.compile(
+    r"\b("
+    r"inc|incorporated|llc|l\.l\.c|llp|ltd|limited|corp|corporation|co|company|"
+    r"plc|gmbh|ag|sa|nv|holdings|group|technologies|technology|labs|systems|"
+    r"solutions|software|enterprises"
+    r")\b\.?",
+    flags=re.IGNORECASE,
+)
+
 
 def _normalize(text: str) -> str:
     return (text or "").strip().lower()
 
 
-def _company_is_large(company: str) -> bool:
+def _canonical_company(company: str) -> str:
+    """Lowercase, strip a leading 'the', punctuation noise, and legal suffixes."""
     c = _normalize(company)
     if not c:
+        return ""
+    # Drop ".com" style domains and commas/periods used as separators.
+    c = c.replace(".com", " ")
+    c = c.replace(",", " ")
+    if c.startswith("the "):
+        c = c[4:]
+    c = _LEGAL_SUFFIX_RE.sub(" ", c)
+    # Collapse whitespace.
+    c = re.sub(r"\s+", " ", c).strip()
+    return c
+
+
+def _company_is_large(company: str) -> bool:
+    """O(1) membership test against the curated large-company set (+ aliases).
+
+    Uses exact canonical-name matching (no substring scan) so names like "Go" or
+    "Xerox" are never mistaken for "Google" / "X".
+    """
+    canonical = _canonical_company(company)
+    if not canonical:
         return False
-    if c in LARGE_COMPANIES:
-        return True
-    # Substring match so "Google LLC" / "Amazon.com" / "Meta Platforms" still resolve.
-    for known in LARGE_COMPANIES:
-        if known in c or c in known:
-            return True
-    return False
+    canonical = COMPANY_ALIASES.get(canonical, canonical)
+    return canonical in LARGE_COMPANIES
+
+
+def _matches_position_keyword(text: str, keyword: str) -> bool:
+    """Word-boundary keyword match (so 'ai'/'ml'/'qa' don't match inside words)."""
+    return re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", text) is not None
 
 
 def _job_requires_citizenship(job: Dict[str, Any]) -> bool:
@@ -116,6 +173,9 @@ def normalize_filters(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Coerce a raw filters dict (e.g. parsed from a JSON form field) into a clean,
     validated structure. Returns a dict with consistent types and lowercased values.
+
+    The result is the canonical shape consumed by ``apply_normalized_filters`` and
+    ``has_active_filters`` — normalize ONCE per request and reuse it.
     """
     raw = raw or {}
 
@@ -131,10 +191,18 @@ def normalize_filters(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         return [p.strip() for p in parts if p and p.strip()]
 
     citizenship = _normalize(raw.get("citizenship", "any")) or "any"
-    if citizenship not in ("any", "citizen", "non_citizen"):
+    if citizenship not in ("any", "citizen_only", "exclude_citizen"):
         citizenship = "any"
 
-    company_sizes = {s for s in (_normalize(x) for x in _as_str_list(raw.get("company_sizes"))) if s in ("startup", "midsize", "large")}
+    # Company size collapsed to the two buckets we can actually distinguish.
+    raw_sizes = {_normalize(x) for x in _as_str_list(raw.get("company_sizes"))}
+    # Backward-compat: map legacy startup/midsize values onto "not_large".
+    company_sizes = set()
+    for s in raw_sizes:
+        if s == "large":
+            company_sizes.add("large")
+        elif s in ("not_large", "startup", "midsize", "mid-size", "small"):
+            company_sizes.add("not_large")
 
     positions = {p for p in (_normalize(x) for x in _as_str_list(raw.get("positions"))) if p in POSITION_KEYWORDS}
 
@@ -147,15 +215,16 @@ def normalize_filters(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def has_active_filters(filters: Dict[str, Any]) -> bool:
-    if not filters:
+def has_active_filters(normalized: Dict[str, Any]) -> bool:
+    """True if a NORMALIZED filters dict actually constrains the result set."""
+    if not normalized:
         return False
     return bool(
-        filters.get("locations")
-        or filters.get("positions")
-        or filters.get("company_sizes")
-        or filters.get("avoid_companies")
-        or filters.get("citizenship", "any") != "any"
+        normalized.get("locations")
+        or normalized.get("positions")
+        or normalized.get("company_sizes")
+        or normalized.get("avoid_companies")
+        or normalized.get("citizenship", "any") != "any"
     )
 
 
@@ -179,10 +248,12 @@ def _passes_location(job: Dict[str, Any], locations: List[str]) -> bool:
 def _passes_position(job: Dict[str, Any], positions) -> bool:
     if not positions:
         return True
-    title = _normalize(job.get("title", ""))
+    # Match against title AND description — SimplifyJobs listings often carry a
+    # generic title ("Summer 2026 Intern") with the real role in the description.
+    haystack = f"{_normalize(job.get('title', ''))} {_normalize(job.get('description', ''))}"
     for category in positions:
         for kw in POSITION_KEYWORDS.get(category, []):
-            if kw in title:
+            if _matches_position_keyword(haystack, kw):
                 return True
     return False
 
@@ -191,21 +262,19 @@ def _passes_company_size(job: Dict[str, Any], company_sizes) -> bool:
     if not company_sizes:
         return True
     is_large = _company_is_large(job.get("company", ""))
-    allow_large = "large" in company_sizes
-    allow_other = bool(company_sizes & {"startup", "midsize"})
     if is_large:
-        return allow_large
-    return allow_other
+        return "large" in company_sizes
+    return "not_large" in company_sizes
 
 
 def _passes_citizenship(job: Dict[str, Any], citizenship: str) -> bool:
-    if citizenship != "non_citizen":
-        return True
-    # A non-citizen / sponsorship-dependent applicant can't take roles that require
-    # citizenship or that explicitly refuse sponsorship.
-    if _job_requires_citizenship(job) or _job_offers_no_sponsorship(job):
-        return False
-    return True
+    if citizenship == "citizen_only":
+        # Only roles that require U.S. citizenship.
+        return _job_requires_citizenship(job)
+    if citizenship == "exclude_citizen":
+        # Hide roles that require citizenship or explicitly refuse sponsorship.
+        return not (_job_requires_citizenship(job) or _job_offers_no_sponsorship(job))
+    return True  # "any"
 
 
 def _passes_avoid_companies(job: Dict[str, Any], avoid_companies: List[str]) -> bool:
@@ -221,27 +290,20 @@ def _passes_avoid_companies(job: Dict[str, Any], avoid_companies: List[str]) -> 
     return True
 
 
-def apply_filters(jobs: List[Dict[str, Any]], raw_filters: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Filter the job list according to user-supplied preferences.
+def apply_normalized_filters(jobs: List[Dict[str, Any]], normalized: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Filter ``jobs`` using an ALREADY-normalized filters dict (see normalize_filters).
 
-    Args:
-        jobs: List of job dicts.
-        raw_filters: Raw (possibly partial) filters dict — normalized internally.
-
-    Returns:
-        The subset of jobs passing every active filter. If no filters are active,
-        the original list is returned unchanged.
+    Prefer this in request handlers that already normalized once — it avoids
+    re-normalizing the same payload repeatedly.
     """
-    filters = normalize_filters(raw_filters)
-    if not has_active_filters(filters):
+    if not has_active_filters(normalized):
         return jobs
 
-    locations = filters["locations"]
-    positions = filters["positions"]
-    company_sizes = filters["company_sizes"]
-    citizenship = filters["citizenship"]
-    avoid_companies = filters["avoid_companies"]
+    locations = normalized["locations"]
+    positions = normalized["positions"]
+    company_sizes = normalized["company_sizes"]
+    citizenship = normalized["citizenship"]
+    avoid_companies = normalized["avoid_companies"]
 
     filtered = [
         job for job in jobs
@@ -259,3 +321,13 @@ def apply_filters(jobs: List[Dict[str, Any]], raw_filters: Optional[Dict[str, An
         f"avoid={avoid_companies})"
     )
     return filtered
+
+
+def apply_filters(jobs: List[Dict[str, Any]], raw_filters: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Filter the job list according to raw (un-normalized) user preferences.
+
+    Convenience wrapper that normalizes then delegates to ``apply_normalized_filters``.
+    If no filters are active the original list is returned unchanged.
+    """
+    return apply_normalized_filters(jobs, normalize_filters(raw_filters))

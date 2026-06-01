@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import { SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 import { cn } from '../lib/utils';
+import TagAutocomplete from './ui/tag-autocomplete';
+import { LOCATION_SUGGESTIONS, COMPANY_SUGGESTIONS } from '../lib/filterSuggestions';
 
-export type CitizenshipPref = 'any' | 'citizen' | 'non_citizen';
+export type CitizenshipPref = 'any' | 'citizen_only' | 'exclude_citizen';
 
 export interface JobFilterState {
-  locations: string;        // comma-separated free text
+  locations: string[];      // selected location tags
   positions: string[];      // category ids (see POSITION_OPTIONS)
-  companySizes: string[];   // 'startup' | 'midsize' | 'large'
+  companySizes: string[];   // 'large' | 'not_large'
   citizenship: CitizenshipPref;
-  avoidCompanies: string;   // comma-separated free text
+  avoidCompanies: string[]; // company name tags to exclude
 }
 
 export const EMPTY_FILTERS: JobFilterState = {
-  locations: '',
+  locations: [],
   positions: [],
   companySizes: [],
   citizenship: 'any',
-  avoidCompanies: '',
+  avoidCompanies: [],
 };
 
 // Position category ids MUST match POSITION_KEYWORDS keys in matching/job_filters.py
@@ -30,38 +32,39 @@ const POSITION_OPTIONS: { id: string; label: string }[] = [
   { id: 'data_engineering', label: 'Data Engineering' },
   { id: 'machine_learning', label: 'ML / AI' },
   { id: 'mobile', label: 'Mobile' },
+  { id: 'cloud', label: 'Cloud' },
   { id: 'devops', label: 'DevOps / SRE' },
   { id: 'security', label: 'Security' },
   { id: 'qa', label: 'QA / Test' },
   { id: 'hardware', label: 'Hardware / Embedded' },
 ];
 
+// We can only reliably identify large/enterprise employers, so size collapses to
+// two honest buckets (startup & mid-size were indistinguishable without headcount data).
 const COMPANY_SIZE_OPTIONS: { id: string; label: string }[] = [
-  { id: 'startup', label: 'Startup' },
-  { id: 'midsize', label: 'Mid-size' },
+  { id: 'not_large', label: 'Startup / Mid-size' },
   { id: 'large', label: 'Large / Enterprise' },
 ];
 
 const CITIZENSHIP_OPTIONS: { id: CitizenshipPref; label: string }[] = [
-  { id: 'any', label: "Doesn't matter" },
-  { id: 'citizen', label: "I'm a U.S. citizen" },
-  { id: 'non_citizen', label: 'Not a citizen — need sponsorship' },
+  { id: 'any', label: 'All jobs' },
+  { id: 'exclude_citizen', label: 'No U.S.-citizen-only jobs' },
+  { id: 'citizen_only', label: 'U.S.-citizen jobs only' },
 ];
 
 export function isFilterActive(f: JobFilterState): boolean {
   return Boolean(
-    f.locations.trim() ||
+    f.locations.length ||
     f.positions.length ||
     f.companySizes.length ||
-    f.avoidCompanies.trim() ||
+    f.avoidCompanies.length ||
     f.citizenship !== 'any'
   );
 }
 
 /** Stable signature used to key the result cache per filter combination. */
 export function filterSignature(f: JobFilterState): string {
-  const norm = (s: string) =>
-    s.split(',').map(p => p.trim().toLowerCase()).filter(Boolean).sort().join('|');
+  const norm = (arr: string[]) => [...arr].map(s => s.trim().toLowerCase()).filter(Boolean).sort().join('|');
   return [
     norm(f.locations),
     [...f.positions].sort().join('|'),
@@ -85,10 +88,10 @@ const JobFilters: React.FC<JobFiltersProps> = ({ value, onChange, disabled }) =>
   const active = isFilterActive(value);
 
   const activeCount =
-    (value.locations.trim() ? 1 : 0) +
+    value.locations.length +
     value.positions.length +
     value.companySizes.length +
-    (value.avoidCompanies.trim() ? 1 : 0) +
+    value.avoidCompanies.length +
     (value.citizenship !== 'any' ? 1 : 0);
 
   const toggleInArray = (arr: string[], id: string): string[] =>
@@ -164,18 +167,15 @@ const JobFilters: React.FC<JobFiltersProps> = ({ value, onChange, disabled }) =>
           {/* Location */}
           <div>
             {sectionLabel('Location')}
-            <input
-              type="text"
+            <TagAutocomplete
               value={value.locations}
+              onChange={(locations) => onChange({ ...value, locations })}
+              suggestions={LOCATION_SUGGESTIONS}
+              placeholder="Type a city, state, or “Remote”…"
               disabled={disabled}
-              onChange={(e) => onChange({ ...value, locations: e.target.value })}
-              placeholder="e.g. New York, San Francisco, Remote"
-              className={cn(
-                'w-full bg-bg border border-lp-border px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary',
-                focusRing
-              )}
+              ariaLabel="Add a location filter"
             />
-            <p className="font-mono text-[10px] text-text-tertiary mt-1">Comma-separated. Matches city, state, or "Remote".</p>
+            <p className="font-mono text-[10px] text-text-tertiary mt-1">Add multiple — results match any of them.</p>
           </div>
 
           {/* Position */}
@@ -200,7 +200,7 @@ const JobFilters: React.FC<JobFiltersProps> = ({ value, onChange, disabled }) =>
                 )
               )}
             </div>
-            <p className="font-mono text-[10px] text-text-tertiary mt-1">Best-effort — based on a list of well-known large employers.</p>
+            <p className="font-mono text-[10px] text-text-tertiary mt-1">Best-effort — “Large” is matched against well-known enterprise employers.</p>
           </div>
 
           {/* Citizenship */}
@@ -213,26 +213,26 @@ const JobFilters: React.FC<JobFiltersProps> = ({ value, onChange, disabled }) =>
                 )
               )}
             </div>
-            {value.citizenship === 'non_citizen' && (
-              <p className="font-mono text-[10px] text-text-tertiary mt-1">Hides roles requiring U.S. citizenship or that don't offer sponsorship.</p>
+            {value.citizenship === 'exclude_citizen' && (
+              <p className="font-mono text-[10px] text-text-tertiary mt-1">Hides roles requiring U.S. citizenship or that don’t offer sponsorship.</p>
+            )}
+            {value.citizenship === 'citizen_only' && (
+              <p className="font-mono text-[10px] text-text-tertiary mt-1">Shows only roles that require U.S. citizenship.</p>
             )}
           </div>
 
           {/* Companies to avoid */}
           <div>
             {sectionLabel('Companies to avoid')}
-            <input
-              type="text"
+            <TagAutocomplete
               value={value.avoidCompanies}
+              onChange={(avoidCompanies) => onChange({ ...value, avoidCompanies })}
+              suggestions={COMPANY_SUGGESTIONS}
+              placeholder="Type a company to exclude…"
               disabled={disabled}
-              onChange={(e) => onChange({ ...value, avoidCompanies: e.target.value })}
-              placeholder="e.g. Amazon, Meta"
-              className={cn(
-                'w-full bg-bg border border-lp-border px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary',
-                focusRing
-              )}
+              ariaLabel="Add a company to avoid"
             />
-            <p className="font-mono text-[10px] text-text-tertiary mt-1">Comma-separated. These companies are excluded from results.</p>
+            <p className="font-mono text-[10px] text-text-tertiary mt-1">These companies are excluded from results.</p>
           </div>
         </div>
       )}
