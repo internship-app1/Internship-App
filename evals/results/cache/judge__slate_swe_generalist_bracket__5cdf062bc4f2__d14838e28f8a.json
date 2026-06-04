@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "baseline",
+  "justification": "A consistently captures concrete numeric metrics from the resume (1,000+ orders, 52% latency reduction, 98% time reduction, 30K+ students, 83% code reduction) and maps them to specific job matches, earning high impact_quality marks. B's reasoning is vaguer and rarely references specific metrics. A also provides more precise and standardized skill matches per job (e.g., WebSockets, Async Processing, Full-Stack Architecture) and meaningful skill gaps that reflect real role requirements, whereas B lists almost no skill gaps at all \u2014 a suspicious omission that hurts conservatism and accuracy. B's skill_matches are also shallower (e.g., 'algorithms', 'data structures', 'databases' as generic terms rather than demonstrated specifics). Both outputs rank jobs 7 and 5 highest and 3/4 lower, roughly aligning with expected behavior, but A's per-job reasoning is more grounded in resume evidence. A wins on skill_accuracy, conservatism, and impact_quality; project_classification is roughly tied since neither output explicitly classifies project types in a taxonomy field, but A's reasoning better reflects the nature of each project."
+}

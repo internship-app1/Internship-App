@@ -1,0 +1,35 @@
+Tyler Brooks
+tyler.brooks@email.com | github.com/tylerbrooks
+
+EDUCATION
+B.S. Computer Science, Ohio State University | Expected May 2027 (Sophomore)
+GPA: 3.2
+
+ABOUT
+I am passionate about technology and have exposure to many tools. I enjoy learning new
+frameworks and trying things out through tutorials and online courses.
+
+SKILLS (self-reported)
+Languages: Python, Java, C, C++, JavaScript, TypeScript, HTML, CSS, PHP, Ruby, Go, Rust,
+  Kotlin, Swift, Scala, R, MATLAB, Assembly (x86), Bash, Perl
+Frameworks: React, Angular, Vue, Next.js, Django, Flask, FastAPI, Spring Boot, Express,
+  Ruby on Rails, Laravel, Svelte, Nuxt, Gatsby
+Databases: MySQL, PostgreSQL, MongoDB, Redis, SQLite, Cassandra, DynamoDB, Elasticsearch,
+  Neo4j, InfluxDB
+Cloud: AWS, Azure, GCP, Heroku, Vercel, Netlify, DigitalOcean, Cloudflare
+DevOps: Docker, Kubernetes, Terraform, Ansible, Jenkins, CircleCI, GitHub Actions, Nginx
+AI/ML: TensorFlow, PyTorch, scikit-learn, Keras, Pandas, NumPy, Matplotlib, HuggingFace,
+  OpenAI API, LangChain, Pinecone, CUDA
+Tools: Git, Jira, Confluence, Figma, Postman, VS Code, IntelliJ, Vim
+
+PROJECTS
+Hello World App (Dec 2024)
+- Built a Hello World app in Python
+- Also tried it in JavaScript
+
+Calculator (Nov 2024)
+- Made a command-line calculator in Java as part of a class assignment
+- Used basic arithmetic operators
+
+EXPERIENCE
+None yet

@@ -1,0 +1,105 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agent at Burnt (YC S25) with Claude+RAG across 1,000+ orders and built autonomous SMS agent with FSM pipeline; AI Agents focus maps exactly to their work.",
+      "skill_matches": [
+        "Python",
+        "AI/LLM",
+        "Claude",
+        "FastAPI",
+        "Data Processing"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 72,
+      "reasoning": "Decent match \u2014 candidate has strong full-stack foundation (React, Python, TypeScript) across Burnt and internshipmatcher.com, but role description is generic with no specific stack mentioned.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "Algorithms",
+        "Data Structures"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 24,
+      "reasoning": "Poor fit \u2014 \ud83d\udec2 flag indicates clearance requirement; candidate has AWS S3 experience but no defense/government background, and clearance roles typically require U.S. citizenship.",
+      "skill_matches": [
+        "AWS"
+      ],
+      "skill_gaps": [
+        "Security Clearance",
+        "Government/Defense Experience"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 18,
+      "reasoning": "Misaligned \u2014 General Dynamics is defense contractor requiring clearance; candidate has no defense/aerospace background and likely cannot obtain required clearance as international student.",
+      "skill_matches": [],
+      "skill_gaps": [
+        "Security Clearance",
+        "Defense Industry Experience"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 86,
+      "reasoning": "Strong fit \u2014 candidate built production AI agents at Burnt with Claude+RAG and autonomous SMS agent with intent classification; AI internship at Attentive maps directly to their LLM application work.",
+      "skill_matches": [
+        "Python",
+        "AI/LLM",
+        "Claude",
+        "Machine Learning",
+        "FastAPI"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 78,
+      "reasoning": "Strong match \u2014 candidate has production full-stack experience (React+TypeScript+Python) at Burnt and internshipmatcher.com; TikTok's scale fits their distributed systems work (Redis, PostgreSQL, async pipelines).",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "PostgreSQL",
+        "Redis",
+        "Distributed Systems"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 7,
+      "match_score": 70,
+      "reasoning": "Decent fit \u2014 candidate has solid full-stack foundation across multiple projects, but Context role is extremely generic with no specific requirements to assess alignment beyond general programming.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "Algorithms"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 90,
+      "reasoning": "Excellent fit \u2014 candidate shipped AI-native products at Burnt (multi-channel agent with Claude+RAG) and built autonomous SMS agent; San Jose location + AI-Native focus perfectly matches their production LLM work.",
+      "skill_matches": [
+        "Python",
+        "AI/LLM",
+        "Claude",
+        "FastAPI",
+        "React",
+        "TypeScript"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

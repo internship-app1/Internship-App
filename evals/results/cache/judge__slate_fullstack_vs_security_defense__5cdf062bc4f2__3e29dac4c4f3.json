@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "baseline",
+  "justification": "A consistently outperforms B across all dimensions. On skill_accuracy, A uses standardized skill names and maps them precisely to demonstrated evidence (e.g., 'Claude LLMs', 'RAG', 'Vector stores' tied to specific projects), while B uses vague labels like 'AI/ML' and 'Algorithms/Data Structures' not directly evidenced. On conservatism, A provides appropriately calibrated skill_matches per job (5\u20137 skills grounded in the resume), whereas B is sparse (2\u20134 skills) and under-extracts demonstrated competencies. On project_classification, this dimension is less directly tested here since both outputs are job-matching rather than project-tagging, so both score neutrally, but A's reasoning references specific projects more accurately. On impact_quality, A explicitly cites concrete metrics from the resume (1,000+ orders, 83% code reduction, 95%+ accuracy, 52% latency reduction, 5 hrs/week saved) in its reasoning, making the match justifications far more grounded and precise. B's reasoning is vague and rarely references specific numbers. A also correctly ranks jobs in alignment with expected behavior: LegalZoom AI (90) and Burnt-type AI roles highest, Snyk (72) and Leidos (65) lowest \u2014 matching the expected ranking. B's Docugami score (70) is oddly low given expected behavior, and its GenBio score (68) is also underweighted."
+}

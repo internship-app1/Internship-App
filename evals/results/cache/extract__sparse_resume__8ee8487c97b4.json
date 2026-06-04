@@ -1,0 +1,26 @@
+{
+  "skills": [
+    "Python",
+    "HTML",
+    "CSS",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with demonstrated coursework or completed learning. Excluded 'familiarity' claims without concrete evidence. Python is listed as 'very beginner level' but is actively being learned in current coursework, so included. Git from YouTube tutorial is minimal but represents actual exposure.",
+  "projects": [],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Clear coursework documentation (Introduction to Programming in Python, Web Design Basics with A grade). Skills are directly tied to completed or in-progress courses."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.7,
+      "confidence_notes": "Git skill based on self-directed YouTube learning without formal coursework or project application. Minimal evidence of practical use."
+    }
+  ]
+}

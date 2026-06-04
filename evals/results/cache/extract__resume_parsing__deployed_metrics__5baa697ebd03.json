@@ -1,0 +1,22 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "SQL",
+    "React",
+    "Node.js",
+    "Express",
+    "FastAPI",
+    "PostgreSQL",
+    "Redis",
+    "AWS",
+    "Vercel",
+    "Git",
+    "Docker"
+  ],
+  "experience_level": "recent_graduate",
+  "years_of_experience": 1,
+  "is_student": false,
+  "confidence_notes": "Extracted skills directly from resume with strong evidence of hands-on experience. All skills listed in SKILLS section are backed by concrete project work and internship experience. Sofia has demonstrated proficiency through: (1) internship work with React/TypeScript/PostgreSQL optimization, (2) full-stack SaaS project using React/Node.js/PostgreSQL/AWS, (3) Python scraper with AWS Lambda/Redis. Excluded soft skills as they weren't explicitly mentioned. Recent graduate (May 2024) with ~3 months of paid internship experience plus 2 significant personal projects."
+}

@@ -1,0 +1,100 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "React",
+    "Node.js",
+    "PostgreSQL",
+    "SQL",
+    "AWS",
+    "Git",
+    "Docker",
+    "Redis",
+    "Express"
+  ],
+  "experience_level": "recent_graduate",
+  "years_of_experience": 0.5,
+  "is_student": false,
+  "confidence_notes": "All skills extracted from concrete work experience (internship) and deployed projects with measurable outcomes. Skills section corroborated by project implementations. No aspirational skills included.",
+  "projects": [
+    {
+      "name": "InternTracker \u2014 Job Application Tracker",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "React",
+        "Node.js",
+        "PostgreSQL",
+        "AWS",
+        "Clerk",
+        "SendGrid"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": true,
+      "summary": "Full-stack SaaS application for job application tracking with drag-and-drop Kanban board, authentication, and email reminders. Deployed to AWS EC2 and live at interntracker.io. Achieved 500+ registered users within 2 weeks of launch and won $5,000 prize at HackUCLA 2024."
+    },
+    {
+      "name": "PricePulse \u2014 E-Commerce Price Monitor",
+      "type": "Data Engineering / ETL",
+      "technologies": [
+        "Python",
+        "AWS",
+        "Redis",
+        "SendGrid"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Python-based web scraper deployed as AWS Lambda cron job monitoring 3,000+ product listings daily. Handles 10,000+ requests per day with Redis caching layer reducing repeat API calls by 80%. Sends automated email alerts for price drops exceeding 15%."
+    },
+    {
+      "name": "FinanceApp Inc. Dashboard Optimization",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "React",
+        "TypeScript",
+        "PostgreSQL",
+        "Vercel"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Rebuilt user dashboard with React and TypeScript, optimized PostgreSQL queries, and deployed to production serving 22,000 monthly active users. Achieved significant performance improvements through code-splitting and database indexing."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Reduced dashboard page load time from 3.2 seconds to 1.4 seconds through code-splitting and lazy loading of chart components.",
+      "metric": "1.8 second reduction (56% improvement)",
+      "dimension": "speed"
+    },
+    {
+      "description": "Optimized PostgreSQL queries by adding composite indexes, significantly reducing database query latency.",
+      "metric": "62% reduction in average query time (from 850ms to 320ms)",
+      "dimension": "performance"
+    },
+    {
+      "description": "InternTracker SaaS application achieved rapid user adoption and won hackathon competition.",
+      "metric": "500+ registered users within 2 weeks; $5,000 prize",
+      "dimension": "business_value"
+    },
+    {
+      "description": "PricePulse web scraper deployed to production handling high-volume monitoring with efficient caching.",
+      "metric": "10,000+ requests per day; 80% reduction in repeat API calls via Redis caching",
+      "dimension": "scale"
+    },
+    {
+      "description": "FinanceApp dashboard served significant user base in production environment.",
+      "metric": "22,000 monthly active users",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All 12 skills directly corroborated by internship experience and deployed projects with concrete implementations. No self-reported-only skills included. Strong evidence of production deployment and measurable impact."
+    }
+  ]
+}

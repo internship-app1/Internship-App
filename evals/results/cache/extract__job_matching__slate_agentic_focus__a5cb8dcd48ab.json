@@ -1,0 +1,120 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agent at Burnt (YC S25) handling 1,000+ orders with Claude+RAG and built autonomous Cold Leads Agent with FSM-driven pipeline; this AI Agents role maps directly to their demonstrated LLM application work.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "RAG",
+        "FastAPI",
+        "AI agents",
+        "Production LLM systems"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 76,
+      "reasoning": "Strong fit \u2014 candidate has production full-stack experience at Burnt and owns internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL); generic SWE role matches their demonstrated stack, though no specific requirements listed to distinguish further.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "PostgreSQL",
+        "AWS"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 34,
+      "reasoning": "Poor fit \u2014 role requires security clearance (\ud83d\udec2 flag) and is defense-focused at National Harbor; candidate has no cleared work history and their portfolio (Burnt, Internship Matcher, Sleep-PSG) is commercial SaaS/consumer tech, not government/defense.",
+      "skill_matches": [
+        "Python",
+        "AWS S3"
+      ],
+      "skill_gaps": [
+        "Security clearance",
+        "Defense/government domain experience",
+        "Cloud infrastructure focus"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 29,
+      "reasoning": "Poor fit \u2014 General Dynamics is a defense contractor in Chantilly, VA (cleared facility); candidate has zero defense/clearance background and their entire portfolio (Burnt, Internship Matcher, Cold Leads Agent) is commercial software with no government work.",
+      "skill_matches": [
+        "Python",
+        "General programming"
+      ],
+      "skill_gaps": [
+        "Security clearance",
+        "Defense systems",
+        "Government contracting experience"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 86,
+      "reasoning": "Excellent fit \u2014 candidate built production AI agents at Burnt (1,000+ orders with Claude+RAG) and Cold Leads Agent with intent classification; Attentive's AI Intern role in NYC aligns perfectly with their LLM application and agent-building experience.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "AI agents",
+        "FastAPI",
+        "RAG",
+        "Production AI systems"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 72,
+      "reasoning": "Decent fit \u2014 candidate has strong full-stack production experience (React+TypeScript+Python at Burnt and internshipmatcher.com) suitable for TikTok's scale, but role is generic 'Multiple Teams' with no specific stack mentioned; lacks large-scale distributed systems evidence.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis"
+      ],
+      "skill_gaps": [
+        "Large-scale distributed systems",
+        "Mobile development"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 74,
+      "reasoning": "Strong fit \u2014 candidate has production full-stack work at Burnt and owns internshipmatcher.com (React+FastAPI+PostgreSQL); Context SF role is generic SWE with no specific requirements, so candidate's demonstrated stack applies but nothing distinguishes this further.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "PostgreSQL",
+        "AWS"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 90,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (Claude+RAG, 1,000+ orders), built Internship Matcher with dual-model Claude pipeline (95%+ accuracy), and owns Cold Leads Agent; Kognitos 'AI-Native' role in San Jose maps perfectly to their LLM application expertise.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "AI agents",
+        "FastAPI",
+        "RAG",
+        "Production LLM systems",
+        "React"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

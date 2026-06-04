@@ -1,0 +1,31 @@
+Priya Sharma
+priya.sharma@university.edu | github.com/priyasharma | linkedin.com/in/priya-sharma
+
+EDUCATION
+B.S. Computer Science, University of Texas at Austin | Expected May 2026
+GPA: 3.8 | Relevant Coursework: Computer Vision, Deep Learning, Data Structures, Algorithms
+
+PROJECTS
+Object Detection System for Traffic Analysis (Jan 2025 – May 2025)
+- Trained a YOLOv8 model on a custom dataset of 12,000 annotated traffic camera images
+- Achieved 91% mAP on the test set, a 12% improvement over the YOLOv5 baseline
+- Implemented real-time inference pipeline using OpenCV and CUDA, achieving 28 FPS on NVIDIA T4
+- Deployed model behind a FastAPI endpoint on AWS EC2; live at traffic-demo.priya.dev
+
+Facial Expression Classifier (Sep 2024 – Dec 2024)
+- Built a CNN (ResNet-50 fine-tuned) in PyTorch to classify 7 emotional states from webcam frames
+- Achieved 88% accuracy on FER2013 test set
+- Integrated into a React web app for real-time demo
+
+EXPERIENCE
+Undergraduate Research Assistant, UT Computer Vision Lab (Jan 2025 – Present)
+- Assisted Professor Chen in experiments on monocular depth estimation
+- Wrote Python scripts to preprocess and augment 50,000-image medical imaging dataset
+- Contributed to an IEEE paper submission (under review)
+
+SKILLS
+Languages: Python, C++, Java
+Libraries: PyTorch, TensorFlow, OpenCV, NumPy, Pandas, scikit-learn
+Tools: Git, Docker, CUDA, Jupyter
+Cloud: AWS EC2, AWS S3
+Web: React, FastAPI

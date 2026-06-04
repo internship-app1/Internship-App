@@ -1,0 +1,32 @@
+Alex Johnson
+alex.johnson@email.com | github.com/alexjohnson
+
+EDUCATION
+B.S. Computer Science, Arizona State University | May 2025
+GPA: 3.4
+
+ABOUT ME
+I come from a JavaScript-heavy background. I have never used Python professionally
+and do not consider it one of my skills. I tried a quick tutorial once but it didn't
+stick. I also have not yet learned Rust — it is on my list for next year.
+I want to learn React after graduation but haven't started yet.
+
+EXPERIENCE
+Frontend Engineer Intern, Webflow Corp (May 2024 – Aug 2024)
+- Built interactive UI components using HTML, CSS, and vanilla JavaScript
+- Worked with the team's GraphQL API endpoints (read-only queries, wrote by senior devs)
+- Used Figma to hand off designs; not a Figma user myself, just reviewed specs
+
+PROJECTS
+Task Manager Website (Jan 2024 – Mar 2024)
+- Created a simple task management webpage using HTML, CSS, JavaScript
+- Added localStorage persistence so tasks survive page refresh
+- No backend; the job posting I was applying to mentioned Node.js but I haven't used it
+
+Personal Portfolio (Sep 2023)
+- Static HTML/CSS portfolio site hosted on GitHub Pages
+- The internship description asked for Tailwind CSS experience, which I don't have yet
+
+SKILLS
+Languages: JavaScript, HTML, CSS
+Tools: Git, VS Code, Chrome DevTools, Figma (reviewer only)

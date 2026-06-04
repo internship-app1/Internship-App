@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "tie",
+  "justification": "Both extractions are identical across all four dimensions. Both correctly avoid backend skills and capture the core frontend stack. Both add 'Web design', 'UI/UX', and 'Accessibility (WCAG)' \u2014 the first two are inferred rather than explicitly stated but defensible given the Studio Art minor and design intern role; WCAG is directly evidenced. The 13-skill list is slightly bloated for a student with narrow frontend experience but not egregiously so. Neither extraction includes project classifications or impact highlights, which is neutral given the schema shown. Since the outputs are byte-for-byte identical, a tie is the only honest verdict."
+}

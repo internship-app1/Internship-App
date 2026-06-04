@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "tie",
+  "justification": "Both extractions are identical across all four dimensions. Both correctly extract the four skills present in the resume (HTML, CSS, Python, Git) without hallucinating additional skills. Both correctly set experience_level to student and years_of_experience to 0. Neither extracts projects or impact highlights, which is appropriate since none exist in the resume. This is a genuine tie as the outputs are completely equivalent."
+}

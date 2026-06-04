@@ -1,0 +1,85 @@
+{
+  "name": "Sujan Nandikol Sunilkumar",
+  "email": "sujan.nandikolsunilkumar@sjsu.edu",
+  "phone": "(925)-967-6795",
+  "website": "https://suqjan.com",
+  "github": "https://github.com/sujan",
+  "linkedin": "https://linkedin.com/in/sujan",
+  "experience": [
+    {
+      "company": "Burnt (YC S25)",
+      "location": "San Francisco, CA",
+      "title": "Full Stack Developer Intern",
+      "dates": "July 2025 \u2013 September 2025",
+      "bullets": [
+        "Developed complete full stack web application for multi-channel B2B AI order agent spanning database (PostgreSQL), backend APIs (Python), and frontend interfaces, delivering end-to-end features from conception to production across 7 enterprise clients processing 1,000+ orders",
+        "Engineered full stack internal tooling with React frontend and Python backend for operations teams: built Intercom ticketing interface (5+ min saved per request, 50+ customers), ERP sales order dashboard, and AWS S3 file management system handling 250+ attachments",
+        "Implemented full stack QA validation layer combining automated output checks and human-in-the-loop review to improve AI reliability; iterated on backend prompt logic and vector-store memory across 1,000+ production orders"
+      ]
+    },
+    {
+      "company": "SJSU College of Engineering",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "June 2025 \u2013 August 2025",
+      "bullets": [
+        "Developed Python backend abstraction layer over Grafanalib on 3-person engineering team, reducing code complexity by 83% (30+ lines to 5) for dashboard configuration",
+        "Migrated 7+ monitoring dashboards across 3 production Grafana environments with comprehensive unit test coverage at the application layer"
+      ]
+    },
+    {
+      "company": "SJSU Software & Computer Engineering Society",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "February 2025 \u2013 Present",
+      "bullets": [
+        "Building full stack professor review web application for 30,000+ students using TypeScript and React on the frontend, Node.js backend, and Drizzle ORM for database management",
+        "Delivered complete review submission feature from user interface to database persistence; built Python GraphQL webscraper for backend course data ingestion across agile development sprints"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "school": "San Jose State University",
+      "location": "San Jose, CA",
+      "degree": "Bachelor of Science in Computer Science and Linguistics",
+      "dates": "May 2027"
+    }
+  ],
+  "skills": {
+    "Programming Languages": "TypeScript, JavaScript, Python, SQL, Java",
+    "Frontend Technologies": "React.js, Tailwind CSS, HTML/CSS, WebSockets",
+    "Backend Technologies": "Node.js, FastAPI, Flask, Spring Boot, RESTful APIs",
+    "Databases & Tools": "PostgreSQL, Redis, AWS (EC2/S3), Docker, Git, GitHub Actions, Linux",
+    "AI & ML": "Anthropic/OpenAI/Gemini API, LangChain, RAG, Prompt Engineering, Vector Stores"
+  },
+  "projects": [
+    {
+      "name": "Internship Matcher (React + TypeScript, FastAPI, PostgreSQL, Redis, AWS S3)",
+      "dates": "October 2025 \u2013 Present",
+      "bullets": [
+        "Built and deployed full stack web application at internshipmatcher.com covering complete technology stack: React + TypeScript frontend, FastAPI Python backend, PostgreSQL database, Redis caching layer, and AWS S3 storage with Clerk JWT authentication",
+        "Architected dual-model AI pipeline (Claude Haiku 4.5 for skill extraction, Sonnet 4.5 for ranking top 30 to top 10) achieving 95%+ accuracy; implemented SSE streaming from backend to frontend for real-time progress updates in the user interface",
+        "Optimized full stack performance with parallel backend processing of 30+ positions, reducing end-to-end latency by 52% (270s to 130s) through dynamic batching and prompt caching"
+      ]
+    },
+    {
+      "name": "Sleep-PSG Scoring (React, FastAPI, PostgreSQL, Redis, WebSockets)",
+      "dates": "January 2026 \u2013 April 2026",
+      "bullets": [
+        "Developed full stack automated sleep-stage scoring platform with React frontend dashboard and FastAPI Python backend, achieving 98% time reduction (2+ hrs to under 2 min) and 83% balanced accuracy validated against clinical datasets",
+        "Built asynchronous backend pipeline using Redis + ARQ for distributed EEG data processing, spectral feature extraction, and Scikit-Learn classification with PostgreSQL persistence per patient",
+        "Implemented sub-10ms WebSocket streaming from backend to React frontend for real-time rendering of live EEG waveforms and hypnogram visualizations in the user interface"
+      ]
+    },
+    {
+      "name": "Cold Leads Agent (FastAPI, PostgreSQL, Claude AI, Cal.com Integration)",
+      "dates": "May 2026 \u2013 Present",
+      "bullets": [
+        "Built and deployed production full stack autonomous SMS agent for Bay Area real estate client: FastAPI Python backend with FSM-driven pipeline, PostgreSQL database with Alembic migrations, and multi-service frontend integrations",
+        "Integrated complete web application stack: HMAC-signed Linq SMS webhooks, Cal.com v2 booking API, SendGrid email service; dual-model Claude backend (Haiku + Sonnet) with async PostgreSQL and APScheduler job processing",
+        "Shipped live production application auto-booking qualified leads via Cal.com integration and saving ~5 hrs/week of manual outreach for client"
+      ]
+    }
+  ]
+}

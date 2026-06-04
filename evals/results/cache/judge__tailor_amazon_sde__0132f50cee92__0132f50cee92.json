@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "tie",
+  "justification": "Both extractions are nearly identical in quality across all four dimensions. Both correctly capture key metrics (1,000+ orders, 83% code reduction, 30,000+ students, 52% latency reduction, 98% time reduction, sub-10ms WebSocket latency, ~5 hrs/week saved). Both include Java from the skills section which is listed by the candidate. Neither output includes explicit project_type taxonomy classifications, so both score neutral on project_classification. The bullet phrasing differs marginally (e.g., B uses 'Architected' vs A's 'Built and deployed' for Internship Matcher; B preserves 'hypnogram' terminology more faithfully), but these differences are cosmetic and do not meaningfully differentiate quality on any scoring dimension. All four dimensions are within 0 points of each other."
+}

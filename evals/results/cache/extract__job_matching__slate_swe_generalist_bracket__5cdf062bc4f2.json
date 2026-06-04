@@ -1,0 +1,159 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 78,
+      "reasoning": "Strong internship track record with production deployments at YC-backed startup. Demonstrated full-stack capabilities and algorithmic work. General SDE role fits well, though lacks specific AWS/distributed systems depth that Amazon typically values.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "FastAPI",
+        "PostgreSQL",
+        "AWS S3",
+        "Data Structures",
+        "Algorithms"
+      ],
+      "skill_gaps": [
+        "Java",
+        "Distributed Systems",
+        "AWS EC2/Lambda",
+        "System Design at Scale"
+      ]
+    },
+    {
+      "job_id": 2,
+      "match_score": 80,
+      "reasoning": "Excellent fit for Apple's general SDE intern role. Multiple production deployments, strong full-stack foundation, and demonstrated ability to ship polished user-facing products. Clean code practices evident from test coverage and architecture choices.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "WebSockets"
+      ],
+      "skill_gaps": [
+        "Swift/Objective-C",
+        "iOS Development",
+        "macOS Frameworks"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 82,
+      "reasoning": "Strong match for data infrastructure role. Built async EEG pipeline with Redis+ARQ, parallel processing optimizations (52% latency reduction), and multi-tier data layers. Demonstrated understanding of data pipelines, caching strategies, and distributed processing.",
+      "skill_matches": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "AWS S3",
+        "Data Pipelines",
+        "Async Processing"
+      ],
+      "skill_gaps": [
+        "Spark/Airflow",
+        "Kafka",
+        "Data Warehousing",
+        "ETL Tools"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 79,
+      "reasoning": "Good fit for healthcare data acquisition role. Experience with data ingestion (GraphQL webscraper, EDF parsing), pipeline architecture, and database work. Healthcare domain experience missing but strong technical foundation in data engineering patterns.",
+      "skill_matches": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Data Pipelines",
+        "API Integration",
+        "WebSockets"
+      ],
+      "skill_gaps": [
+        "HL7/FHIR",
+        "Healthcare Data Standards",
+        "ETL Frameworks",
+        "Data Governance"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 88,
+      "reasoning": "Exceptional fit. Burnt internship demonstrates end-to-end full-stack ownership across 7 enterprise clients with measurable impact (1,000+ orders). Built React+Python tools, multi-channel integrations, and production AI systems. Internship Matcher project shows complete stack mastery.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "AWS S3",
+        "Full-Stack Development"
+      ],
+      "skill_gaps": [
+        "Mobile Development",
+        "DevOps/CI-CD"
+      ]
+    },
+    {
+      "job_id": 6,
+      "match_score": 76,
+      "reasoning": "Solid general SDE intern candidate with proven ability to ship features. Multiple internships with production impact. Podium focuses on customer communication tools - candidate's B2B AI agent and multi-channel integration experience is relevant.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "API Development"
+      ],
+      "skill_gaps": [
+        "Ruby/Rails",
+        "Microservices Architecture",
+        "Messaging Systems"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 90,
+      "reasoning": "Outstanding match for SF-based full-stack role. Burnt internship in SF with production full-stack work, Internship Matcher live at internshipmatcher.com showing complete ownership, and professor review platform demonstrating agile delivery. Strong React+TypeScript frontend and Python backend expertise.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "Node.js",
+        "PostgreSQL",
+        "Redis",
+        "AWS",
+        "Full-Stack Development"
+      ],
+      "skill_gaps": [
+        "GraphQL Server Implementation",
+        "Docker/Kubernetes"
+      ]
+    },
+    {
+      "job_id": 8,
+      "match_score": 85,
+      "reasoning": "Excellent backend fit with San Jose location advantage. Built multiple FastAPI backends in production (Internship Matcher, Sleep-PSG, Cold Leads Agent). Demonstrated scalability work (parallel processing, caching, async pipelines). Strong database and API design experience.",
+      "skill_matches": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "AWS S3",
+        "API Development",
+        "Async Processing",
+        "WebSockets"
+      ],
+      "skill_gaps": [
+        "gRPC",
+        "Message Queues (RabbitMQ/Kafka)",
+        "Containerization"
+      ]
+    }
+  ]
+}

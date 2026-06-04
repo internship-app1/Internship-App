@@ -1,0 +1,97 @@
+{
+  "skills": [
+    "Python",
+    "PyTorch",
+    "OpenCV",
+    "CUDA",
+    "FastAPI",
+    "React",
+    "AWS",
+    "Git",
+    "Docker",
+    "TensorFlow",
+    "NumPy",
+    "Pandas"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "All skills extracted from demonstrated project work and research experience. Object Detection and Facial Expression projects provide concrete evidence of PyTorch, OpenCV, CUDA, FastAPI, React, and AWS usage. Research role confirms Python and data preprocessing skills. Self-reported skills section corroborated by project implementations.",
+  "projects": [
+    {
+      "name": "Object Detection System for Traffic Analysis",
+      "type": "AI/ML (Computer Vision)",
+      "technologies": [
+        "YOLOv8",
+        "OpenCV",
+        "CUDA",
+        "FastAPI",
+        "AWS EC2",
+        "Python"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": true,
+      "summary": "Trained YOLOv8 model on 12,000 annotated traffic images achieving 91% mAP (12% improvement over YOLOv5 baseline). Implemented real-time inference pipeline with OpenCV and CUDA reaching 28 FPS on NVIDIA T4. Deployed behind FastAPI endpoint on AWS EC2 with live demo at traffic-demo.priya.dev."
+    },
+    {
+      "name": "Facial Expression Classifier",
+      "type": "AI/ML (Computer Vision)",
+      "technologies": [
+        "PyTorch",
+        "ResNet-50",
+        "React",
+        "OpenCV",
+        "Python"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Fine-tuned ResNet-50 CNN in PyTorch to classify 7 emotional states from webcam frames, achieving 88% accuracy on FER2013 test set. Integrated into React web app for real-time emotion detection demo."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Object Detection System achieved 91% mAP on custom traffic dataset, representing a 12% improvement over YOLOv5 baseline model.",
+      "metric": "91% mAP, 12% improvement over baseline",
+      "dimension": "performance"
+    },
+    {
+      "description": "Real-time inference pipeline optimized with CUDA achieved 28 frames per second on NVIDIA T4 GPU.",
+      "metric": "28 FPS on NVIDIA T4",
+      "dimension": "speed"
+    },
+    {
+      "description": "Facial Expression Classifier achieved strong accuracy on industry-standard FER2013 benchmark dataset.",
+      "metric": "88% accuracy on FER2013 test set",
+      "dimension": "performance"
+    },
+    {
+      "description": "Object Detection System deployed to production on AWS EC2 with live public endpoint.",
+      "metric": "Live deployment at traffic-demo.priya.dev",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Preprocessed and augmented large-scale medical imaging dataset for research publication.",
+      "metric": "50,000 images processed",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All 12 skills directly corroborated by project implementations or research work. Object Detection and Facial Expression projects provide explicit evidence of PyTorch, OpenCV, CUDA, FastAPI, React, and AWS usage. Self-reported skills section aligns perfectly with demonstrated project technologies."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Project classification as Computer Vision (AI/ML) is definitive based on YOLOv8 and ResNet-50 implementations. Deployment status confirmed by live URL (traffic-demo.priya.dev) and explicit AWS EC2 mention."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Impact metrics extracted from concrete numerical evidence: 91% mAP, 12% improvement, 28 FPS, 88% accuracy, 50,000 images. All metrics are explicitly stated in resume with no inference required."
+    }
+  ]
+}

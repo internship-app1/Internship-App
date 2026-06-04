@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "tie",
+  "justification": "Both extractions are functionally identical in their skill lists (HTML, CSS, Python, Git), correctly set experience_level='student', years_of_experience=0, is_student=true, and return empty projects and impact_highlights. Both provide appropriate confidence notes acknowledging beginner levels and the self-reported nature of Git. Neither hallucinates skills nor over-extracts. The only difference is that A includes a more detailed confidence_metrics structure, but this does not meaningfully improve accuracy or correctness on any of the four scored dimensions. All four dimension scores are within 0 points of each other, making this a genuine tie."
+}

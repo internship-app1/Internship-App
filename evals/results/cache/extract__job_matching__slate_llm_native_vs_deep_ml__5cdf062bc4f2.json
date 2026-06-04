@@ -1,0 +1,135 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 82,
+      "reasoning": "Strong fit: YC-backed startup experience with production deployments (7 enterprise clients, 1000+ orders), full-stack skills, and proven ability to ship end-to-end features. Forward deployed role aligns with customer-facing technical work at Burnt.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "FastAPI",
+        "Full-stack development",
+        "Production deployment"
+      ],
+      "skill_gaps": [
+        "Specific Labelbox platform knowledge"
+      ]
+    },
+    {
+      "job_id": 2,
+      "match_score": 88,
+      "reasoning": "Excellent match: Multiple AI/ML production projects with Claude integration, RAG implementation, vector stores, and data pipelines. Built scalable systems (Redis, PostgreSQL, async processing). TikTok scale aligns with 1000+ order production experience.",
+      "skill_matches": [
+        "AI/ML",
+        "Python",
+        "Data pipelines",
+        "Redis",
+        "PostgreSQL",
+        "Claude LLM",
+        "RAG",
+        "Vector stores"
+      ],
+      "skill_gaps": [
+        "Large-scale distributed systems at TikTok scale"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 85,
+      "reasoning": "Strong alignment: Demonstrated AI application development with Claude Sonnet/Haiku in production, prompt engineering, LLM validation layers, and real-world impact metrics. Educational tech experience via SJSU professor review platform fits Cambium's edtech focus.",
+      "skill_matches": [
+        "AI applications",
+        "Claude LLM",
+        "Python",
+        "React",
+        "TypeScript",
+        "Prompt engineering",
+        "Production AI"
+      ],
+      "skill_gaps": [
+        "Educational domain-specific ML models"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 78,
+      "reasoning": "Good fit for startup accelerator: YC startup experience, entrepreneurial mindset shown through internshipmatcher.com side project, and AI agent development. However, location (MD) and fellowship structure may not align with candidate's Bay Area focus.",
+      "skill_matches": [
+        "AI innovation",
+        "Startup experience",
+        "Full-stack",
+        "Autonomous agents"
+      ],
+      "skill_gaps": [
+        "Geographic mismatch",
+        "Fellowship vs traditional internship structure"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 90,
+      "reasoning": "Exceptional fit: Built production AI agents (B2B order agent, Cold Leads SMS agent) with FSM-driven pipelines, intent classification, and real-world deployment. Direct experience with agentic AI, data processing (Redis, PostgreSQL), and measurable business impact.",
+      "skill_matches": [
+        "AI agents",
+        "FSM pipelines",
+        "Intent classification",
+        "Python",
+        "FastAPI",
+        "Production deployment",
+        "Data systems"
+      ],
+      "skill_gaps": [
+        "Risk/fraud detection domain knowledge"
+      ]
+    },
+    {
+      "job_id": 6,
+      "match_score": 83,
+      "reasoning": "Strong match: Agentic AI experience with Cold Leads Agent and B2B order agent, both using Claude for autonomous decision-making. Neural-symbolic aspects align with hybrid LLM + rule-based validation systems built at Burnt. Healthcare domain is new but transferable.",
+      "skill_matches": [
+        "Agentic AI",
+        "Claude LLM",
+        "FSM systems",
+        "Python",
+        "Production AI",
+        "Validation layers"
+      ],
+      "skill_gaps": [
+        "Healthcare domain expertise",
+        "Neural-symbolic theory"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 81,
+      "reasoning": "Good fit: Solid AI engineering foundation with multiple LLM projects, dual-model pipelines, prompt optimization, and production deployment. Insurance tech domain is new but technical skills transfer well. Philadelphia location may be a consideration.",
+      "skill_matches": [
+        "AI engineering",
+        "LLM integration",
+        "Python",
+        "Model optimization",
+        "Production systems"
+      ],
+      "skill_gaps": [
+        "Insurance/financial domain",
+        "Geographic distance"
+      ]
+    },
+    {
+      "job_id": 8,
+      "match_score": 84,
+      "reasoning": "Strong fit: Bay Area location ideal, solid AI/ML production experience with Claude integration, vector stores, and real-time systems. Cybersecurity domain is new but data pipeline and ML skills are highly transferable. Sunnyvale proximity to San Jose is advantage.",
+      "skill_matches": [
+        "AI/ML",
+        "Python",
+        "Real-time systems",
+        "Data processing",
+        "Production deployment",
+        "Location match"
+      ],
+      "skill_gaps": [
+        "Cybersecurity domain knowledge"
+      ]
+    }
+  ]
+}

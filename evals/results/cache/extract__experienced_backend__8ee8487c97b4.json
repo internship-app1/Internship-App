@@ -1,0 +1,158 @@
+{
+  "skills": [
+    "Python",
+    "Go",
+    "Java",
+    "SQL",
+    "Bash",
+    "FastAPI",
+    "Flask",
+    "Spring Boot",
+    "Celery",
+    "PostgreSQL",
+    "Redis",
+    "MySQL",
+    "Elasticsearch",
+    "AWS",
+    "Kubernetes",
+    "Docker",
+    "Terraform",
+    "Kafka",
+    "RabbitMQ",
+    "Git",
+    "Datadog",
+    "PagerDuty"
+  ],
+  "experience_level": "experienced",
+  "years_of_experience": 6,
+  "is_student": false,
+  "confidence_notes": "All skills extracted directly from explicit skills section and demonstrated through work experience at major tech companies (Stripe, Plaid, LinkedIn). High confidence due to concrete project implementations and measurable outcomes.",
+  "projects": [
+    {
+      "name": "Distributed Rate-Limiting System (Stripe)",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "Go",
+        "Redis"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Designed and implemented a distributed rate-limiting system handling 120,000 requests per second in production, supporting Stripe's $4B+ annual transaction volume."
+    },
+    {
+      "name": "Billing API Microservices (Stripe)",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Go",
+        "Kubernetes",
+        "AWS",
+        "PostgreSQL",
+        "Redis"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Lead engineer owning 3 microservices processing $4B+ in annual transactions with optimized latency and high availability."
+    },
+    {
+      "name": "Bank Connection Ingestion Pipeline (Plaid)",
+      "type": "Data Engineering / ETL",
+      "technologies": [
+        "Python",
+        "Celery",
+        "RabbitMQ",
+        "PostgreSQL"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built and maintained production ETL pipeline processing 2M+ daily bank connections using Celery task queue and RabbitMQ messaging."
+    },
+    {
+      "name": "PostgreSQL Migration (Plaid)",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "PostgreSQL",
+        "Kubernetes"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Executed zero-downtime migration of 8 services from PostgreSQL 11 to 14 using logical replication, maintaining 99.99% uptime SLA."
+    },
+    {
+      "name": "OAuth Token Encryption (Plaid)",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "Python",
+        "PostgreSQL"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Implemented end-to-end encryption for OAuth token storage using AES-256 encryption standard for enhanced security."
+    },
+    {
+      "name": "LinkedIn Learning Recommendation Engine (LinkedIn)",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Java",
+        "Spring Boot"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built backend features for recommendation engine with A/B testing instrumentation running experiments on 500,000 daily active users."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Designed and implemented distributed rate-limiting system at Stripe handling massive scale with high throughput.",
+      "metric": "120,000 requests per second",
+      "dimension": "scale"
+    },
+    {
+      "description": "Optimized Stripe Billing API latency through profiling and code rewriting, achieving significant performance improvement.",
+      "metric": "Reduced P99 latency from 380ms to 95ms (75% reduction)",
+      "dimension": "performance"
+    },
+    {
+      "description": "Built and maintained production ETL pipeline at Plaid processing high volume of daily bank connections.",
+      "metric": "2M+ daily connections processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Executed complex zero-downtime database migration across multiple services while maintaining strict uptime requirements.",
+      "metric": "8 services migrated with 99.99% uptime SLA maintained",
+      "dimension": "deployment"
+    },
+    {
+      "description": "A/B testing instrumentation for LinkedIn Learning recommendation engine reaching significant user base.",
+      "metric": "500,000 daily active users",
+      "dimension": "scale"
+    },
+    {
+      "description": "Owns critical microservices handling Stripe's annual transaction volume.",
+      "metric": "$4B+ in annual transactions",
+      "dimension": "business_value"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.98,
+      "confidence_notes": "All skills explicitly listed in dedicated skills section. Work experience at tier-1 tech companies (Stripe, Plaid, LinkedIn) with concrete project implementations and measurable outcomes. No ambiguity in skill claims."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Projects extracted from job descriptions with clear evidence of deployment, production use, and quantifiable impact. All technologies mentioned are directly tied to implemented systems."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.96,
+      "confidence_notes": "Impact metrics are concrete and specific (RPS, latency reduction, transaction volume, user counts). All claims are tied to actual work experience with measurable outcomes."
+    }
+  ]
+}

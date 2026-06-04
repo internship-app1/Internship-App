@@ -1,0 +1,115 @@
+[
+  {
+    "id": "cs_student_cv",
+    "resume_file": "cs_student_cv.txt",
+    "description": "CS student with a real computer vision project (YOLO + OpenCV) and research experience",
+    "expectations": "experience_level should be 'student', is_student=true. Skills should include Python, PyTorch, OpenCV, C++, React, FastAPI, AWS, Docker, Git (well-demonstrated). The CNN/YOLO project should be classified as 'AI/ML (Computer Vision)'. The React web app project is lightweight frontend usage, not a Full-Stack app. Impact highlights should include the deployment at traffic-demo.priya.dev and the 12% mAP improvement metric. Do NOT include soft skills unless clearly demonstrated.",
+    "rules_under_test": [
+      "project_classification",
+      "impact_extraction",
+      "experience_level"
+    ]
+  },
+  {
+    "id": "negative_context",
+    "resume_file": "negative_context.txt",
+    "description": "Resume where Python appears only as 'I have never used Python professionally' and React as 'I want to learn React after graduation'",
+    "expectations": "Python must NOT appear in skills \u2014 it is explicitly disclaimed. React must NOT appear in skills \u2014 it is a future goal. Node.js must NOT appear in skills \u2014 it appeared only in a job description the candidate mentioned. Figma must NOT appear in skills or should be flagged as 'reviewer only'. GraphQL must NOT appear \u2014 candidate only ran read-only queries written by others. Valid skills: JavaScript, HTML, CSS, Git. experience_level should be 'student' or 'recent_graduate'.",
+    "rules_under_test": [
+      "negative_context_exclusion",
+      "job_description_exclusion"
+    ]
+  },
+  {
+    "id": "nonstandard_names",
+    "resume_file": "nonstandard_names.txt",
+    "description": "Resume that uses abbreviations throughout: Py, JS, TS, ML, AI, and combined JS/TS",
+    "expectations": "All skills must use standardized names: 'Python' not 'Py', 'JavaScript' not 'JS', 'TypeScript' not 'TS', 'Machine Learning' not 'ML', 'Artificial Intelligence' not 'AI'. The skills list must never contain 'Py', 'JS', 'TS', 'ML', or 'AI' as standalone entries. experience_level should be 'student' or 'recent_graduate'. Candidate has real work experience, so skills list should be reasonably populated (8-12 skills).",
+    "rules_under_test": [
+      "standardization_rules"
+    ]
+  },
+  {
+    "id": "deployed_metrics",
+    "resume_file": "deployed_metrics.txt",
+    "description": "Strong student resume with concrete deployment evidence and numeric performance metrics",
+    "expectations": "impact_highlights should contain multiple concrete entries: page load time reduction (1.8s / 62% faster), query optimization (62% latency reduction), 500+ users on InternTracker, $5,000 hackathon prize, 80% Redis cache improvement. These all have explicit numbers and deployment evidence. experience_level should be 'recent_graduate'. Skills should include Python, JavaScript, TypeScript, React, Node.js, PostgreSQL, Redis, AWS, Docker. Projects: InternTracker = 'Full-Stack Web App', PricePulse = 'Developer Tool / Automation' or 'Data Engineering / ETL'.",
+    "rules_under_test": [
+      "impact_extraction",
+      "project_classification"
+    ]
+  },
+  {
+    "id": "vague_claims",
+    "resume_file": "vague_claims.txt",
+    "description": "Resume with only vague accomplishments: 'made it faster', 'users were happier', no metrics",
+    "expectations": "impact_highlights should be empty or nearly empty \u2014 none of the claims have concrete metrics or deployment evidence. 'Made the website significantly faster' with no number is explicitly disallowed by the IMPACT EXTRACTION RULES. Valid skills: JavaScript, HTML, CSS, React, Git. Python should be excluded or marked with low confidence (listed as 'learning'). experience_level should be 'student'. conservatism: should not list more than 5-6 skills since evidence is thin.",
+    "rules_under_test": [
+      "impact_extraction",
+      "vague_claim_rejection",
+      "negative_context_exclusion"
+    ]
+  },
+  {
+    "id": "experienced_backend",
+    "resume_file": "experienced_backend.txt",
+    "description": "Senior engineer with 5+ years at Stripe and Plaid; extensive real backend experience",
+    "expectations": "experience_level must be 'experienced', is_student=false, years_of_experience ~5-7. Skills should be conservative but populated with genuinely demonstrated skills: Python, Go, Java, SQL, PostgreSQL, Redis, Kafka, RabbitMQ, AWS, Kubernetes, Docker, FastAPI, Flask. Should NOT include soft skills like 'mentoring' unless specifically asked for. Conservatism: 10-14 skills is appropriate here given the depth of evidence.",
+    "rules_under_test": [
+      "experience_level_detection",
+      "conservatism_with_experienced_candidate"
+    ]
+  },
+  {
+    "id": "frontend_only",
+    "resume_file": "frontend_only.txt",
+    "description": "CS student whose projects are exclusively frontend/CSS/static-site work",
+    "expectations": "All projects should be classified as 'Frontend Only' \u2014 portfolio site, CSS component library, landing page clones, Framer Motion showcase. None should be classified as 'Full-Stack Web App' because there is no backend, database, or authentication. experience_level should be 'student'. Skills: HTML, CSS, JavaScript, React, Framer Motion, Git, Figma. is_deployed should be true for the portfolio (GitHub Pages). project_complexity should be Low or Medium, not High.",
+    "rules_under_test": [
+      "project_classification",
+      "is_deployed_detection"
+    ]
+  },
+  {
+    "id": "embedded_robotics",
+    "resume_file": "embedded_robotics.txt",
+    "description": "ECE student with drone firmware, Arduino IoT, and custom RTOS projects",
+    "expectations": "All three projects should be classified as 'Embedded Systems / IoT / Robotics', not 'System/Infrastructure' and not 'Developer Tool / Automation'. Skills should include C, C++, Python, ROS 2, FreeRTOS, Arduino, Git. Impact highlights: 2nd place award at robotics competition, ~30% water usage reduction (has a metric qualifier). experience_level should be 'student'. is_student=true.",
+    "rules_under_test": [
+      "project_classification",
+      "impact_extraction"
+    ]
+  },
+  {
+    "id": "kitchen_sink_20_skills",
+    "resume_file": "kitchen_sink_20_skills.txt",
+    "description": "Sophomore who self-reports 50+ technologies but only has Hello World and a calculator to show for it",
+    "expectations": "The skills list should be dramatically narrowed \u2014 DO NOT echo back the self-reported list. The only demonstrated skills are Python (intro course, basic) and Java (class assignment). HTML/CSS can be included if mentioned with coursework. Git is acceptable if mentioned. The skills list should have no more than 5 entries. Most of the 50+ listed technologies have zero project or work evidence. experience_level should be 'student', is_student=true. conservatism is the primary rule under test.",
+    "rules_under_test": [
+      "conservatism",
+      "evidence_based_extraction"
+    ]
+  },
+  {
+    "id": "sparse_resume",
+    "resume_file": "sparse_resume.txt",
+    "description": "First-generation college student with almost no CS experience yet",
+    "expectations": "Skills list should be very short: HTML, CSS (from coursework), Python (beginner, from current class), Git (basic familiarity). The extraction must NOT hallucinate skills not mentioned. experience_level should be 'student', is_student=true, years_of_experience=0. confidence_notes or confidence_metrics should reflect low/medium confidence. impact_highlights should be empty. projects should be empty. The barista job must not contribute any technical skills.",
+    "rules_under_test": [
+      "sparse_resume_handling",
+      "no_hallucination",
+      "confidence_reflection"
+    ]
+  },
+  {
+    "id": "real_resume",
+    "resume_file": "real_resume.txt",
+    "description": "Real uploaded resume \u2014 high school grad / early college with Python/JS internship, ML project work, and HTML/Java GitHub projects",
+    "expectations": "experience_level should be \"student\" or \"recent_graduate\", is_student=true. Demonstrated skills: Python, JavaScript, Java, HTML, Machine Learning. The AI scribe project at Atelia is real work evidence for Python and ML. GitHub projects used HTML and Java. Do NOT extract soft skills (blogging, event planning, treasurer) as technical skills. years_of_experience should be 0-2. The WordPress blog and sports analytics club are not technical projects. Skills list should be conservative (4-6 technical skills) since project depth is limited. No impact_highlights unless a specific metric is stated.",
+    "rules_under_test": [
+      "evidence_based_extraction",
+      "conservatism",
+      "negative_soft_skill_boundary"
+    ]
+  }
+]

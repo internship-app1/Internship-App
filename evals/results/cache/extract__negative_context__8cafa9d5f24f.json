@@ -1,0 +1,69 @@
+{
+  "skills": [
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "Git",
+    "GraphQL"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with concrete evidence from internship and projects. Excluded Python (explicitly stated never used professionally), Rust (on future learning list), React (wants to learn after graduation), Node.js (mentioned in job posting, not used), Tailwind CSS (internship description, not actually used), and Figma (reviewer only, not a user). GraphQL included due to demonstrated API work at internship.",
+  "projects": [
+    {
+      "name": "Task Manager Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "JavaScript",
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Simple task management webpage with localStorage persistence for data retention across page refreshes. No backend integration."
+    },
+    {
+      "name": "Personal Portfolio",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Static portfolio site hosted on GitHub Pages demonstrating basic web presence and HTML/CSS skills."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built interactive UI components during internship at Webflow Corp, a professional web design platform, demonstrating ability to work in production frontend environment.",
+      "metric": "3-month internship tenure (May-Aug 2024)",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Implemented localStorage persistence in Task Manager project, enabling data retention across browser sessions without backend infrastructure.",
+      "metric": "Full feature implementation with client-side storage",
+      "dimension": "performance"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "JavaScript, HTML, CSS, and Git are explicitly listed in skills section and corroborated by internship and project experience."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "GraphQL extracted from internship bullet point describing API work with GraphQL endpoints, demonstrating practical exposure."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Correctly excluded Python (explicitly stated 'never used professionally'), Rust (future learning goal), React (wants to learn after graduation), Node.js (mentioned in job posting, not used), Tailwind CSS (internship description, not used), and Figma (reviewer only, not a user). Resume explicitly disclaims these skills."
+    }
+  ]
+}

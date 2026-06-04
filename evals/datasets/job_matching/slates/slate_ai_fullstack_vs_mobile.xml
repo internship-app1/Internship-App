@@ -1,0 +1,50 @@
+<job_listings>
+  <job id="1">
+    <company>Homebase</company>
+    <title>AI Engineer Intern</title>
+    <location>SF</location>
+    <description>Software Engineering internship at Homebase. Role: AI Engineer Intern. Location: SF. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="2">
+    <company>Amazon</company>
+    <title>Software Development Engineer Intern</title>
+    <location>6 locationsWinnipeg, MB, CanadaToronto, ON, CanadaVictoria, BC, CanadaCalgary, AB, CanadaOttawa, ON, CanadaVancouver, BC, Canada</location>
+    <description>Software Engineering internship at Amazon. Role: Software Development Engineer Intern. Location: 6 locationsWinnipeg, MB, CanadaToronto, ON, CanadaVictoria, BC, CanadaCalgary, AB, CanadaOttawa, ON, CanadaVancouver, BC, Canada. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong pr</description>
+  </job>
+  <job id="3">
+    <company>EarnIn</company>
+    <title>Mobile Engineer Intern - iOS</title>
+    <location>Mountain View, CA</location>
+    <description>Software Engineering internship at EarnIn. Role: Mobile Engineer Intern - iOS. Location: Mountain View, CA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="4">
+    <company>Reply</company>
+    <title>IOS Developer Intern</title>
+    <location>Michigan</location>
+    <description>Software Engineering internship at Reply. Role: IOS Developer Intern. Location: Michigan. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="5">
+    <company>Kognitos</company>
+    <title>Software Engineer Intern - AI-Native</title>
+    <location>San Jose, CA</location>
+    <description>Software Engineering internship at Kognitos. Role: Software Engineer Intern - AI-Native. Location: San Jose, CA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="6">
+    <company>Apple</company>
+    <title>Software Undergrad Engineer Intern</title>
+    <location>United States</location>
+    <description>Software Engineering internship at Apple. Role: Software Undergrad Engineer Intern. Location: United States. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="7">
+    <company>Nash</company>
+    <title>Full Stack Engineer Intern</title>
+    <location>SF</location>
+    <description>Software Engineering internship at Nash. Role: Full Stack Engineer Intern. Location: SF. This role involves full stack development covering both frontend and backend technologies. You'll work on complete web applications from database to user interface. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="8">
+    <company>Mariana Minerals</company>
+    <title>Full-Stack Software Engineer Intern</title>
+    <location>SFAnn Arbor, MI</location>
+    <description>Software Engineering internship at Mariana Minerals. Role: Full-Stack Software Engineer Intern. Location: SFAnn Arbor, MI. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+</job_listings>

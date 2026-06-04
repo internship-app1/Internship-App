@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both extractions are broadly accurate and avoid fabricating skills like Spark or Kafka. Neither output explicitly classifies projects into the taxonomy categories, so both score neutral there. On skill accuracy, B adds Scikit-Learn and MNE to the skills section which are legitimately demonstrated in the Sleep-PSG project, a minor advantage, but B also drops Tailwind CSS and Spring Boot which are listed in the resume, making it a wash. The key differentiator is impact_quality: A faithfully preserves the exact numeric metrics from the resume (98% time reduction, 83% accuracy, 52% latency reduction, 5 hrs/week saved, 95%+ accuracy) without editorializing, while B introduces vague framing like 'scalable data architecture,' 'data platform reliability,' 'ML inference pipeline,' and 'data platform' in contexts where those terms overstate or mischaracterize the work (e.g., calling the Grafana migration a 'data platform'). B's rewriting inflates language beyond what the resume supports, which conflicts with the expected behavior of not fabricating or overstating. A's more conservative, faithful transcription of the original bullets better preserves the concrete evidence without embellishment."
+}

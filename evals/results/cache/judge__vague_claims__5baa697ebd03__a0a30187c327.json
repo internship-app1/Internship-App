@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 5,
+    "impact_quality": 4
+  },
+  "winner": "candidate",
+  "justification": "Both outputs correctly extract the same 5 skills (excluding Python as aspirational) and set experience_level to 'student'. However, B goes further by correctly classifying all three projects as 'Frontend Only' \u2014 an accurate taxonomy call given the HTML/CSS/React/API-consumption nature of the work. B also explicitly sets impact_highlights to an empty array, which is the correct behavior per the expected rules (no concrete metrics exist). A does not extract projects or impact highlights at all, which is neutral but less informative. B's additional structured output (project classifications, empty impact array, confidence metrics) demonstrates better alignment with the expected behavior without introducing any inaccuracies. The years_of_experience discrepancy (0 vs 1) is minor and debatable for a summer internship, but does not significantly affect the overall assessment."
+}

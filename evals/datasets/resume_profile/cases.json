@@ -1,0 +1,50 @@
+[
+  {
+    "id": "profile_cs_student",
+    "resume_file": "cs_student_cv.txt",
+    "description": "CS undergrad student \u2014 should classify as student, 0-1 years",
+    "expectations": "experience_level should be 'student'. years_of_experience should be 0 or 1. Skills should reflect actual coursework/project technologies, not bloated. Should not include soft skills or tools mentioned only in passing."
+  },
+  {
+    "id": "profile_experienced_backend",
+    "resume_file": "experienced_backend.txt",
+    "description": "Experienced backend engineer \u2014 5+ years, should classify as experienced",
+    "expectations": "experience_level must be 'experienced'. years_of_experience should reflect the resume (likely 5+). Skills should be conservative and accurate \u2014 only demonstrated backend skills."
+  },
+  {
+    "id": "profile_negative_context",
+    "resume_file": "negative_context.txt",
+    "description": "Resume with skills mentioned in negative contexts (never used, want to learn)",
+    "expectations": "Skills mentioned only as 'never used' or 'want to learn' must NOT appear in the skills list. This is the hardest rule to enforce \u2014 the model should be conservative and exclude aspirational skills."
+  },
+  {
+    "id": "profile_deployed_metrics",
+    "resume_file": "deployed_metrics.txt",
+    "description": "Resume with real deployment metrics \u2014 strong technical background",
+    "expectations": "Skills list should be well-calibrated to the demonstrated technologies. experience_level should reflect the seniority shown. Not a student, likely entry_level or experienced depending on years."
+  },
+  {
+    "id": "profile_frontend_only",
+    "resume_file": "frontend_only.txt",
+    "description": "Frontend-only resume \u2014 React/JS/CSS, no backend",
+    "expectations": "Skills should be frontend technologies only. No backend skills should be hallucinated. experience_level should match the resume timeline."
+  },
+  {
+    "id": "profile_kitchen_sink",
+    "resume_file": "kitchen_sink_20_skills.txt",
+    "description": "Resume that self-claims 20+ skills \u2014 model should be conservative",
+    "expectations": "Must not blindly copy all 20 claimed skills. Should conservatism-filter to skills that are actually demonstrated in project descriptions. Should ideally produce 8-14 skills, not 20+."
+  },
+  {
+    "id": "profile_sparse",
+    "resume_file": "sparse_resume.txt",
+    "description": "Very sparse resume with minimal information",
+    "expectations": "Should extract only what's actually present \u2014 few skills, likely student level. Must not hallucinate skills or experience. years_of_experience should be 0 when unknown."
+  },
+  {
+    "id": "profile_real_resume",
+    "resume_file": "sujan_resume.txt",
+    "description": "Real resume: Sujan \u2014 YC startup full-stack + AI intern, SJSU junior",
+    "expectations": "experience_level should be 'student' (current SJSU student) or 'entry_level' (has real internship). years_of_experience should be 0-2. Core skills must include: Python, React, TypeScript, FastAPI, PostgreSQL, Redis, AWS, Claude/Anthropic API. Should NOT include generic soft skills or tools only mentioned in passing."
+  }
+]

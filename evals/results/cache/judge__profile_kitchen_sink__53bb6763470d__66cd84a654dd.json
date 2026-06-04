@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 1,
+    "conservatism": 1,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "A correctly filters to only the three languages actually demonstrated in the two trivial projects (Python, Java, JavaScript), avoiding the trap of blindly copying the inflated self-reported skills list. B copies all 80+ claimed skills verbatim, including dozens of frameworks, cloud platforms, DevOps tools, and AI/ML libraries that have zero evidence of use anywhere in the resume \u2014 a severe failure on both skill_accuracy and conservatism. A is slightly under the ideal 5\u201312 range but is far more defensible given the near-zero demonstrated experience. Project classification and impact quality are neutral for both since the projects are trivial and metrics-free."
+}

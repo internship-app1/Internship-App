@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "winner": "baseline",
+  "justification": "Both extractions are largely equivalent in skill accuracy and conservatism, correctly capturing the candidate's demonstrated skills without hallucination. Neither output explicitly classifies projects into the taxonomy categories, so both score neutral there. The key differentiator is impact_quality: B consistently preserves more precise metrics and context \u2014 notably '250+ attachments' in the Burnt bullet (which A omits), '83% (from 30+ lines to 5 lines per dashboard configuration)' with fuller context, and cleaner preservation of all numeric evidence throughout. B's bullets are also slightly more complete and faithful to the original resume's specificity, particularly in the Burnt experience where the 250+ files metric is explicitly retained. A drops that metric entirely, which is a meaningful loss given the expected behavior emphasizes specific actual metrics."
+}

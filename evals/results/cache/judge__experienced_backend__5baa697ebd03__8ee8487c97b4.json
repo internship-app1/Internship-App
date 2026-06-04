@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both extractions pull the same 22 skills, which is slightly over the expected 10-14 range (tools like Git, PagerDuty, Datadog, MySQL, Elasticsearch, Bash are listed but not meaningfully demonstrated in the experience bullets). However, A significantly outperforms B on project_classification and impact_quality. A correctly classifies the bank connection pipeline as Data Engineering/ETL and the infrastructure projects as System/Infrastructure, though it misclassifies the Billing API microservices as Full-Stack Web App (should be System/Infrastructure) and the LinkedIn recommendation engine as Full-Stack Web App (should be System/Infrastructure or Developer Tool). B extracts no projects at all, earning a neutral 3. On impact_quality, A captures all key concrete metrics ($4B+ transactions, 120K RPS, P99 latency 380ms\u219295ms, 2M+ daily connections, 8 services migrated, 500K DAU) with specific dimensions, earning a 5. B extracts no impact highlights, earning a 3. A is the clear winner on the dimensions that matter most for this experienced-engineer resume."
+}

@@ -1,0 +1,104 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 78,
+      "reasoning": "Strong fit \u2014 candidate shipped production React+Python+FastAPI at Burnt (YC S25) and owns internshipmatcher.com; forward-deployed role maps to their client-facing B2B agent work across 7 enterprise clients.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "FastAPI",
+        "Software Engineering"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 42,
+      "reasoning": "Weak fit \u2014 role targets ML data platform infrastructure (Spark, Hadoop pipelines); candidate builds LLM applications (Claude API, RAG) but has no distributed data systems or model training experience.",
+      "skill_matches": [
+        "Python"
+      ],
+      "skill_gaps": [
+        "Spark",
+        "Hadoop",
+        "Data Pipeline Infrastructure"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 86,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (Claude+RAG, 1,000+ orders) and owns internshipmatcher.com (dual-model Claude pipeline); AI application development maps exactly to this role.",
+      "skill_matches": [
+        "Python",
+        "AI/ML",
+        "Claude",
+        "FastAPI",
+        "React"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 4,
+      "match_score": 81,
+      "reasoning": "Strong fit \u2014 candidate built autonomous AI agents (Burnt B2B order agent, Cold Leads SMS agent) with Claude and production deployments; startup accelerator context aligns with YC S25 experience.",
+      "skill_matches": [
+        "Python",
+        "AI/ML",
+        "Claude",
+        "FastAPI"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 5,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (multi-channel B2B, 1,000+ orders) and Cold Leads (autonomous SMS FSM pipeline); 'AI Agents' in title maps exactly to their agent work.",
+      "skill_matches": [
+        "Python",
+        "AI Agents",
+        "Claude",
+        "FastAPI",
+        "RAG"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 84,
+      "reasoning": "Strong fit \u2014 candidate built agentic systems (Burnt order agent, Cold Leads FSM agent) with Claude and production deployments; 'Agentic AI' in title directly matches their shipped agent architectures.",
+      "skill_matches": [
+        "Python",
+        "AI Agents",
+        "Claude",
+        "FastAPI"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 7,
+      "match_score": 85,
+      "reasoning": "Strong fit \u2014 candidate shipped AI applications at Burnt (Claude+RAG agent, 1,000+ orders) and internshipmatcher.com (dual-model pipeline); production AI engineering maps directly to this role.",
+      "skill_matches": [
+        "Python",
+        "AI/ML",
+        "Claude",
+        "FastAPI",
+        "React"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 83,
+      "reasoning": "Strong fit \u2014 candidate built production AI systems (Burnt B2B agent, internshipmatcher.com Claude pipeline, Cold Leads agent); Sunnyvale location near SJSU and AI application work align well.",
+      "skill_matches": [
+        "Python",
+        "AI/ML",
+        "Claude",
+        "FastAPI"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

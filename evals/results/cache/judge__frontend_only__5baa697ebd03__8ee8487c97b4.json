@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 5,
+    "impact_quality": 4
+  },
+  "winner": "candidate",
+  "justification": "A is clearly superior across all dimensions. A correctly extracts 7 well-evidenced skills (matching expected behavior closely), classifies all four projects as 'Frontend Only' with correct complexity ratings, marks the portfolio as deployed, and captures concrete impact highlights (npm publication, WCAG 2.1 AA compliance, 2 landing pages coded from specs, live GitHub Pages deployment). B fails on multiple fronts: it inflates skills to 11 by adding CSS Grid, Flexbox, and 'WCAG Accessibility' as standalone skills (these are techniques/standards, not discrete skills in the expected taxonomy, and bloat the list beyond what's appropriate), includes Framer Motion which is valid but pushes the count high, and critically fails to extract any projects at all \u2014 scoring neutral (3) on project_classification and impact_quality by default rather than earning those scores. The years_of_experience of 0 in B is also less accurate than A's 1 year given the internship and project timeline. A is the clearly better extraction."
+}

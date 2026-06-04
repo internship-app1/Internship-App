@@ -1,0 +1,50 @@
+<job_listings>
+  <job id="1">
+    <company>Attentive</company>
+    <title>AI Intern</title>
+    <location>NYC</location>
+    <description>Software Engineering internship at Attentive. Role: AI Intern. Location: NYC. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="2">
+    <company>Oracle</company>
+    <title>Software Engineer Intern</title>
+    <location>Seattle, WASanta Clara, CA</location>
+    <description>Software Engineering internship at Oracle. Role: Software Engineer Intern. Location: Seattle, WASanta Clara, CA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="3">
+    <company>Snyk</company>
+    <title>Software Engineer Intern - Code Rules - Developer Security Platform</title>
+    <location>London, UK</location>
+    <description>Software Engineering internship at Snyk. Role: Software Engineer Intern - Code Rules - Developer Security Platform. Location: London, UK. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="4">
+    <company>Leidos</company>
+    <title>System Engineer Intern</title>
+    <location>Reston, VA</location>
+    <description>Software Engineering internship at Leidos. Role: System Engineer Intern. Location: Reston, VA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="5">
+    <company>Magna</company>
+    <title>Junior Full Stack Developer Co-op</title>
+    <location>Oakville, ON, Canada</location>
+    <description>Software Engineering internship at Magna. Role: Junior Full Stack Developer Co-op. Location: Oakville, ON, Canada. This role involves full stack development covering both frontend and backend technologies. You'll work on complete web applications from database to user interface. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="6">
+    <company>GenBio AI</company>
+    <title>Software Engineer Intern 🎓</title>
+    <location>Palo Alto, CA</location>
+    <description>Software Engineering internship at GenBio AI. Role: Software Engineer Intern 🎓. Location: Palo Alto, CA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="7">
+    <company>Docugami</company>
+    <title>Software Engineer Intern</title>
+    <location>Kirkland, WA</location>
+    <description>Software Engineering internship at Docugami. Role: Software Engineer Intern. Location: Kirkland, WA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="8">
+    <company>LegalZoom</company>
+    <title>AI Enablement Engineer Intern</title>
+    <location>LAMountain View, CA</location>
+    <description>Software Engineering internship at LegalZoom. Role: AI Enablement Engineer Intern. Location: LAMountain View, CA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+</job_listings>

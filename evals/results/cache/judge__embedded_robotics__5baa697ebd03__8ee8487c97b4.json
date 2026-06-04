@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 1
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "B is clearly superior across nearly all dimensions. On skill_accuracy, A adds inferred domain labels ('Embedded Systems', 'Firmware Development', 'Sensor Fusion', 'Real-time Operating Systems') that are not standardized skill names but rather category descriptors, making them less precise; B sticks to concrete, named technologies. On conservatism, A's 14 skills include 4 vague domain terms that bloat the list, while B's 11 skills are well-calibrated to demonstrated evidence. On project_classification, A extracts no projects at all (neutral score 3), while B correctly classifies two of three projects as 'Embedded Systems / IoT / Robotics' but misclassifies the Custom RTOS Scheduler as 'System/Infrastructure' \u2014 it runs on bare-metal ARM Cortex-M4 hardware and is clearly an embedded systems project, costing B one point. On impact_quality, A extracts no impact highlights whatsoever despite the resume containing a competition award and a quantified water reduction metric, earning a 1; B captures all key metrics including the 2nd place award, ~30% water reduction, 50Hz control loop, and <5\u03bcs context switch overhead with concrete specificity, earning a 5."
+}

@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "tie",
+  "justification": "Both extractions are nearly identical in quality across all four dimensions. Both accurately capture skills demonstrated in the resume without hallucination, extract a well-calibrated set of skills, and faithfully preserve all concrete metrics (83% code reduction, 52% latency reduction, 98% time reduction, 5 hrs/week saved, 1,000+ orders, etc.). Neither output includes explicit project type classifications per the taxonomy, so both score neutral on project_classification. The primary differences are minor: B preserves the original resume language more faithfully (less embellishment like 'intelligent API design'), B includes coursework as a skill category (a minor plus for completeness), and A uses slightly more inflated language ('Architected', 'Engineered') that borders on embellishment. These differences are within the 0-1 point threshold for a tie across all dimensions."
+}

@@ -1,0 +1,14 @@
+{
+  "scores_baseline": {
+    "ranking_accuracy": 3,
+    "reasoning_quality": 3,
+    "skill_gap_accuracy": 2
+  },
+  "scores_candidate": {
+    "ranking_accuracy": 4,
+    "reasoning_quality": 4,
+    "skill_gap_accuracy": 4
+  },
+  "winner": "candidate",
+  "justification": "Ranking accuracy: B correctly scores the data-infra/ETL jobs (3=62, 4=64) substantially lower than the full-stack jobs (5=86, 7=88, 8=84), creating a ~22-26 point spread that matches the expected behavior. A clusters nearly everything between 76-90 (jobs 3 and 4 score 82 and 79 respectively), failing to distinguish the poor-fit data pipeline roles from the good-fit full-stack roles \u2014 a critical error given the instructions. Reasoning quality: B consistently references specific artifacts ('internshipmatcher.com', 'Burnt (YC S25), 1,000+ orders', 'Sleep-PSG Redis+ARQ', 'SJSU professor platform TypeScript+React+Node.js') tied to each job's requirements. A's reasoning is more generic ('clean code practices', 'demonstrated understanding of data pipelines') and occasionally vague. Skill gap accuracy: A fabricates or over-penalizes gaps \u2014 listing 'Java' as a gap for Amazon when the candidate lists Java in skills, listing 'Mobile Development' as a gap for a full-stack role (irrelevant), and giving 4-5 gaps to genuinely strong matches. B correctly uses empty gaps [] for strong full-stack matches and lists only genuinely missing skills (Spark, Airflow, HL7/FHIR) for the poor-fit data roles."
+}

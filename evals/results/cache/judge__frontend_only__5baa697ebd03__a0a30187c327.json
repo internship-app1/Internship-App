@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 2,
+    "impact_quality": 2
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 5,
+    "impact_quality": 4
+  },
+  "winner": "candidate",
+  "justification": "B is clearly superior across most dimensions. On project_classification, B correctly labels all four projects as 'Frontend Only' with appropriate complexity ratings (Low/Medium), while A extracts no project classifications at all \u2014 a significant omission given the resume is project-heavy. On conservatism, B's 6 core skills is well-calibrated to the evidence; A's 11 skills bloats the list with derived sub-skills like 'CSS Grid', 'Flexbox', and 'WCAG Accessibility' that are techniques/standards rather than standalone skills, and the expected behavior calls for ~7 skills. On impact_quality, B captures concrete deployment evidence (live URL, WCAG 2.1 AA compliance, 2 client deliverables) while A provides no impact highlights at all. Both score equally on skill_accuracy \u2014 both capture the core set well, though B's exclusion of Framer Motion is a minor miss given it's explicitly listed in the resume skills section and demonstrated in a project. B's years_of_experience of 1 is a slight overreach for a student with only a summer internship, but this is a minor issue. Overall B wins decisively on structure, completeness, and classification accuracy."
+}

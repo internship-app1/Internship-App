@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "baseline",
+  "justification": "Both outputs correctly reject the bloated self-reported skill list and identify only demonstrated skills. B is slightly better calibrated on conservatism: it includes Git (a reasonable standard inclusion) while keeping the list to 4 skills, perfectly matching the expected behavior of \u22645 entries. A includes JavaScript from the Hello World 'also tried it' mention, which is borderline acceptable but weaker evidence than Python or Java. B also omits JavaScript, which is arguably more conservative and defensible given the throwaway phrasing. Neither output has meaningful project classification differences (both trivially classify simple beginner projects) or impact highlights (none exist in the resume), so those dimensions are neutral ties. B wins on conservatism as the primary dimension under test."
+}

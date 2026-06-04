@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both extractions capture the key metrics well (1,000+ orders, 83% code reduction, 30,000+ students, 52% latency reduction, 98% time reduction). However, A edges out B on skill_accuracy by including AI Tools (LangChain, RAG, Prompt Engineering, Vector Stores, MCP/Scikit-Learn) which are clearly demonstrated throughout the resume, whereas B omits the entire AI Tools category from skills \u2014 a significant gap for a candidate whose strongest work is AI-driven. B also loses conservatism points for dropping the AI tools section entirely while still listing Spring Boot and Java-adjacent frameworks that are less demonstrated. A's fabricated bullet ('Collaborated with team to design and implement scalable monitoring infrastructure') is a minor hallucination but less damaging than B's systematic omission of a whole demonstrated skill category. Neither output attempts project type classification, so both score neutral there. Impact quality is equivalent \u2014 both faithfully reproduce the concrete numeric metrics from the resume."
+}

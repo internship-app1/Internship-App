@@ -1,0 +1,105 @@
+{
+  "skills": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Figma",
+    "Git",
+    "npm"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "All skills extracted are directly corroborated by specific projects or work experience. HTML, CSS, and JavaScript are demonstrated across multiple projects (portfolio site, component library, landing page clones). React is used in Framer Motion Showcase. Figma is mentioned in design internship. Git, GitHub Pages, and npm are explicitly listed with project evidence.",
+  "projects": [
+    {
+      "name": "Personal Portfolio Site",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": true,
+      "summary": "Static portfolio website with smooth scroll animations, CSS Grid layout, and custom dark mode toggle. Deployed on GitHub Pages at emmawalsh.design. Demonstrates strong frontend fundamentals and visual design focus."
+    },
+    {
+      "name": "UI Component Library",
+      "type": "Frontend Only",
+      "technologies": [
+        "CSS",
+        "npm"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "CSS-only component library (buttons, cards, modals, tooltips) published as npm package with zero JavaScript dependencies. All components meet WCAG 2.1 AA accessibility standards. Demonstrates mastery of CSS3 and accessibility best practices."
+    },
+    {
+      "name": "Landing Page Clones",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Pixel-perfect recreations of Stripe, Linear, and Vercel landing pages using only HTML and CSS. Focused on mastering flexbox, grid, custom properties, and CSS animations. Demonstrates attention to detail and advanced CSS skills."
+    },
+    {
+      "name": "Framer Motion Showcase",
+      "type": "Frontend Only",
+      "technologies": [
+        "React",
+        "Framer Motion"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Collection of React page transition animations exploring Framer Motion APIs. Pure frontend exploration of animation capabilities with no backend or data persistence."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Published UI Component Library as npm package with zero JavaScript dependencies, demonstrating ability to create production-ready, reusable code.",
+      "metric": "Published npm package with WCAG 2.1 AA compliance",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Deployed personal portfolio website to production on GitHub Pages, showcasing ability to take projects from concept to live deployment.",
+      "metric": "Live at emmawalsh.design",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Completed design internship where coded 2 landing pages from Figma specifications, demonstrating ability to translate design mockups into functional HTML/CSS.",
+      "metric": "2 landing pages delivered",
+      "dimension": "business_value"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "HTML, CSS, and JavaScript are demonstrated across 4 separate projects with concrete evidence of implementation. Each skill is directly tied to specific project deliverables."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "React and Framer Motion are explicitly used in Framer Motion Showcase project. Figma is mentioned in design internship experience with direct application to landing page coding."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Git, GitHub Pages, and npm are explicitly mentioned in project descriptions and skills section with supporting evidence (portfolio deployed on GitHub Pages, component library published to npm)."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.88,
+      "confidence_notes": "All extracted skills pass the verification test: each can be pointed to in specific bullet points or project descriptions. No aspirational skills from self-reported list without project backing were included."
+    }
+  ]
+}

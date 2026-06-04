@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 4,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both extractions are highly accurate with identical skill sets and appropriate conservatism. Neither output includes explicit project_classification taxonomy labels, so both score neutrally there. The key differentiator is impact_quality: Output A preserves the concrete metrics more faithfully and concisely (e.g., '30+ lines to 5', '270s\u2192130s', '~5 hrs/week'), while Output B occasionally dilutes precision with added editorial language ('demonstrating measurable ROI from AI automation', 'improving developer productivity') that substitutes vague framing for the specific numbers already present. Output A's bullets stay closer to the original quantified evidence without padding, making it the stronger extraction overall."
+}

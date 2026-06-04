@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "baseline",
+  "justification": "A is more conservative and accurate: it extracts only 4 skills with genuine evidence (Python, Java, JavaScript from projects, Git as reasonable standard tool). B adds 'C' with zero project or coursework evidence \u2014 it appears in the self-reported list only, making it a hallucinated skill inclusion. Both outputs correctly avoid echoing the bloated self-reported list, but A is tighter. Project classification is neutral for both since neither output classifies projects (A) or classifies them identically (B as Developer Tool / Automation, which is debatable but not wrong for trivial beginner projects). Impact quality is neutral for both since no real metrics exist. A wins primarily on conservatism and skill_accuracy by not including the unsupported 'C' entry."
+}

@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 4
+  },
+  "winner": "baseline",
+  "justification": "A is cleaner and more accurate across the board. On skill_accuracy, A correctly uses 'Anthropic/OpenAI/Gemini API' matching the resume exactly, while B collapses it to 'Claude/OpenAI/Gemini API' which is a minor inaccuracy. On impact_quality, A preserves all concrete metrics faithfully (1,000+ orders, 5+ min saved, 250+ files, 52% latency, 98% time reduction, 83% accuracy, ~5 hrs/week) in well-formed prose without adding fabricated framing. B introduces hallucinated bullets \u2014 notably 'Data processing pipeline: webhook ingestion, intelligent routing, multi-format order parsing for enterprise ERP systems' at Burnt, 'Data visualization automation: programmatic dashboard generation reducing manual configuration time' at SJSU Engineering, and 'Data processing: automated scraping, validation, and ingestion pipeline for academic course metadata' at SCE \u2014 none of which are directly stated in the resume and appear to be role-targeted embellishments that violate the expected behavior warning against fabricating ETL/pipeline experience. This hurts B's skill_accuracy and impact_quality. Both outputs classify projects similarly (AI/ML pipeline, ML/analytics, and agentic AI categories are implied but neither output uses the formal taxonomy explicitly). A's prose is more faithful to the source and avoids fabrication, making it the clear winner."
+}

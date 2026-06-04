@@ -1,0 +1,97 @@
+{
+  "skills": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Figma",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "Extracted skills with concrete project evidence. Excluded 'Framer Motion' and 'CSS animations' as frameworks/techniques rather than standalone skills. Excluded 'npm' and 'GitHub Pages' as tools rather than core technical skills. All extracted skills have demonstrated project or work experience.",
+  "projects": [
+    {
+      "name": "Personal Portfolio Site",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": true,
+      "summary": "Static portfolio website with smooth scroll animations, CSS Grid layout, and custom dark mode toggle. Deployed on GitHub Pages at emmawalsh.design. Demonstrates frontend fundamentals and design-focused implementation."
+    },
+    {
+      "name": "UI Component Library",
+      "type": "Frontend Only",
+      "technologies": [
+        "CSS"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "CSS-only reusable component library (buttons, cards, modals, tooltips) published as npm package with zero JavaScript dependencies. All components meet WCAG 2.1 AA accessibility standards for contrast ratios."
+    },
+    {
+      "name": "Landing Page Clones",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Pixel-perfect recreations of Stripe, Linear, and Vercel landing pages using HTML and CSS exclusively. Focused on mastering flexbox, grid, custom properties, and CSS animations without frameworks."
+    },
+    {
+      "name": "Framer Motion Showcase",
+      "type": "Frontend Only",
+      "technologies": [
+        "React"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Collection of React page transition animations exploring Framer Motion animation APIs. Pure frontend exploration with no backend or data persistence."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Published UI Component Library as npm package with zero JavaScript dependencies, demonstrating ability to create production-ready, reusable code.",
+      "metric": "Published npm package with WCAG 2.1 AA compliance",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Personal portfolio website deployed and live at custom domain, showcasing design and frontend implementation skills.",
+      "metric": "Live deployment at emmawalsh.design",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Completed pixel-perfect landing page clones of major tech companies (Stripe, Linear, Vercel), demonstrating CSS mastery and attention to design detail.",
+      "metric": "3 pixel-perfect landing page recreations",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All extracted skills have explicit project or work experience evidence. Portfolio site, component library, and landing page clones directly demonstrate HTML, CSS, and JavaScript proficiency. React experience confirmed through Framer Motion project. Figma and Git mentioned in both skills section and work/project context."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Project classifications are straightforward\u2014all are frontend-only with no backend/database components. Deployment status clearly indicated for portfolio site and npm package. Complexity assessments based on scope and technical requirements."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Impact highlights focus on concrete deployments (GitHub Pages, npm package) and measurable outputs (3 landing page clones, WCAG compliance). No vague claims extracted. Student status confirmed by NYU enrollment through May 2026."
+    }
+  ]
+}

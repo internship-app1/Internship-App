@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 5,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both extractions correctly identify the same 5 skills (excluding Python), mark the candidate as a student, and leave impact_highlights empty. However, A is clearly superior because it actually extracts and classifies all three projects with correct taxonomy (Frontend Only for all three \u2014 portfolio, todo list, and weather dashboard), provides technology breakdowns per project, and explicitly returns an empty impact_highlights array. B extracts no projects at all, earning a neutral 3 on project_classification and impact_quality by default. Since the resume clearly has projects that can and should be classified, A's thorough project extraction is a meaningful advantage. A also correctly notes the Weather Dashboard likely doesn't use React (only JavaScript and a public API are mentioned), though this is a minor point. Overall A is the stronger output."
+}

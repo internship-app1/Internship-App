@@ -1,0 +1,53 @@
+{
+  "skills": [
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with explicit work or project evidence. Excluded Python (explicitly stated 'never used professionally'), Rust (explicitly stated 'not yet learned'), React (explicitly stated 'want to learn after graduation, haven't started'), Node.js (mentioned in job posting, not used), Tailwind CSS (mentioned in internship description, not used), GraphQL (read-only exposure at internship, not written), Figma (explicitly stated 'reviewer only, not a Figma user'). Chrome DevTools and VS Code excluded as they are development environments, not technical skills. Internship experience confirms HTML, CSS, JavaScript usage.",
+  "projects": [
+    {
+      "name": "Task Manager Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "JavaScript",
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Simple task management webpage with localStorage persistence for data retention across page refreshes. Frontend-only implementation with no backend integration."
+    },
+    {
+      "name": "Personal Portfolio",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Static portfolio site hosted on GitHub Pages. Demonstrates basic HTML/CSS skills with no dynamic functionality."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built interactive UI components during Frontend Engineer internship at Webflow Corp, demonstrating practical application of HTML, CSS, and JavaScript in a professional environment.",
+      "metric": "3-month internship (May 2024 \u2013 Aug 2024)",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Resume explicitly states what the candidate has NOT done (Python, Rust, React, Node.js, Tailwind CSS). Skills extracted only from confirmed work experience (internship) and completed projects with no aspirational claims."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "scores_baseline": {
+    "ranking_accuracy": 3,
+    "reasoning_quality": 4,
+    "skill_gap_accuracy": 3
+  },
+  "scores_candidate": {
+    "ranking_accuracy": 4,
+    "reasoning_quality": 4,
+    "skill_gap_accuracy": 5
+  },
+  "winner": "candidate",
+  "justification": "A correctly ranks the bad-fit jobs (General Dynamics 29, Cloudforce 34) far below the good-fit AI roles (Kognitos 90, Socure 88, Attentive 86), producing a 56-61 point spread that matches expected behavior. B collapses the spread: General Dynamics scores 50 and Cloudforce 45, only 44-49 points below the top jobs, and critically gives General Dynamics a 50 \u2014 well above the expected 'lowest' ranking. Both outputs have similarly specific reasoning referencing Burnt (YC), Cold Leads Agent, and Internship Matcher. However, B's skill_gap_accuracy suffers: it lists 'NYC location preference unclear' as a skill gap (not a skill gap at all), 'TikTok-specific tech stack' as a gap when no such requirement is stated, and 'Role requirements unclear' as a gap for Context \u2014 these are fabricated or category-confused entries. A's gaps are precise and honest, with empty arrays for strong matches and accurate gaps (security clearance, defense domain) for the genuinely poor fits."
+}

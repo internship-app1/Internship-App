@@ -1,0 +1,14 @@
+{
+  "scores_baseline": {
+    "ranking_accuracy": 2,
+    "reasoning_quality": 3,
+    "skill_gap_accuracy": 3
+  },
+  "scores_candidate": {
+    "ranking_accuracy": 4,
+    "reasoning_quality": 5,
+    "skill_gap_accuracy": 4
+  },
+  "winner": "candidate",
+  "justification": "Ranking accuracy: A clusters all 8 jobs between 78-90 (only 12-point spread), failing to discriminate good from bad fits \u2014 Cambium (job 3, expected low) gets 85 and TikTok Data Platform (job 2, expected medium) gets 88, both near the top. B correctly tanks TikTok Data Platform (job 2) at 42, recognizing it's a data infrastructure role not matching the candidate's LLM/agent work, creating a meaningful spread (42 vs 82-91). However, B still scores Cambium (job 7, expected low) at 85 and Rackner (job 6) at 84, which is imperfect. Reasoning quality: B consistently references specific artifacts \u2014 'Burnt (YC S25) serving 1,000+ orders', 'dual-model Claude pipeline at 95%+ accuracy', '52% latency reduction', 'Cold Leads Agent with FSM-driven pipeline' \u2014 tied directly to each job's requirements. A's reasoning is more generic ('Strong fit', 'Good fit') with less precise linkage to job-specific needs. Skill gap accuracy: B correctly lists empty gaps [] for strong matches like Socure AI Agents and Labelbox FDE, and accurately identifies 'Spark, Hadoop, distributed systems' as gaps for the data platform role. A fabricates gaps like 'Geographic mismatch' and 'Fellowship vs traditional internship structure' which are not skill gaps, and lists 'Educational domain-specific ML models' as a gap for Cambium without acknowledging the deeper PyTorch/TF training mismatch."
+}

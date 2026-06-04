@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "baseline",
+  "justification": "Both outputs correctly narrow the skill list dramatically from the bloated self-reported section, but B is better calibrated. A includes C with no project or coursework evidence (hallucinated from 'typical CS curriculum' assumption), while B correctly omits it and includes Git instead, which is a reasonable standard tool inference. B's 4-skill list (Python, Java, JavaScript, Git) is tighter and more defensible than A's 4-skill list that includes an unsupported C. B also avoids extracting trivial projects like 'Hello World App' and 'Calculator' as formal project entries \u2014 these are so minimal that not classifying them is arguably more honest, though A's classification of them as 'Developer Tool / Automation' is not wrong per se. Neither output has impact highlights to evaluate (correctly, since there are none). B wins primarily on conservatism and skill accuracy by not hallucinating C."
+}

@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "tie",
+  "justification": "Both extractions are genuinely equivalent across all four dimensions. Both accurately capture skills demonstrated in the resume without fabricating Spark, Kafka, or ETL experience. Both extract a well-calibrated set of skills (neither bloated nor sparse). Neither misclassifies projects \u2014 though neither output explicitly labels project taxonomy categories, both correctly represent the nature of each project. Both capture the concrete numeric metrics faithfully (52% latency reduction, 98% time reduction, 83% accuracy, 5 hrs/week saved, 1,000+ orders, etc.). The main stylistic difference is that A rewrites bullets with more verbose prose while B stays closer to the original terse style, but neither approach is clearly superior for the evaluation criteria. Skill organization differs slightly (B adds a 'Data Platform & Infrastructure' category surfacing ARQ, Alembic, WebSockets, JWKS, SSE which are real demonstrated tools), which is marginally more informative, but A includes Scikit-Learn and MNE in frameworks which is equally valid. The differences are within 0-1 points on every dimension."
+}

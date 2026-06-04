@@ -1,0 +1,126 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (YC S25) handling 1,000+ orders with Claude Sonnet+RAG and owns internshipmatcher.com with dual-model Claude pipeline at 95%+ accuracy; directly maps to AI development work.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "RAG",
+        "FastAPI",
+        "LLM application development",
+        "Prompt engineering"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 76,
+      "reasoning": "Strong fit \u2014 candidate has production full-stack experience at Burnt (React+Python) and owns internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL); generic SWE role matches their demonstrated stack.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "PostgreSQL",
+        "Data structures",
+        "Algorithms"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 72,
+      "reasoning": "Decent fit \u2014 candidate has strong full-stack foundation (React+Python at Burnt, TypeScript+Node.js at SJSU) but no demonstrated security/code-analysis domain experience; generic SWE skills transfer.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "Node.js",
+        "Software engineering fundamentals"
+      ],
+      "skill_gaps": [
+        "Security tooling",
+        "Static analysis",
+        "Code scanning"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 38,
+      "reasoning": "Weak fit \u2014 Leidos system engineering roles typically require defense/clearance and systems integration work; candidate's portfolio (Burnt, Internship Matcher, Sleep-PSG) is web/AI application development with no systems or defense domain evidence.",
+      "skill_matches": [
+        "Python",
+        "Software engineering"
+      ],
+      "skill_gaps": [
+        "Systems integration",
+        "Defense domain",
+        "Security clearance eligibility",
+        "Systems architecture"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 85,
+      "reasoning": "Excellent fit \u2014 candidate shipped production full-stack at Burnt (React+Python serving 1,000+ orders) and owns internshipmatcher.com (React+TypeScript frontend, FastAPI backend, PostgreSQL); exact match for full-stack role.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Node.js",
+        "Full-stack development"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 74,
+      "reasoning": "Decent fit \u2014 candidate has strong SWE fundamentals (React+Python+TypeScript across Burnt and personal projects) but GenBio AI likely requires bio/genomics domain knowledge not demonstrated in resume; generic programming skills transfer.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "Software engineering"
+      ],
+      "skill_gaps": [
+        "Bioinformatics",
+        "Genomics domain knowledge",
+        "Computational biology"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 77,
+      "reasoning": "Strong fit \u2014 candidate has production full-stack experience (React+Python at Burnt, TypeScript+FastAPI on personal projects) and Docugami's document AI space aligns with their LLM application work (Claude agents, RAG at Burnt).",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "LLM APIs",
+        "Document processing"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 87,
+      "reasoning": "Excellent fit \u2014 candidate built production AI agents at Burnt (Claude+RAG, 1,000+ orders) and owns internshipmatcher.com with dual-model Claude pipeline; AI enablement/tooling maps directly to their LLM application expertise.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "LLM application development",
+        "FastAPI",
+        "RAG",
+        "Prompt engineering",
+        "AI agent development"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

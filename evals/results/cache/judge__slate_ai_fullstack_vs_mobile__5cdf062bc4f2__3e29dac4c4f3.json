@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 3
+  },
+  "winner": "baseline",
+  "justification": "Both outputs handle skill accuracy and project classification similarly well, correctly identifying the iOS roles as poor fits and the AI/full-stack roles as strong fits. A edges out on impact_quality by referencing concrete metrics (1,000+ orders, 52% latency reduction, production deployments) more consistently in its reasoning, while B's reasoning is more generic. A's conservatism is slightly penalized for listing vague skill_gaps like 'Distributed systems at scale' and 'Systems programming' that aren't clearly evidenced as gaps, and for including filler entries like 'Production AI deployment' as a skill match rather than a real skill name. However, B's conservatism is better calibrated \u2014 shorter, cleaner skill lists without padding. The deciding factor is impact_quality: A consistently ties match reasoning to specific production metrics from the resume (1,000+ orders, 83% code reduction, 52% latency reduction), whereas B's reasoning is more surface-level and misses opportunities to cite these concrete numbers. A also correctly differentiates the iOS roles with slightly more nuanced reasoning. Overall A is the stronger extraction."
+}

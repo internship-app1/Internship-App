@@ -1,0 +1,73 @@
+{
+  "skills": [
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "Git",
+    "VS Code",
+    "Chrome DevTools",
+    "GraphQL"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with demonstrated work or project experience. Excluded Python (explicitly stated never used professionally), Rust (on future learning list), React (wants to learn after graduation), Node.js (mentioned in job posting, not used), Tailwind CSS (explicitly stated doesn't have yet), and Figma (only reviewed specs, not a user). GraphQL included due to professional API work at Webflow internship.",
+  "projects": [
+    {
+      "name": "Task Manager Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "localStorage"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Simple task management webpage with client-side persistence using localStorage. Demonstrates foundational frontend skills with vanilla JavaScript and DOM manipulation."
+    },
+    {
+      "name": "Personal Portfolio",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS",
+        "GitHub Pages"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Static portfolio site hosted on GitHub Pages. Demonstrates basic HTML/CSS skills and deployment experience."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built interactive UI components at Webflow Corp internship using vanilla JavaScript, HTML, and CSS, contributing to production frontend codebase.",
+      "metric": "3-month internship (May-Aug 2024)",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Implemented client-side data persistence in Task Manager project using localStorage, enabling tasks to survive page refreshes without backend infrastructure.",
+      "metric": "Full feature implementation",
+      "dimension": "performance"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Resume explicitly states what skills are NOT possessed (Python, Rust, React, Node.js, Tailwind CSS). Extracted only skills with clear evidence: internship work (JavaScript, HTML, CSS, GraphQL, Git, VS Code, Chrome DevTools) and personal projects (JavaScript, HTML, CSS)."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Project classifications are straightforward: both projects are frontend-only with no backend or complex infrastructure. Task Manager uses vanilla JavaScript with localStorage; Portfolio is static HTML/CSS on GitHub Pages."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "Limited impact metrics available. Internship duration and feature implementation are documented, but no quantitative performance metrics, user scale, or business outcomes provided in resume."
+    }
+  ]
+}

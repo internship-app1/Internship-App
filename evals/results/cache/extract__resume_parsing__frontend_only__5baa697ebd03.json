@@ -1,0 +1,18 @@
+{
+  "skills": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Figma",
+    "Git",
+    "npm",
+    "Framer Motion",
+    "CSS Grid",
+    "Flexbox"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Emma is a current CS student (graduating May 2026) with demonstrated project-based experience in frontend web development. Extracted skills are based on concrete project work and internship experience. Included CSS Grid and Flexbox as specific technical competencies evidenced by landing page clone projects. Excluded soft skills and design principles that lack concrete technical application. All skills have clear evidence from projects or work experience rather than aspirational learning goals."
+}

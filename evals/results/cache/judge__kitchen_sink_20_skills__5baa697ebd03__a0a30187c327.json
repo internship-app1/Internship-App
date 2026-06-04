@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 4,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "B is more conservative and accurate: it excludes Git (which has no project evidence in this resume) and extracts only the three skills with direct project demonstration. A includes Git without evidence, which is a minor but real accuracy/conservatism failure. B also explicitly classifies both projects with appropriate types and complexity levels, providing richer structured output. Both correctly set experience_level='student' and is_student=true. Impact quality is neutral for both since the resume has no real metrics. B wins on conservatism and skill_accuracy, and adds value with project classification."
+}

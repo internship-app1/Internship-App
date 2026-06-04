@@ -1,0 +1,50 @@
+<job_listings>
+  <job id="1">
+    <company>Labelbox</company>
+    <title>Forward Deployed Engineer Intern</title>
+    <location>SF</location>
+    <description>Software Engineering internship at Labelbox. Role: Forward Deployed Engineer Intern. Location: SF. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="2">
+    <company>TikTok</company>
+    <title>AI/ML Software Engineer Intern - Data Platform</title>
+    <location>San Jose, CA</location>
+    <description>Software Engineering internship at TikTok. Role: AI/ML Software Engineer Intern - Data Platform. Location: San Jose, CA. ByteDance is a global technology company known for TikTok and other popular apps. This role involves developing software for global e-commerce and social media platforms. This position is suitable for students and recent graduates with strong programming skills and a passion for</description>
+  </job>
+  <job id="3">
+    <company>Cambium Learning Group</company>
+    <title>Software Engineer Intern - AI Applications 🎓</title>
+    <location>Remote in USA</location>
+    <description>Software Engineering internship at Cambium Learning Group. Role: Software Engineer Intern - AI Applications 🎓. Location: Remote in USA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for t</description>
+  </job>
+  <job id="4">
+    <company>Rackner</company>
+    <title>Rackner AI Innovation Fellowship – Startup Accelerator Intern</title>
+    <location>Hyattsville, MD</location>
+    <description>Software Engineering internship at Rackner. Role: Rackner AI Innovation Fellowship – Startup Accelerator Intern. Location: Hyattsville, MD. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion f</description>
+  </job>
+  <job id="5">
+    <company>Socure</company>
+    <title>Engineering Intern - AI Agents - Data & Riskos 🎓</title>
+    <location>Remote in USA</location>
+    <description>Software Engineering internship at Socure. Role: Engineering Intern - AI Agents - Data &amp; Riskos 🎓. Location: Remote in USA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="6">
+    <company>Cotiviti</company>
+    <title>Temporary Intern - Agentic AI & Neural-Symbolic Systems - Healthcare</title>
+    <location>Remote in USA</location>
+    <description>Software Engineering internship at Cotiviti. Role: Temporary Intern - Agentic AI &amp; Neural-Symbolic Systems - Healthcare. Location: Remote in USA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a pas</description>
+  </job>
+  <job id="7">
+    <company>Guidewire</company>
+    <title>AI Engineer Intern</title>
+    <location>Philadelphia, PA</location>
+    <description>Software Engineering internship at Guidewire. Role: AI Engineer Intern. Location: Philadelphia, PA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="8">
+    <company>Fortinet</company>
+    <title>AI Intern</title>
+    <location>Sunnyvale, CA</location>
+    <description>Software Engineering internship at Fortinet. Role: AI Intern. Location: Sunnyvale, CA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+</job_listings>

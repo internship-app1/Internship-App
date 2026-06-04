@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 5,
+    "impact_quality": 4
+  },
+  "winner": "candidate",
+  "justification": "B correctly classifies both projects (Sentiment Analysis Tool as AI/ML NLP/GenAI, Real-Time Chat App as Full-Stack Web App) and captures concrete impact highlights with specific metrics (80,000 tweets, GCP Cloud Run deployment, AWS EC2 with Docker/CI-CD). A extracts no project classifications or impact highlights at all, losing significant value on those dimensions. However, B loses a point on skill_accuracy for including 'Artificial Intelligence' as a standalone skill \u2014 the resume only lists 'AI' as an abbreviation alongside 'ML', and the actual demonstrated work is specifically Machine Learning/NLP, not a broad AI discipline. A correctly omits this vague entry. Both outputs are slightly over-extracted on conservatism (24 and 21 skills respectively, above the 8\u201312 target), though A is marginally worse at 24. Overall B wins decisively on project_classification and impact_quality, which are the dimensions where the most differentiation exists."
+}

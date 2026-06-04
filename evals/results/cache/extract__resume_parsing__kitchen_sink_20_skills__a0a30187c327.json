@@ -1,0 +1,45 @@
+{
+  "skills": [
+    "Python",
+    "Java",
+    "JavaScript",
+    "C"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with explicit project or coursework evidence. Self-reported skills section excluded entirely per instructions\u2014no corroborating work experience, internships, or substantial projects. Only 'Hello World App' (Python, JavaScript) and 'Calculator' (Java) projects mentioned, both trivial. No deployment evidence, no metrics, no real-world application.",
+  "projects": [
+    {
+      "name": "Hello World App",
+      "type": "Frontend Only",
+      "technologies": [
+        "Python",
+        "JavaScript"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Basic Hello World application built in Python and JavaScript. Trivial scope with no measurable outcomes or deployment."
+    },
+    {
+      "name": "Calculator",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Command-line calculator built in Java for a class assignment. Implements basic arithmetic operators. No deployment or real-world application."
+    }
+  ],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Sophomore with no work experience. Self-reported skills section (19 languages, 20+ frameworks, 10+ databases, 8+ cloud platforms, 8+ DevOps tools, 12+ AI/ML tools) is entirely aspirational with zero corroborating evidence. Per instructions, skills listed ONLY in self-reported sections with no supporting project/job/coursework = automatic exclusion. Only extracted skills explicitly mentioned in actual projects: Python and JavaScript from 'Hello World App', Java from 'Calculator'. High confidence in exclusions due to clear lack of evidence."
+    }
+  ]
+}

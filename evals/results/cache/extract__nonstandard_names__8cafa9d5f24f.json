@@ -1,0 +1,116 @@
+{
+  "skills": [
+    "Python",
+    "TypeScript",
+    "JavaScript",
+    "SQL",
+    "Java",
+    "React",
+    "Angular",
+    "Flask",
+    "Node.js",
+    "PyTorch",
+    "scikit-learn",
+    "HuggingFace",
+    "PostgreSQL",
+    "Redis",
+    "MySQL",
+    "AWS",
+    "GCP",
+    "Docker",
+    "Git",
+    "Machine Learning",
+    "REST API",
+    "WebSockets"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "All skills extracted are directly corroborated by internship experience, completed projects, or education. Self-reported skills section validated against concrete project/work evidence. No aspirational skills included.",
+  "projects": [
+    {
+      "name": "Sentiment Analysis Tool",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "PyTorch",
+        "HuggingFace",
+        "BERT",
+        "PostgreSQL",
+        "SQLAlchemy",
+        "Twitter API"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Fine-tuned BERT model for sentiment classification on 80,000 tweets. Processed data using PyTorch and NumPy, stored results in PostgreSQL with SQLAlchemy ORM. Demonstrates NLP expertise and large-scale data handling."
+    },
+    {
+      "name": "Real-Time Chat App",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Node.js",
+        "React",
+        "TypeScript",
+        "Socket.io",
+        "Redis",
+        "AWS EC2",
+        "Docker",
+        "GitHub Actions"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Full-stack real-time messaging application with Node.js backend and React frontend. Implemented WebSocket communication via Socket.io and Redis pub/sub for scalable messaging. Deployed on AWS EC2 with Docker containerization and GitHub Actions CI/CD pipeline."
+    },
+    {
+      "name": "DataCo ETL & ML Pipeline",
+      "type": "Data Engineering / ETL",
+      "technologies": [
+        "Python",
+        "Flask",
+        "scikit-learn",
+        "GCP Cloud Run",
+        "CSV processing"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Built ETL pipeline to clean and transform CSV datasets. Created REST API using Flask deployed to GCP Cloud Run. Implemented logistic regression model for churn prediction using scikit-learn. Demonstrates data engineering and cloud deployment skills."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Processed and fine-tuned BERT model on 80,000 tweets for sentiment classification, demonstrating ability to handle large-scale NLP datasets.",
+      "metric": "80,000 tweets processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Deployed real-time chat application to AWS EC2 with Docker containerization and automated CI/CD pipeline via GitHub Actions, demonstrating production-ready deployment practices.",
+      "metric": "Live deployment on AWS EC2",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Built and deployed REST API to GCP Cloud Run as part of internship, showing cloud platform proficiency.",
+      "metric": "API deployed to GCP Cloud Run",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All 20 skills directly corroborated by internship work experience or completed projects with specific technology mentions. No self-reported skills extracted without supporting evidence."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Three projects clearly classified with concrete technology stacks and deployment status. Real-Time Chat App and DataCo work explicitly mention deployment (AWS EC2, GCP Cloud Run)."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Impact metrics extracted from concrete evidence: 80,000 tweet dataset size, explicit AWS EC2 and GCP Cloud Run deployments. No vague claims included."
+    }
+  ]
+}

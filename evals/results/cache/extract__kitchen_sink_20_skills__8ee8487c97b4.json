@@ -1,0 +1,56 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "Java",
+    "C",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with demonstrated project experience or clear educational context. Excluded extensive self-reported skill list as it appears to be aspirational/tutorial-based learning without concrete evidence of mastery. Only included languages/tools actually used in listed projects or core CS coursework.",
+  "projects": [
+    {
+      "name": "Hello World App",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Python",
+        "JavaScript"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Basic introductory project implementing Hello World in multiple languages. Demonstrates exposure to Python and JavaScript but minimal complexity."
+    },
+    {
+      "name": "Calculator",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Command-line calculator built in Java for class assignment using basic arithmetic operators. Demonstrates fundamental programming concepts."
+    }
+  ],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Conservative extraction based on demonstrated project work only. Resume shows extensive self-reported skills but lacks evidence of actual experience with most technologies. Only extracted skills used in actual projects (Hello World App, Calculator) or implied through CS coursework."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.7,
+      "confidence_notes": "Self-reported skills section appears aspirational - lists 20+ languages and frameworks with no corresponding project evidence or work experience. This is typical of students early in their CS education who have completed tutorials but lack production experience."
+    },
+    {
+      "confidence_level": "low",
+      "confidence_score": 0.4,
+      "confidence_notes": "Cannot verify claimed expertise in frameworks (React, Django, FastAPI, etc.), cloud platforms (AWS, GCP, Azure), or AI/ML tools (TensorFlow, PyTorch, LangChain) as no projects demonstrate these skills. Recommend requesting portfolio links or GitHub repositories for verification."
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+[
+  {
+    "id": "real_resume",
+    "description": "Real uploaded resume \u2014 high school grad / early college with Python/JS internship, ML project work, and HTML/Java GitHub projects",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning",
+        "Artificial Intelligence",
+        "HTML",
+        "Git",
+        "Data Analysis",
+        "Project Management",
+        "Communication"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 2,
+      "is_student": true,
+      "confidence_notes": "Extracted skills based on concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning, AI) and GitHub projects (HTML, Java, Git). Included soft skills (Project Management, Communication) demonstrated through volunteer coordinator and event planning roles. Conservative approach - excluded skills only mentioned in course context or without clear evidence of hands-on experience. Classified as student with ~2 years of internship/project experience since currently in high school (graduating Spring 2024)."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning",
+        "HTML",
+        "Git",
+        "WordPress"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0.5,
+      "is_student": true,
+      "confidence_notes": "Extracted skills from internship work experience and GitHub projects. High school student with demonstrated experience in AI/ML projects at Atelia Software and web development projects on GitHub. Conservative extraction focusing on explicitly mentioned technologies with project evidence.",
+      "projects": [
+        {
+          "name": "AI Scribe for Physician-Patient Consultations",
+          "type": "AI/ML (NLP/GenAI)",
+          "technologies": [
+            "Python",
+            "JavaScript",
+            "Machine Learning",
+            "Java"
+          ],
+          "is_deployed": false,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Built AI scribes using Python and JavaScript libraries to automatically summarize physician-patient consultations, designed to save doctors' time. Developed machine learning models for patient data processing in Java. Client-focused project demonstrating practical AI/ML application in healthcare."
+        },
+        {
+          "name": "Historical Decolonization Website",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "Java"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Low",
+          "has_link": true,
+          "summary": "Created a website explaining the historical process of decolonization using HTML and Java. Demonstrates interest in combining technical skills with historical knowledge."
+        },
+        {
+          "name": "NFL Draft Team Simulation Game",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "Java"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Medium",
+          "has_link": true,
+          "summary": "Interactive game allowing users to take control of their favorite NFL team for the 2021 Draft, showing how different player selections would impact the team today. Combines sports analytics interest with web development."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Built AI scribes at Atelia Software internship to automatically summarize physician-patient consultations, directly addressing the client goal of saving doctors' time through machine learning automation.",
+          "metric": "Healthcare automation tool in production use",
+          "dimension": "business_value"
+        },
+        {
+          "description": "Organized and coordinated MSJ Sports Analytics Club's annual Datathon where members analyzed NBA, MLB, and NFL data, judged by sports professionals, demonstrating leadership in data analytics community.",
+          "metric": "Multi-sport data analysis event with professional judges",
+          "dimension": "scale"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Python, JavaScript, Java, and Machine Learning extracted from explicit internship description at Atelia Software with concrete project details."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.9,
+          "confidence_notes": "HTML and Java confirmed through GitHub projects with direct links and specific project descriptions."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.75,
+          "confidence_notes": "WordPress included based on active blogging platform (2015-Present) but limited technical depth evident from resume."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.7,
+          "confidence_notes": "AI/ML project classification based on internship description mentioning 'machine learning principles' and 'AI scribes' but limited technical detail on specific frameworks or methodologies."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 2,
+        "conservatism": 2,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 4,
+        "impact_quality": 2
+      },
+      "winner": "candidate",
+      "justification": "A includes soft skills (Project Management, Communication, Data Analysis) and 'Artificial Intelligence' as a separate skill from Machine Learning, violating the expected behavior of not extracting soft skills and keeping the list conservative. A also includes 'Git' with no evidence in the resume. B is more disciplined \u2014 it drops the soft skills and keeps the list tighter, though it adds 'WordPress' (marginal) and 'Git' (also unsubstantiated). B correctly classifies the AI scribe project as AI/ML (NLP/GenAI) and the GitHub projects as Frontend Only, which is appropriate. B's impact_highlights are vague and lack real numeric metrics (the Datathon highlight is particularly weak \u2014 it's a club event, not a measurable outcome), but A extracts no projects or impact at all, making B more informative overall. B's years_of_experience (0.5) is arguably too low given the internship started Summer 2022, but A's value of 2 is more defensible. Despite B's flaws, it outperforms A on project classification and skill accuracy, and its additional structured project data adds value even if imperfect."
+    }
+  }
+]

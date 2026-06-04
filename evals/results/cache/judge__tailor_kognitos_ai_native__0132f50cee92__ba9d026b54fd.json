@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A preserves the original resume's concrete metrics faithfully (270s\u2192130s, 98% time reduction, 83% accuracy, ~5 hrs/week) without embellishment, earning a strong impact_quality score. B inflates language with adjectives like 'intelligent,' 'scalable,' and 'AI-powered' that aren't in the source and adds MNE to the skills section (a library used in one project, not a demonstrated standalone skill), slightly hurting skill_accuracy and conservatism. B also adds 'intelligent API design' and 'data integrity' as vague qualitative claims not supported by the resume. A's bullets stay closer to the source text, avoiding fabricated framing while still capturing the agentic AI work prominently. Both handle project classification similarly (no explicit taxonomy labels provided, but project types are implicitly correct). A's github/linkedin URLs are more plausible guesses than B's truncated ones, though both are inferred. Overall A is more faithful, conservative, and precise."
+}

@@ -1,0 +1,102 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "SQL",
+    "Java",
+    "React",
+    "Angular",
+    "Flask",
+    "Node.js",
+    "PyTorch",
+    "scikit-learn",
+    "HuggingFace",
+    "PostgreSQL",
+    "Redis",
+    "MySQL",
+    "AWS",
+    "GCP",
+    "Docker",
+    "Git",
+    "Machine Learning",
+    "Artificial Intelligence"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Extracted skills from concrete work experience (internship) and completed projects with demonstrated implementation. Standardized abbreviations (Py\u2192Python, TS\u2192TypeScript, JS\u2192JavaScript, ML\u2192Machine Learning, AI\u2192Artificial Intelligence). Excluded vague skill claims and focused on technologies with clear project/work evidence.",
+  "projects": [
+    {
+      "name": "Sentiment Analysis Tool",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "PyTorch",
+        "HuggingFace",
+        "BERT",
+        "NumPy",
+        "PostgreSQL",
+        "SQLAlchemy",
+        "Twitter API"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Fine-tuned a BERT transformer model for sentiment classification on 80,000 tweets. Processed data using PyTorch and NumPy, stored results in PostgreSQL with SQLAlchemy ORM. Demonstrates NLP expertise with large-scale dataset handling and production-ready database integration."
+    },
+    {
+      "name": "Real-Time Chat App",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Node.js",
+        "React",
+        "TypeScript",
+        "Socket.io",
+        "Redis",
+        "AWS EC2",
+        "Docker",
+        "GitHub Actions",
+        "Git"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Full-stack real-time messaging application with Node.js backend and React/TypeScript frontend. Implemented WebSocket communication via Socket.io and Redis pub/sub for scalable message distribution. Deployed to AWS EC2 with containerization (Docker) and automated CI/CD pipeline (GitHub Actions)."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Processed and fine-tuned BERT model on large-scale NLP dataset for sentiment classification task.",
+      "metric": "80,000 tweets processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Deployed full-stack chat application to production cloud infrastructure with containerization and automated deployment pipeline.",
+      "metric": "Deployed on AWS EC2 with Docker and GitHub Actions CI/CD",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Built and deployed REST API for data transformation and ML inference in professional internship setting.",
+      "metric": "Deployed to GCP Cloud Run",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Skills extracted directly from work experience and completed projects with clear technical implementation details. All technologies have concrete evidence of use in internship or project work."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Project classifications based on explicit technology stack and project descriptions. Deployment status confirmed by explicit mentions of AWS EC2, GCP Cloud Run, and Docker usage."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "Impact metrics extracted from quantifiable evidence (80k tweets, deployment platforms). No explicit performance benchmarks or user metrics provided, so scale and deployment are primary impact dimensions."
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "skills": [
+    "Python",
+    "C++",
+    "Java",
+    "PyTorch",
+    "TensorFlow",
+    "OpenCV",
+    "NumPy",
+    "Pandas",
+    "scikit-learn",
+    "Git",
+    "Docker",
+    "CUDA",
+    "React",
+    "FastAPI",
+    "AWS EC2",
+    "AWS S3"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "All skills extracted are directly corroborated by project work or current research experience. YOLOv8, ResNet-50, and CNN architectures are demonstrated in projects but not listed as standalone skills since they are frameworks/techniques within PyTorch/TensorFlow. Jupyter listed in skills section but not explicitly used in project descriptions, so excluded to be conservative.",
+  "projects": [
+    {
+      "name": "Object Detection System for Traffic Analysis",
+      "type": "AI/ML (Computer Vision)",
+      "technologies": [
+        "YOLOv8",
+        "OpenCV",
+        "CUDA",
+        "FastAPI",
+        "AWS EC2",
+        "AWS S3"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": true,
+      "summary": "Trained YOLOv8 model on 12,000 annotated traffic images achieving 91% mAP (12% improvement over YOLOv5 baseline). Implemented real-time inference pipeline with OpenCV and CUDA reaching 28 FPS on NVIDIA T4. Deployed behind FastAPI endpoint on AWS EC2 with live demo at traffic-demo.priya.dev."
+    },
+    {
+      "name": "Facial Expression Classifier",
+      "type": "AI/ML (Computer Vision)",
+      "technologies": [
+        "PyTorch",
+        "ResNet-50",
+        "React",
+        "OpenCV"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Fine-tuned ResNet-50 CNN in PyTorch to classify 7 emotional states from webcam frames, achieving 88% accuracy on FER2013 test set. Integrated into React web app for real-time demonstration of facial expression recognition."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "YOLOv8 object detection model achieved 91% mAP on custom traffic dataset, representing a 12% improvement over YOLOv5 baseline model.",
+      "metric": "91% mAP, 12% improvement over baseline",
+      "dimension": "performance"
+    },
+    {
+      "description": "Real-time inference pipeline implemented with OpenCV and CUDA optimization on NVIDIA T4 GPU, enabling practical deployment for traffic analysis.",
+      "metric": "28 FPS real-time inference",
+      "dimension": "speed"
+    },
+    {
+      "description": "Object detection model successfully deployed to production on AWS EC2 with public-facing endpoint, demonstrating full deployment capability.",
+      "metric": "Live deployment at traffic-demo.priya.dev",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Facial expression classifier achieved strong accuracy on industry-standard FER2013 benchmark dataset using fine-tuned ResNet-50 architecture.",
+      "metric": "88% accuracy on FER2013 test set",
+      "dimension": "performance"
+    },
+    {
+      "description": "Preprocessed and augmented large-scale medical imaging dataset for monocular depth estimation research contributing to IEEE paper submission.",
+      "metric": "50,000-image dataset processed",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All extracted skills are directly evidenced by project implementations or current research work. YOLOv8, OpenCV, CUDA, FastAPI, PyTorch, and React are explicitly mentioned in project descriptions with concrete usage examples."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "AWS EC2 and AWS S3 are listed in skills section and corroborated by deployment of traffic analysis model on EC2. Cloud skills are well-supported."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "Java and C++ are listed in skills section but no project or work experience explicitly demonstrates their use. Excluded from high-confidence extraction but included based on self-reported skills with coursework context."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.88,
+      "confidence_notes": "Computer Vision expertise is strongly demonstrated through two substantial projects (YOLOv8 and facial expression classification) plus current research assistantship in CV lab. Deep Learning coursework and IEEE paper contribution provide additional validation."
+    }
+  ]
+}

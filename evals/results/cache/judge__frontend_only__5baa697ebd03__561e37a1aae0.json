@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 1
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 5,
+    "project_classification": 5,
+    "impact_quality": 4
+  },
+  "winner": "candidate",
+  "justification": "A correctly classifies all four projects as Frontend Only, captures deployment evidence (GitHub Pages, npm), and extracts a well-calibrated skill set. The only minor omission is Framer Motion, which is a legitimate demonstrated skill. B over-extracts skills by including CSS Grid, Flexbox, and WCAG Accessibility as standalone skills \u2014 these are techniques/standards rather than discrete skills, inflating the list beyond what is appropriate. More critically, B extracts zero projects and zero impact highlights, scoring a 1 on impact_quality and a neutral 3 on project_classification by default. A's impact highlights are concrete (live deployment URL, npm publication, WCAG 2.1 AA compliance, 3 pixel-perfect clones) rather than vague. A wins decisively on project_classification, impact_quality, and conservatism."
+}

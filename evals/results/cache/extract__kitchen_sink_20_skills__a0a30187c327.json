@@ -1,0 +1,44 @@
+{
+  "skills": [
+    "Python",
+    "Java",
+    "JavaScript"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted ONLY skills with explicit project evidence. Self-reported skills section excluded entirely per instructions\u2014no corroborating work experience, internships, or substantial projects. Hello World App demonstrates Python and JavaScript; Calculator assignment demonstrates Java. All other listed technologies lack supporting evidence and are aspirational.",
+  "projects": [
+    {
+      "name": "Hello World App",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Python",
+        "JavaScript"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Basic introductory program demonstrating language syntax in Python and JavaScript. No deployment or measurable impact."
+    },
+    {
+      "name": "Calculator",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Command-line calculator built as a class assignment using basic arithmetic operators. Educational exercise with no deployment or production use."
+    }
+  ],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Self-reported skills section is extensive but entirely unsupported by work experience, internships, or substantive projects. Per strict extraction rules, skills listed ONLY in self-reported sections with no corroborating evidence are automatically excluded. Only Python, Java, and JavaScript are extracted because they appear in actual project descriptions. Hello World App and Calculator are trivial learning exercises with no deployment, scale, or measurable impact."
+    }
+  ]
+}

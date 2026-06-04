@@ -1,0 +1,107 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 72,
+      "reasoning": "Decent fit \u2014 candidate has strong Python/React production work at Burnt and internshipmatcher.com, but Amazon SDE roles typically require deeper algorithms/data structures focus than demonstrated in resume's LLM/full-stack projects.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "algorithms",
+        "data structures"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 70,
+      "reasoning": "Decent fit \u2014 candidate shipped production React/Python/TypeScript at Burnt and owns internshipmatcher.com, but Apple roles often require platform-specific skills (iOS/macOS) not shown in resume's web-focused projects.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 58,
+      "reasoning": "Weak fit \u2014 role requires data infrastructure/pipelines; candidate built Redis/PostgreSQL layers but resume shows LLM application work, not data engineering (Spark, Airflow, ETL pipelines).",
+      "skill_matches": [
+        "Python",
+        "PostgreSQL",
+        "Redis"
+      ],
+      "skill_gaps": [
+        "Spark",
+        "Airflow",
+        "ETL pipelines"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 54,
+      "reasoning": "Weak fit \u2014 data acquisition/pipelines role; candidate has PostgreSQL/Redis but resume focuses on LLM agents and full-stack apps, not data ingestion systems or healthcare data integration.",
+      "skill_matches": [
+        "Python",
+        "PostgreSQL"
+      ],
+      "skill_gaps": [
+        "data pipelines",
+        "ETL",
+        "healthcare data standards"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 86,
+      "reasoning": "Strong fit \u2014 candidate shipped production React+Python+FastAPI at Burnt (YC S25) and owns internshipmatcher.com with TypeScript frontend and FastAPI backend, directly matching full-stack requirements.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 74,
+      "reasoning": "Decent fit \u2014 candidate has strong Python/React/TypeScript production experience at Burnt and internshipmatcher.com, but generic SWE role lacks specificity to confirm exact stack alignment.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 7,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate owns internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL full stack) and shipped production full-stack tools at Burnt; SF location and full-stack scope match perfectly.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Node.js"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 84,
+      "reasoning": "Strong fit \u2014 candidate built FastAPI backends at Burnt and internshipmatcher.com with PostgreSQL/Redis, plus async pipelines in Sleep-PSG project; San Jose location and backend focus align well.",
+      "skill_matches": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "API development"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

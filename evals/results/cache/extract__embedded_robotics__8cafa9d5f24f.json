@@ -1,0 +1,115 @@
+{
+  "skills": [
+    "C",
+    "C++",
+    "Python",
+    "ROS 2",
+    "Arduino",
+    "Raspberry Pi",
+    "STM32",
+    "MQTT",
+    "Git",
+    "GDB",
+    "LiDAR",
+    "IMU",
+    "Extended Kalman Filter"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "Extracted skills from concrete project experience and internship. All skills are backed by specific project implementations or work experience. Avoided aspirational skills from generic 'SKILLS' section that lacked project evidence. Included sensor/hardware skills (LiDAR, IMU) and algorithms (Extended Kalman Filter) with demonstrated project usage.",
+  "projects": [
+    {
+      "name": "Autonomous Drone Navigation",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C++",
+        "ROS 2",
+        "LiDAR",
+        "IMU",
+        "Extended Kalman Filter",
+        "Raspberry Pi",
+        "Ubuntu"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Developed obstacle avoidance firmware for custom quadcopter with sensor fusion using Extended Kalman Filter. Deployed on Raspberry Pi 4 with real-time kernel achieving 50Hz control loop. Won 2nd place at Purdue Robotics Competition 2025."
+    },
+    {
+      "name": "Smart Irrigation System",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C",
+        "Arduino Mega",
+        "Raspberry Pi",
+        "MQTT",
+        "ADC",
+        "GPIO"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built IoT soil-moisture monitoring network with 8 Arduino Mega nodes and central Raspberry Pi hub. Implemented C firmware for sensor data acquisition and MQTT transmission. System monitors 0.5 acres of greenhouse with automated valve control."
+    },
+    {
+      "name": "Custom RTOS Scheduler",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "C",
+        "STM32",
+        "ARM Cortex-M4",
+        "GDB",
+        "oscilloscope"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Implemented preemptive RTOS kernel in C for ARM Cortex-M4 with round-robin scheduling, semaphores, mutexes, and priority inheritance. Validated context-switch timing with oscilloscope probing."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Autonomous Drone Navigation system achieved 50Hz control loop on Raspberry Pi 4 with real-time kernel, demonstrating production-grade embedded systems performance.",
+      "metric": "50Hz control loop frequency",
+      "dimension": "performance"
+    },
+    {
+      "description": "Smart Irrigation System reduced water usage in greenhouse monitoring 0.5 acres through automated sensor-driven valve control.",
+      "metric": "~30% water usage reduction",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Custom RTOS Scheduler achieved sub-5 microsecond context switch overhead, validated with oscilloscope measurements.",
+      "metric": "<5\u03bcs context switch overhead",
+      "dimension": "performance"
+    },
+    {
+      "description": "Autonomous Drone Navigation project won 2nd place at Purdue Robotics Competition 2025, demonstrating competitive-level embedded systems engineering.",
+      "metric": "2nd place award",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Smart Irrigation System deployed across 0.5 acres of greenhouse with 8 distributed Arduino nodes communicating via MQTT.",
+      "metric": "8 sensor nodes, 0.5 acres coverage",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All extracted skills are directly supported by project implementations or internship work. C, C++, ROS 2, Arduino, Raspberry Pi, STM32, MQTT, and debugging tools (GDB, oscilloscope) all have explicit evidence in project descriptions or experience section."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Extended Kalman Filter and sensor technologies (LiDAR, IMU) extracted from Autonomous Drone Navigation project with specific implementation details. These are not aspirational but demonstrated technical competencies."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Project classifications and complexity assessments based on concrete technical details: firmware development, sensor fusion, real-time constraints, distributed systems, and kernel-level programming all indicate high-complexity embedded systems work."
+    }
+  ]
+}

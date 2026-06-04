@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "tie",
+  "justification": "Both extractions are nearly identical in quality across all four dimensions. Both accurately capture skills demonstrated in the resume without hallucination, with A adding SSE and WebSockets as frontend technologies (reasonable given project evidence) while B omits them but stays closer to the listed skills section. Both extract a well-calibrated number of skills. Neither output includes explicit project_type classification fields using the taxonomy \u2014 both simply name projects with tech stacks \u2014 so both score neutral (3) on project_classification. Both faithfully preserve all concrete metrics (98% time reduction, 52% latency reduction, 83% accuracy, 1,000+ orders, 250+ files, 5 hrs/week saved, 30,000+ students) earning equal impact_quality scores. The differences in bullet phrasing are stylistic rather than substantive, and no dimension shows a meaningful gap between the two outputs."
+}

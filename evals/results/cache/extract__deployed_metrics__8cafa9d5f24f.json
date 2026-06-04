@@ -1,0 +1,113 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "SQL",
+    "React",
+    "Node.js",
+    "Express",
+    "FastAPI",
+    "PostgreSQL",
+    "Redis",
+    "AWS",
+    "Vercel",
+    "Git",
+    "Docker"
+  ],
+  "experience_level": "recent_graduate",
+  "years_of_experience": 0.5,
+  "is_student": false,
+  "confidence_notes": "All skills extracted are directly corroborated by work experience (FinanceApp internship) and completed projects (InternTracker, PricePulse). No aspirational skills included. Sofia demonstrates hands-on experience with full-stack development, cloud deployment, and database optimization.",
+  "projects": [
+    {
+      "name": "InternTracker \u2014 Job Application Tracker",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "React",
+        "Node.js",
+        "PostgreSQL",
+        "AWS",
+        "Clerk",
+        "SendGrid"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": true,
+      "summary": "Full-stack SaaS application for tracking job applications with drag-and-drop Kanban board, authentication, and automated email reminders. Deployed to AWS EC2 and live at interntracker.io. Achieved 500+ registered users within 2 weeks of launch and won $5,000 prize at HackUCLA 2024."
+    },
+    {
+      "name": "PricePulse \u2014 E-Commerce Price Monitor",
+      "type": "Data Engineering / ETL",
+      "technologies": [
+        "Python",
+        "AWS Lambda",
+        "Redis",
+        "Email API"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Automated price monitoring system using Python web scraper deployed as AWS Lambda cron job. Monitors 3,000+ product listings daily, handles 10,000+ requests per day, and sends email alerts for price drops exceeding 15%. Redis caching layer optimizes performance by reducing repeat API calls."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Rebuilt user dashboard with React and TypeScript at FinanceApp Inc., implementing code-splitting and lazy loading for heavy chart components.",
+      "metric": "Reduced page load time by 1.8 seconds (from 3.2s to 1.4s)",
+      "dimension": "speed"
+    },
+    {
+      "description": "Optimized PostgreSQL queries by adding composite indexes in production environment.",
+      "metric": "Reduced average query time by 62% (from 850ms to 320ms)",
+      "dimension": "performance"
+    },
+    {
+      "description": "Shipped optimized dashboard to production serving significant user base.",
+      "metric": "22,000 monthly active users",
+      "dimension": "scale"
+    },
+    {
+      "description": "Launched InternTracker SaaS application to production with rapid user adoption.",
+      "metric": "500+ registered users within 2 weeks of launch",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Won hackathon competition for InternTracker project.",
+      "metric": "$5,000 prize (Best Solo Hack at HackUCLA 2024)",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Implemented Redis caching layer in PricePulse to optimize web scraper performance.",
+      "metric": "Reduced repeat scraping API calls by 80%",
+      "dimension": "performance"
+    },
+    {
+      "description": "Deployed Python scraper handling high-volume price monitoring at scale.",
+      "metric": "Monitors 3,000+ product listings daily; handles 10,000+ requests per day",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All 14 skills are directly supported by concrete work experience or deployed projects. React, TypeScript, Node.js, PostgreSQL, and AWS are explicitly mentioned in internship role with measurable outcomes. Python, FastAPI, Redis, and Docker appear in completed projects with deployment evidence."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "InternTracker project is fully corroborated with live deployment link (interntracker.io), user metrics (500+ users), and hackathon award. All technologies listed match project description."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "PricePulse project demonstrates data engineering capability with AWS Lambda deployment, cron job automation, and measurable performance metrics (80% cache hit improvement, 10k requests/day). Python and Redis usage is explicit."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.93,
+      "confidence_notes": "FinanceApp internship provides strong evidence of production-level work with specific performance improvements (1.8s load time reduction, 62% query optimization) and scale (22k MAU). All technologies mentioned are standard industry tools."
+    }
+  ]
+}

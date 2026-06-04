@@ -1,0 +1,18 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "Java",
+    "Machine Learning",
+    "Artificial Intelligence",
+    "HTML",
+    "Git",
+    "Data Analysis",
+    "Project Management",
+    "Communication"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 2,
+  "is_student": true,
+  "confidence_notes": "Extracted skills based on concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning, AI) and GitHub projects (HTML, Java, Git). Included soft skills (Project Management, Communication) demonstrated through volunteer coordinator and event planning roles. Conservative approach - excluded skills only mentioned in course context or without clear evidence of hands-on experience. Classified as student with ~2 years of internship/project experience since currently in high school (graduating Spring 2024)."
+}

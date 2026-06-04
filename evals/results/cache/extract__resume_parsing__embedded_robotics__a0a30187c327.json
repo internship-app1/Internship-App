@@ -1,0 +1,100 @@
+{
+  "skills": [
+    "C",
+    "C++",
+    "Python",
+    "ROS 2",
+    "Arduino",
+    "Raspberry Pi",
+    "Git",
+    "MQTT",
+    "STM32",
+    "LiDAR"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "Extracted skills with explicit project or internship evidence. Excluded FreeRTOS, GDB, oscilloscope, logic analyzer, and hardware names (IMU, Cortex-M4) as they are tools/components rather than core technical skills. Python listed in skills section but no project evidence\u2014included due to explicit mention in SKILLS section paired with CS/ECE background, but confidence is lower.",
+  "projects": [
+    {
+      "name": "Autonomous Drone Navigation",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C++",
+        "ROS 2",
+        "LiDAR",
+        "Raspberry Pi",
+        "Extended Kalman Filter"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Developed obstacle avoidance firmware for a custom quadcopter using ROS 2 and C++. Integrated LiDAR and IMU sensor fusion with Extended Kalman Filter. Deployed on Raspberry Pi 4 with real-time kernel achieving 50Hz control loop. Won 2nd place at Purdue Robotics Competition 2025."
+    },
+    {
+      "name": "Smart Irrigation System",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C",
+        "Arduino",
+        "Raspberry Pi",
+        "MQTT"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built an IoT soil-moisture monitoring network with 8 Arduino Mega nodes and central Raspberry Pi hub. Wrote C firmware for ATmega2560 to read ADC sensor data and transmit via MQTT. System monitors 0.5 acres of greenhouse plants with measurable water savings."
+    },
+    {
+      "name": "Custom RTOS Scheduler",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C",
+        "STM32"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Implemented a preemptive RTOS kernel in C for ARM Cortex-M4 (STM32F411). Features include round-robin scheduling, semaphores, mutexes, and priority inheritance. Validated with oscilloscope probing achieving <5\u03bcs context switch overhead."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Autonomous Drone Navigation system achieved 50Hz control loop on Raspberry Pi 4 with real-time kernel, demonstrating production-ready embedded systems performance.",
+      "metric": "50Hz control loop frequency",
+      "dimension": "performance"
+    },
+    {
+      "description": "Smart Irrigation System deployed across 0.5 acres of greenhouse plants with measurable water conservation impact.",
+      "metric": "~30% reduction in water usage; 0.5 acres monitored",
+      "dimension": "scale"
+    },
+    {
+      "description": "Custom RTOS Scheduler validated with oscilloscope measurements showing extremely low context switch overhead.",
+      "metric": "<5\u03bcs context switch overhead",
+      "dimension": "performance"
+    },
+    {
+      "description": "Won 2nd place at Purdue Robotics Competition 2025 for Autonomous Drone Navigation project.",
+      "metric": "2nd place award",
+      "dimension": "business_value"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "C, C++, ROS 2, Arduino, Raspberry Pi, LiDAR, MQTT, STM32 all have explicit project evidence with detailed technical descriptions and measurable outcomes."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.7,
+      "confidence_notes": "Python listed in SKILLS section but no project or internship evidence provided. Included due to explicit mention in skills list, but lower confidence than project-backed skills."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Git extracted from SKILLS section and corroborated by typical embedded systems workflow; internship experience at Bosch suggests professional version control usage."
+    }
+  ]
+}

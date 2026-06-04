@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "winner": "baseline",
+  "justification": "Both outputs are very close across all dimensions, but B edges out A on a few key points. B's reasoning for job_id 7 (Tessera Labs backend) is slightly stronger \u2014 it scores 89 vs A's 90 but provides more precise justification referencing three distinct FastAPI production deployments and the 52% latency reduction metric. B also better captures the Cold Leads Agent as evidence for job_id 5 and job_id 6 (client-facing real estate deployment), showing more thorough use of resume evidence. B's skill_gaps for job_id 3 and 4 are more precise (e.g., 'container orchestration' vs just 'Docker'). Both correctly rank AI roles (jobs 1, 5) highest and infrastructure roles (3, 4) lowest, consistent with expected behavior. Neither output extracts standalone skills or project classifications in the traditional sense, so project_classification and conservatism are evaluated on the skill_matches lists within job scores \u2014 both are well-calibrated. The differences are marginal but B is consistently slightly more precise in its evidence citations and metric references."
+}

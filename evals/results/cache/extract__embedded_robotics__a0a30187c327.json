@@ -1,0 +1,97 @@
+{
+  "skills": [
+    "C",
+    "C++",
+    "Python",
+    "ROS 2",
+    "Arduino",
+    "Raspberry Pi",
+    "Git",
+    "MQTT",
+    "STM32",
+    "LiDAR"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Extracted skills with explicit project or internship evidence. Excluded FreeRTOS, STM32 HAL, GDB, oscilloscope, logic analyzer as they appear only in self-reported skills section or as tools without dedicated project evidence. IMU excluded as it's a hardware component, not a skill. Extended Kalman Filter excluded as it's a mathematical technique mentioned in project context but not a standalone skill claim.",
+  "projects": [
+    {
+      "name": "Autonomous Drone Navigation",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C++",
+        "ROS 2",
+        "LiDAR",
+        "Raspberry Pi",
+        "Extended Kalman Filter"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Developed obstacle avoidance firmware for custom quadcopter with sensor fusion and real-time control loop. Deployed on Raspberry Pi 4 with 50Hz control frequency. Won 2nd place at Purdue Robotics Competition 2025."
+    },
+    {
+      "name": "Smart Irrigation System",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C",
+        "Arduino",
+        "Raspberry Pi",
+        "MQTT",
+        "GPIO"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built IoT soil-moisture monitoring network with 8 Arduino Mega nodes and central Raspberry Pi hub. Implemented C firmware for sensor data acquisition and MQTT transmission. Deployed on 0.5 acres of greenhouse with automated valve control."
+    },
+    {
+      "name": "Custom RTOS Scheduler",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "C",
+        "STM32",
+        "ARM Cortex-M4"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Implemented preemptive RTOS kernel with round-robin scheduling, semaphores, mutexes, and priority inheritance. Validated with oscilloscope measurements achieving <5\u03bcs context switch overhead."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Autonomous Drone Navigation system achieved 50Hz control loop frequency on Raspberry Pi 4 with real-time kernel, enabling stable obstacle avoidance with LiDAR and IMU sensor fusion.",
+      "metric": "50Hz control loop, <5\u03bcs context switch overhead (from RTOS project)",
+      "dimension": "performance"
+    },
+    {
+      "description": "Smart Irrigation System deployed across 0.5 acres of greenhouse plants with automated water management.",
+      "metric": "0.5 acres monitored, ~30% water usage reduction",
+      "dimension": "scale"
+    },
+    {
+      "description": "Won 2nd place at Purdue Robotics Competition 2025 for autonomous drone navigation project.",
+      "metric": "2nd place award",
+      "dimension": "business_value"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "C, C++, Python, ROS 2, Arduino, Raspberry Pi, Git, MQTT, STM32, and LiDAR all have explicit project or internship evidence. Skills extracted only from demonstrated work, not from self-reported skills section without corroboration."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.88,
+      "confidence_notes": "All three projects have concrete technical details, deployment evidence, and measurable outcomes. Project classifications based on hardware platforms (Raspberry Pi, Arduino, STM32) and real-time embedded systems focus."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "Extended Kalman Filter mentioned in Autonomous Drone project but not extracted as a skill since it's a mathematical technique/algorithm rather than a technology/tool. Python listed in skills but no explicit project evidence provided\u2014included due to common use in robotics/embedded systems education, but confidence is lower."
+    }
+  ]
+}

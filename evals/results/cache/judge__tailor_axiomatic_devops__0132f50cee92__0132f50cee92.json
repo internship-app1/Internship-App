@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "B is better calibrated on skills: it correctly separates AI/ML tools (Anthropic/OpenAI/Gemini API, LangChain, RAG, Prompt Engineering, Vector Stores, MCP) into their own category, preserving all demonstrated tools from the resume without omission, while A drops MCP and the full AI tools grouping into a less organized structure. B also avoids A's slight inflation of framing (e.g., A adds 'infrastructure-as-code best practices' which is not stated in the resume \u2014 a minor fabrication). Both capture impact metrics equally well (52% latency reduction, 98% time reduction, 83% accuracy, 5 hrs/week saved, 1,000+ orders). Project classification is equivalent between the two. B's skill organization is more honest and complete, earning it the win on skill_accuracy and conservatism."
+}

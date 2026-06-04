@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "B is clearly better on skill accuracy and conservatism. A bloats the skill list with vague, self-inferred meta-skills like 'Data Preprocessing', 'Model Training', and 'Real-time Inference' that are not discrete skills but rather task descriptions, and also includes 'Object Detection' and 'CNN' as standalone skills when these are better characterized as project domains. A also includes Git and Jupyter which are only listed in the skills section with minimal project evidence. B sticks to the 15 concrete, well-demonstrated technologies from projects and coursework, landing in the ideal 5\u201315 range with no hallucinated or inflated entries. Neither output extracts project classifications or impact highlights, so both score neutral (3) on those dimensions. B wins on the two most important dimensions for this resume type."
+}

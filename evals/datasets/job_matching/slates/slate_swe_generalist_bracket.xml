@@ -1,0 +1,50 @@
+<job_listings>
+  <job id="1">
+    <company>Amazon</company>
+    <title>Software Development Engineer Intern</title>
+    <location>6 locationsWinnipeg, MB, CanadaToronto, ON, CanadaVictoria, BC, CanadaCalgary, AB, CanadaOttawa, ON, CanadaVancouver, BC, Canada</location>
+    <description>Software Engineering internship at Amazon. Role: Software Development Engineer Intern. Location: 6 locationsWinnipeg, MB, CanadaToronto, ON, CanadaVictoria, BC, CanadaCalgary, AB, CanadaOttawa, ON, CanadaVancouver, BC, Canada. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong pr</description>
+  </job>
+  <job id="2">
+    <company>Apple</company>
+    <title>Software Undergrad Engineer Intern</title>
+    <location>United States</location>
+    <description>Software Engineering internship at Apple. Role: Software Undergrad Engineer Intern. Location: United States. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="3">
+    <company>Meshy</company>
+    <title>Data Infra Engineer Intern</title>
+    <location>San Francisco, CA</location>
+    <description>Software Engineering internship at Meshy. Role: Data Infra Engineer Intern. Location: San Francisco, CA. This role focuses on data engineering and analysis. You'll work with data pipelines, databases, and data processing systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="4">
+    <company>Zus Health</company>
+    <title>Data Acquisition Software Engineering Co-op</title>
+    <location>Boston, MA</location>
+    <description>Software Engineering internship at Zus Health. Role: Data Acquisition Software Engineering Co-op. Location: Boston, MA. This role focuses on data engineering and analysis. You'll work with data pipelines, databases, and data processing systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="5">
+    <company>Mariana Minerals</company>
+    <title>Full-Stack Software Engineer Intern</title>
+    <location>SFAnn Arbor, MI</location>
+    <description>Software Engineering internship at Mariana Minerals. Role: Full-Stack Software Engineer Intern. Location: SFAnn Arbor, MI. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="6">
+    <company>Podium</company>
+    <title>Software Engineer Intern</title>
+    <location>Lehi, UT</location>
+    <description>Software Engineering internship at Podium. Role: Software Engineer Intern. Location: Lehi, UT. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="7">
+    <company>Nash</company>
+    <title>Full Stack Engineer Intern</title>
+    <location>SF</location>
+    <description>Software Engineering internship at Nash. Role: Full Stack Engineer Intern. Location: SF. This role involves full stack development covering both frontend and backend technologies. You'll work on complete web applications from database to user interface. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="8">
+    <company>Tessera Labs</company>
+    <title>Software Engineer Intern - Backend</title>
+    <location>San Jose, CA</location>
+    <description>Software Engineering internship at Tessera Labs. Role: Software Engineer Intern - Backend. Location: San Jose, CA. This role focuses on backend development and API development. You'll work with databases, server-side logic, and building scalable backend systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+</job_listings>

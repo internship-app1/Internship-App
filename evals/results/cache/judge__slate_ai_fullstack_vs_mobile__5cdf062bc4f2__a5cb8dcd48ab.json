@@ -1,0 +1,14 @@
+{
+  "scores_baseline": {
+    "ranking_accuracy": 4,
+    "reasoning_quality": 4,
+    "skill_gap_accuracy": 3
+  },
+  "scores_candidate": {
+    "ranking_accuracy": 5,
+    "reasoning_quality": 5,
+    "skill_gap_accuracy": 5
+  },
+  "winner": "candidate",
+  "justification": "Both outputs correctly separate iOS roles (low) from full-stack/AI roles (high), but A does it with slightly cleaner discrimination (iOS jobs at 18/22 vs B's 25/28, giving A a larger spread). More importantly, A's skill_gap_accuracy is superior: B fabricates gaps like 'Traditional ML frameworks beyond Scikit-Learn' for job 1 (candidate has Scikit-Learn in production Sleep-PSG), 'Java' and 'AWS ecosystem depth' for Amazon when Java is listed in the candidate's skills, 'C++/Objective-C' for Apple when those aren't clearly required for a generic SWE role, 'Node.js backend' as a gap for Nash Full Stack when the candidate explicitly lists Node.js, and 'Specific domain knowledge in minerals/resources industry' as a gap for Mariana Minerals which is irrelevant. A correctly returns empty gaps [] for strong matches and only lists genuine gaps for iOS roles. A's reasoning is equally specific \u2014 referencing 'Burnt (YC S25)', '1,000+ orders', 'internshipmatcher.com', 'dual-model Claude pipeline at 95%+ accuracy' \u2014 matching B's quality without the fabricated gap penalty."
+}

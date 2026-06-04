@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 5,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "B correctly excludes GraphQL (read-only queries written by others, no real implementation) and VS Code/Chrome DevTools (tools, not skills), landing on exactly the four validated skills: JavaScript, HTML, CSS, Git. A incorrectly includes GraphQL despite the candidate only running pre-written read-only queries, and also includes VS Code and Chrome DevTools which inflate the skill list beyond what is warranted. B also provides proper project classification (both correctly labeled 'Frontend Only') and extracts project details, while A provides no project data at all. Impact quality is roughly equal for both since the resume contains no real numeric metrics \u2014 B's internship duration note is marginally concrete but still vague. B wins decisively on skill_accuracy and conservatism, and adds value with correct project classification."
+}

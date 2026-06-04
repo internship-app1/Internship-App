@@ -1,0 +1,50 @@
+<job_listings>
+  <job id="1">
+    <company>Attentive</company>
+    <title>AI Intern</title>
+    <location>NYC</location>
+    <description>Software Engineering internship at Attentive. Role: AI Intern. Location: NYC. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="2">
+    <company>TikTok</company>
+    <title>Software Engineer Intern - Multiple Teams</title>
+    <location>San Jose, CA</location>
+    <description>Software Engineering internship at TikTok. Role: Software Engineer Intern - Multiple Teams. Location: San Jose, CA. ByteDance is a global technology company known for TikTok and other popular apps. This role involves developing software for global e-commerce and social media platforms. This position is suitable for students and recent graduates with strong programming skills and a passion for tech</description>
+  </job>
+  <job id="3">
+    <company>Axiomatic AI</company>
+    <title>Software Engineering Internship – Platform/DevOps 🛂</title>
+    <location>Boston, MA</location>
+    <description>Software Engineering internship at Axiomatic AI. Role: Software Engineering Internship – Platform/DevOps 🛂. Location: Boston, MA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="4">
+    <company>Neuralink</company>
+    <title>Software Engineer Intern - Infrastructure</title>
+    <location>Fremont, CA</location>
+    <description>Software Engineering internship at Neuralink. Role: Software Engineer Intern - Infrastructure. Location: Fremont, CA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="5">
+    <company>Great Question</company>
+    <title>AI Engineer Intern</title>
+    <location>SFRemote in USA</location>
+    <description>Software Engineering internship at Great Question. Role: AI Engineer Intern. Location: SFRemote in USA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="6">
+    <company>Palantir</company>
+    <title>Year at Palantir Intern - Forward Deployed Software Engineer - Commercial</title>
+    <location>Washington, DC</location>
+    <description>Software Engineering internship at Palantir. Role: Year at Palantir Intern - Forward Deployed Software Engineer - Commercial. Location: Washington, DC. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="7">
+    <company>Tessera Labs</company>
+    <title>Software Engineer Intern - Backend</title>
+    <location>San Jose, CA</location>
+    <description>Software Engineering internship at Tessera Labs. Role: Software Engineer Intern - Backend. Location: San Jose, CA. This role focuses on backend development and API development. You'll work with databases, server-side logic, and building scalable backend systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+  <job id="8">
+    <company>Context</company>
+    <title>Intern</title>
+    <location>SF</location>
+    <description>Software Engineering internship at Context. Role: Intern. Location: SF. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.</description>
+  </job>
+</job_listings>

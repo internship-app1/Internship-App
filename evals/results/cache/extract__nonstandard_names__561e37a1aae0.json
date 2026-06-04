@@ -1,0 +1,106 @@
+{
+  "skills": [
+    "Python",
+    "TypeScript",
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Flask",
+    "PostgreSQL",
+    "Docker",
+    "AWS",
+    "PyTorch",
+    "Git",
+    "Machine Learning"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Extracted skills with concrete project/work experience. Excluded 'Java' (no project evidence), 'Angular' (minimal use in admin dashboard only), 'scikit-learn' (mentioned only in internship context without detailed project), 'SQL' (subsumed by PostgreSQL), 'GCP' (single deployment mention), 'Redis' (supporting tech only), 'MySQL' (no evidence of use), and generic 'AI/ML' terms. Prioritized skills with demonstrated implementation across internship and major projects.",
+  "projects": [
+    {
+      "name": "Real-Time Chat App",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Node.js",
+        "React",
+        "TypeScript",
+        "Socket.io",
+        "Redis",
+        "Docker",
+        "AWS",
+        "GitHub Actions"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Full-stack real-time messaging application with Node.js backend and React frontend. Implemented WebSocket communication via Socket.io and Redis pub/sub for message distribution. Deployed to AWS EC2 using Docker containerization with automated CI/CD pipeline via GitHub Actions."
+    },
+    {
+      "name": "Sentiment Analysis Tool",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "PyTorch",
+        "HuggingFace",
+        "BERT",
+        "PostgreSQL",
+        "SQLAlchemy",
+        "Twitter API"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "NLP project fine-tuning BERT model for sentiment classification. Processed 80,000 tweets from Twitter API using PyTorch and HuggingFace. Results persisted in PostgreSQL database with SQLAlchemy ORM for querying."
+    },
+    {
+      "name": "DataCo ETL & ML Pipeline",
+      "type": "Data Engineering / ETL",
+      "technologies": [
+        "Python",
+        "Flask",
+        "scikit-learn",
+        "GCP Cloud Run",
+        "CSV"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Internship project involving ETL pipeline for CSV data cleaning and transformation. Built REST API using Flask and deployed to GCP Cloud Run. Implemented logistic regression model using scikit-learn for churn prediction."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Processed and analyzed 80,000 tweets for sentiment classification using fine-tuned BERT model, demonstrating ability to work with large-scale NLP datasets.",
+      "metric": "80,000 tweets processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Deployed real-time chat application to production AWS EC2 environment with automated CI/CD pipeline, demonstrating full deployment capability.",
+      "metric": "Production deployment on AWS EC2",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Built and deployed REST API to GCP Cloud Run during internship, showing cloud platform proficiency.",
+      "metric": "API deployed to GCP Cloud Run",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Python, TypeScript, JavaScript, React, Node.js, Flask, PostgreSQL, Docker, AWS, and PyTorch all have explicit project or work experience evidence. These are core technologies used across internship and major projects."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Git and Machine Learning extracted based on demonstrated use in projects (GitHub Actions CI/CD, BERT fine-tuning, scikit-learn implementation)."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.7,
+      "confidence_notes": "Excluded 'Angular' despite mention because it was only used for a 'small admin dashboard' with minimal evidence of substantial work. Excluded 'scikit-learn' from main skills list as it appeared only in internship context without dedicated project showcase. Excluded 'Java', 'SQL', 'GCP', 'Redis', and 'MySQL' due to lack of project-level evidence or being subsumed by more specific technologies."
+    }
+  ]
+}

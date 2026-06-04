@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "winner": "baseline",
+  "justification": "A is stronger on skill_accuracy (uses 'Anthropic/OpenAI/Gemini API' matching the resume exactly, vs B's 'Claude/OpenAI/Gemini API' which is a non-standard rewrite) and impact_quality (preserves all concrete metrics faithfully without adding fabricated bullets). B introduces hallucinated bullets in two experience entries: 'Developed data processing pipelines for monitoring infrastructure with automated testing' (SJSU Engineering) and 'Developed data ingestion pipeline processing structured academic data for machine learning-ready storage' (SCE) \u2014 neither appears in the resume, hurting skill_accuracy and conservatism. B also adds a fabricated bullet at Burnt ('Owned AI model integration from conception through production launch, processing real-time data across webhooks and APIs') that paraphrases existing content redundantly. Both outputs omit explicit project_classification taxonomy labels so both score neutral on that dimension. A's impact bullets are slightly more complete and precise, preserving all numeric anchors cleanly."
+}

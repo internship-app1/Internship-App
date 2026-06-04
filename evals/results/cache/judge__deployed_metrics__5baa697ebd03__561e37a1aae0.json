@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 1
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 4,
+    "project_classification": 5,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "B is comprehensively better across all dimensions. On skill_accuracy, both are solid but B omits Vercel and FastAPI which have weaker evidence (Vercel is deployment infra, FastAPI appears only in skills list without project corroboration), making B slightly more accurate. On conservatism, B's 12 skills is better calibrated than A's 14 which includes FastAPI and Vercel as marginal additions. On project_classification, B correctly classifies InternTracker as Full-Stack Web App and PricePulse as Data Engineering/ETL, while A extracts no projects at all (neutral score 3). On impact_quality, B captures all five concrete metrics the resume contains \u2014 1.8s load time reduction, 62% query improvement, 500+ users, $5,000 prize, 80% Redis cache improvement, and 22,000 MAUs \u2014 with specific numbers and dimensions, while A extracts zero impact highlights, a critical failure given the resume's rich quantitative evidence."
+}

@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 5,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A outperforms B across nearly every dimension. On skill_accuracy, A correctly excludes C++ and Java (no project evidence) and avoids vague meta-skills like 'Computer Vision', 'Deep Learning', 'Machine Learning', and 'Data Preprocessing' that B inflates the list with. B includes 20 skills including undemonstrated ones (C++, Java, scikit-learn, AWS S3) and abstract category labels that are not skills per se. On conservatism, B's 20-item list is bloated \u2014 especially with course-name-level abstractions \u2014 while A's 12 items are well-calibrated to demonstrated evidence. On project_classification, A correctly classifies both projects as AI/ML (Computer Vision) and provides full structured project entries; B extracts no projects at all, earning a neutral 3. On impact_quality, A captures all key metrics: 91% mAP, 12% improvement over baseline, 28 FPS on NVIDIA T4, live deployment URL, and 50,000-image preprocessing scale \u2014 all concrete and specific. B extracts no impact highlights whatsoever, earning only a neutral 3."
+}

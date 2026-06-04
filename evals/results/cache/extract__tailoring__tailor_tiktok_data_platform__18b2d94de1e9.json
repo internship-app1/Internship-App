@@ -1,0 +1,86 @@
+{
+  "name": "Sujan Nandikol Sunilkumar",
+  "email": "sujan.nandikolsunilkumar@sjsu.edu",
+  "phone": "(925)-967-6795",
+  "website": "https://suqjan.com",
+  "github": "https://github.com/sujan",
+  "linkedin": "https://linkedin.com/in/sujan",
+  "experience": [
+    {
+      "company": "Burnt (YC S25)",
+      "location": "San Francisco, CA",
+      "title": "Full Stack Developer Intern",
+      "dates": "July 2025 \u2013 September 2025",
+      "bullets": [
+        "Shipped production AI order agent (Claude Sonnet + RAG) processing 1,000+ orders across 7 enterprise clients",
+        "Built Python + React internal tools: Intercom ticketing (5+ min saved/request, 50+ customers), AWS S3 store (250+ files)",
+        "Engineered automated LLM validation layer with vector-store correction memory, raising precision across production orders",
+        "Owned multi-channel integration (webhooks, WhatsApp, email, phone) from conception through deployment"
+      ]
+    },
+    {
+      "company": "SJSU College of Engineering",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "June 2025 \u2013 August 2025",
+      "bullets": [
+        "Built Python wrapper around Grafanalib achieving 83% code reduction (30+ lines to 5) on 3-person engineering team",
+        "Migrated 7+ legacy dashboards across 3 Grafana environments with comprehensive unit test coverage"
+      ]
+    },
+    {
+      "company": "SJSU Software & Computer Engineering Society",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "February 2025 \u2013 Present",
+      "bullets": [
+        "Building professor review platform for 30,000+ students using TypeScript, React, Node.js, Drizzle ORM",
+        "Shipped review submission flow and Python GraphQL webscraper for course data ingestion in agile sprints"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "school": "San Jose State University",
+      "location": "San Jose, CA",
+      "degree": "Bachelor of Science in Computer Science and Linguistics",
+      "dates": "May 2027"
+    }
+  ],
+  "skills": {
+    "Programming Languages": "Python, TypeScript, JavaScript, SQL, Java",
+    "AI/ML Tools": "Claude API, OpenAI API, Gemini API, LangChain, RAG, Vector Stores, Prompt Engineering, MCP",
+    "Frameworks & Libraries": "FastAPI, React.js, Node.js, Flask, Scikit-Learn, MNE, Spring Boot, Tailwind CSS",
+    "Data Platform & Infrastructure": "PostgreSQL, Redis, AWS S3, AWS EC2, Docker, WebSockets, ARQ, Alembic",
+    "Developer Tools": "Git, GitHub Actions, GCP, Linux, JWKS, SSE"
+  },
+  "projects": [
+    {
+      "name": "Internship Matcher (React, TypeScript, FastAPI, Claude, PostgreSQL, Redis, AWS S3)",
+      "dates": "October 2025 \u2013 Present",
+      "bullets": [
+        "Deployed production platform at internshipmatcher.com: multi-tier data layer (PostgreSQL, Redis, AWS S3), Clerk JWT auth",
+        "Dual-model Claude pipeline (Haiku 4.5 extraction, Sonnet 4.5 re-ranking) achieving 95%+ accuracy with SSE streaming",
+        "Reduced inference latency 52% (270s\u2192130s) via dynamic batching and prompt caching across 30+ parallel positions"
+      ]
+    },
+    {
+      "name": "Sleep-PSG Scoring (React, FastAPI, MNE, Scikit-Learn, Redis, WebSockets)",
+      "dates": "January 2026 \u2013 April 2026",
+      "bullets": [
+        "Built automated sleep-stage ML platform: 98% time reduction (2+ hrs\u21922 min), 83% balanced accuracy vs clinician labels",
+        "Async distributed EEG pipeline (Redis + ARQ): EDF parsing, spectral features, Scikit-Learn classifiers per patient",
+        "Sub-10ms WebSocket streaming to React dashboard rendering live EEG waveforms and hypnograms for QA"
+      ]
+    },
+    {
+      "name": "Cold Leads Agent (FastAPI, Claude Haiku + Sonnet, Cal.com, Linq, PostgreSQL)",
+      "dates": "May 2026 \u2013 Present",
+      "bullets": [
+        "Deployed autonomous SMS lead-qualification agent: FSM-driven pipeline with dual-model Claude, auto-booking qualified leads",
+        "Multi-service integration: HMAC-signed webhooks, Cal.com v2 API, SendGrid escalation, async Postgres with Alembic",
+        "Live in production for Bay Area real estate client, saving ~5 hrs/week manual outreach"
+      ]
+    }
+  ]
+}

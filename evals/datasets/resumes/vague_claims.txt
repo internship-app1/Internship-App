@@ -1,0 +1,33 @@
+Jordan Kim
+jordan.kim@email.com | github.com/jordankim
+
+EDUCATION
+B.S. Computer Science, University of Washington | Expected Jun 2026
+
+EXPERIENCE
+Web Development Intern, Small Agency LLC (May 2024 – Aug 2024)
+- Made the website significantly faster
+- Improved the user experience so customers were happier
+- Fixed various bugs that had been bothering users
+- Helped the team work better together on a day-to-day basis
+
+PROJECTS
+Personal Portfolio Website (Jan 2024)
+- A website about me, made with HTML and CSS
+- People seemed to like the design
+- Made it look better than before
+
+Todo List App (Oct 2023)
+- A todo list built with React
+- Added some features that users found useful
+- The app performed well in testing
+
+Weather Dashboard (Aug 2023)
+- Used a public API to show weather information
+- Made it visually appealing
+- Worked better than the version I started with
+
+SKILLS
+Languages: JavaScript, HTML, CSS, Python (learning)
+Frameworks: React
+Tools: Git

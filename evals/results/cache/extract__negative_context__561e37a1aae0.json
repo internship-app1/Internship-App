@@ -1,0 +1,63 @@
+{
+  "skills": [
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with demonstrated work or project experience. Excluded Python (explicitly stated never used professionally), Rust (on future learning list), React (wants to learn after graduation), Node.js (mentioned in job posting, not used), Tailwind CSS (mentioned in internship description, not used), and Figma (reviewer only, not a user). GraphQL excluded as read-only exposure without implementation. VS Code and Chrome DevTools excluded as tools rather than technical skills.",
+  "projects": [
+    {
+      "name": "Task Manager Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "JavaScript",
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Simple task management webpage with localStorage persistence for data retention across page refreshes. Frontend-only implementation demonstrating basic DOM manipulation and browser storage APIs."
+    },
+    {
+      "name": "Personal Portfolio",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Static portfolio site hosted on GitHub Pages. Demonstrates basic HTML/CSS skills and Git deployment workflow."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built interactive UI components during Frontend Engineer internship at Webflow Corp, demonstrating practical application of vanilla JavaScript and modern web standards in a professional environment.",
+      "metric": "3-month internship (May-Aug 2024)",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Clear distinction made between actual skills (JavaScript, HTML, CSS, Git) and aspirational/unexplored technologies. Resume explicitly states 'never used Python professionally', 'have not yet learned Rust', and 'want to learn React after graduation', all of which were correctly excluded. Internship experience provides concrete evidence of JavaScript and web development skills."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Project classification straightforward: both projects are frontend-only with no backend infrastructure. Task Manager uses localStorage (client-side), not a backend database. No deployment links provided for either project."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "Limited impact metrics available. Internship duration is the only concrete quantifiable achievement. Projects lack deployment evidence, user metrics, or performance benchmarks. Student status (graduating May 2025) explains limited professional impact data."
+    }
+  ]
+}

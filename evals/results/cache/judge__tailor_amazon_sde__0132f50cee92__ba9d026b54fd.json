@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A is better on skill_accuracy and conservatism. Both outputs include Java, which appears only in the coursework/skills list with no demonstrated project use \u2014 a minor shared weakness. However, B drops the AI Tools category entirely (LangChain, RAG, Prompt Engineering, Vector Stores, MCP), which are well-demonstrated throughout the resume (Burnt internship, Internship Matcher, Cold Leads Agent). This makes B's skill extraction meaningfully less accurate and less complete for a candidate whose core differentiator is AI tooling. A correctly retains these. On conservatism, A's skill set is better calibrated \u2014 B under-extracts by omitting a whole demonstrated category. Both outputs capture all concrete metrics faithfully (1,000+ orders, 83% code reduction, 30,000+ students, 52% latency reduction, 98% time reduction, ~5 hrs/week saved), so impact_quality is tied at 5. Project classification is equivalent \u2014 neither output explicitly labels project types with taxonomy terms, but both correctly represent the nature of each project. A wins on the dimensions that matter most for this technically rich resume."
+}

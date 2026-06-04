@@ -1,0 +1,37 @@
+Emma Walsh
+emma.walsh@email.com | emmawalsh.design | github.com/emmawalsh
+
+EDUCATION
+B.S. Computer Science, NYU | Expected May 2026
+Minor in Studio Art
+
+PROJECTS
+Personal Portfolio Site (Aug 2024)
+- Designed and coded a portfolio website using HTML, CSS, and vanilla JavaScript
+- Implemented smooth scroll animations, CSS Grid layout, and a custom dark mode toggle
+- Hosted on GitHub Pages at emmawalsh.design
+- No backend, no database — purely static, focused on visual design
+
+UI Component Library (Apr 2024 – Jun 2024)
+- Built a CSS-only component library (buttons, cards, modals, tooltips) in raw CSS3
+- Published as an npm package with 0 JavaScript dependencies
+- Focused on accessibility: all components pass WCAG 2.1 AA contrast ratios
+
+Landing Page Clones (Jan 2024 – Mar 2024)
+- Recreated pixel-perfect clones of Stripe, Linear, and Vercel landing pages for practice
+- Used HTML and CSS exclusively — no frameworks
+- Focused on mastering flexbox, grid, custom properties, and CSS animations
+
+Framer Motion Showcase (Oct 2023)
+- Built a collection of React page transition animations using Framer Motion
+- Pure frontend, no data, no backend — purely exploring animation APIs
+
+EXPERIENCE
+Design Intern, Creative Agency (Jun 2024 – Aug 2024)
+- Created mockups in Figma for client landing pages
+- Coded 2 landing pages in HTML/CSS from Figma specs
+
+SKILLS
+Languages: HTML, CSS, JavaScript, React
+Design: Figma, CSS animations, Framer Motion
+Tools: Git, GitHub Pages, npm

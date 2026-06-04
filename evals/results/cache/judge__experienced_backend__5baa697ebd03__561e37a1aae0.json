@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A dumps all 22 skills from the skills section verbatim (Bash, MySQL, Elasticsearch, Terraform, Git, Datadog, PagerDuty, Spring Boot, Celery) without filtering for depth of demonstrated use, bloating well past the expected 10-14 range. B is well-calibrated at 12 skills, keeping only those with clear corroboration in work experience. B also extracts rich, concrete impact highlights with precise metrics (120k RPS, P99 380ms\u219295ms, 2M daily connections, 500k DAU) that A omits entirely. B's project classifications are reasonable (System/Infrastructure for rate-limiting and DB migration, Data Engineering/ETL for the ingestion pipeline), though the LinkedIn recommendation engine backend is better classified as a Developer Tool or AI/ML (Traditional/Analytics) than Full-Stack Web App. Both outputs correctly identify experience level, years, and student status. B wins decisively on conservatism and impact quality."
+}

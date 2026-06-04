@@ -1,0 +1,105 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (YC S25) using Claude Sonnet+Haiku, RAG, and prompt engineering; owns internshipmatcher.com with dual-model Claude pipeline. Direct AI application development experience.",
+      "skill_matches": [
+        "Python",
+        "AI",
+        "Claude",
+        "RAG",
+        "FastAPI"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 72,
+      "reasoning": "Decent match \u2014 candidate has strong algorithms/data structures foundation and production Python+React work at Burnt and SJSU, but role is generic SDE with no specific stack mentioned to validate deeper fit.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "algorithms",
+        "data structures"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 22,
+      "reasoning": "Poor fit \u2014 role requires iOS/Swift development; resume shows only React/Python/FastAPI work with zero mobile, Swift, or iOS experience across all projects and internships.",
+      "skill_matches": [],
+      "skill_gaps": [
+        "Swift",
+        "iOS",
+        "mobile development"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 18,
+      "reasoning": "Poor fit \u2014 role requires iOS development; candidate has no Swift, Objective-C, or mobile experience. All projects are web-based (React, FastAPI, TypeScript).",
+      "skill_matches": [],
+      "skill_gaps": [
+        "Swift",
+        "iOS",
+        "Objective-C",
+        "mobile development"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 86,
+      "reasoning": "Excellent fit \u2014 candidate built AI agents at Burnt (Claude, RAG, 1,000+ production orders) and internshipmatcher.com (dual-model Claude pipeline); San Jose location matches. AI-native role aligns with LLM application work.",
+      "skill_matches": [
+        "Python",
+        "AI",
+        "Claude",
+        "FastAPI",
+        "machine learning"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 68,
+      "reasoning": "Decent match \u2014 candidate has strong CS fundamentals and production experience at Burnt and SJSU, but Apple's generic SDE role lacks specific stack details to confirm alignment beyond general programming.",
+      "skill_matches": [
+        "Python",
+        "algorithms",
+        "data structures"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 7,
+      "match_score": 90,
+      "reasoning": "Excellent fit \u2014 candidate shipped full-stack React+Python apps at Burnt (YC S25) and owns internshipmatcher.com (React+TypeScript frontend, FastAPI backend, PostgreSQL). Exact stack match for full-stack role.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Node.js"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 84,
+      "reasoning": "Strong fit \u2014 candidate has production full-stack experience at Burnt (React+Python) and SJSU (TypeScript+React+Node.js), plus internshipmatcher.com (React+FastAPI+PostgreSQL). Matches full-stack requirements well.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Node.js"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

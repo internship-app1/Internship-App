@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "tie",
+  "justification": "Both extractions are nearly identical in quality across all four dimensions. Both correctly extract the same skill set (including Scikit-Learn from demonstrated project use), maintain appropriate conservatism, omit explicit project_type classification fields (making both neutral on that dimension), and capture the same concrete metrics (52% latency reduction, 98% time reduction, 83% accuracy, 5 hrs/week saved, 1,000+ orders, 30,000+ students). Minor differences: B preserves the original resume language more faithfully and includes Coursework as a skill category, while A adds slightly more editorial polish to bullets. Neither difference is significant enough to declare a clear winner \u2014 the outputs are genuinely equivalent within one point on every dimension."
+}

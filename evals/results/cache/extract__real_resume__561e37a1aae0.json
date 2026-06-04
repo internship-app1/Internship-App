@@ -1,0 +1,82 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "Java",
+    "Machine Learning",
+    "HTML"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted skills from concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning) and GitHub projects (HTML, Java). Excluded CSS, frameworks, and tools mentioned only in self-reported sections without project evidence. Music and blogging skills excluded as non-technical.",
+  "projects": [
+    {
+      "name": "AI Scribe for Physician-Patient Consultations",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built AI models to automatically summarize physician-patient consultations, helping doctors save time. Developed patient data models using machine learning principles in Java and utilized Python/JavaScript libraries."
+    },
+    {
+      "name": "Historical Decolonization Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": true,
+      "summary": "Created a website explaining the historical process of decolonization using HTML and Java. Published on GitHub."
+    },
+    {
+      "name": "NFL Draft Team Simulation Game",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": true,
+      "summary": "Interactive game allowing users to take control of their favorite NFL team for the 2021 Draft, showing how different player selections would impact the team today. Published on GitHub."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built AI scribe system at Atelia Software to automatically summarize physician-patient consultations, directly supporting the company's goal of saving doctors' time.",
+      "metric": "Automated consultation summarization for healthcare professionals",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Organized and judged MSJ Sports Analytics Club's annual Datathon where members analyzed NBA, MLB, and NFL data with judges from professional sports organizations.",
+      "metric": "Multi-sport data analysis competition with professional oversight",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Python, JavaScript, and Java directly mentioned in Atelia Software work experience with specific project context (AI scribes, patient data models). Machine Learning explicitly stated as principle used in model development."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.88,
+      "confidence_notes": "HTML and Java confirmed through GitHub projects with direct links and descriptions of completed work (decolonization website, NFL Draft game)."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.65,
+      "confidence_notes": "AI Scribe project lacks deployment confirmation or specific metrics. Classified as AI/ML (NLP/GenAI) based on consultation summarization context, but no evidence of production deployment or performance metrics."
+    }
+  ]
+}

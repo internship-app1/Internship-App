@@ -1,0 +1,13 @@
+{
+  "skills": [
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "React",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with demonstrated project or work experience. Python was excluded because resume explicitly states 'learning' (future skill, not current). JavaScript, HTML, and CSS are evidenced by portfolio website and weather dashboard projects. React is confirmed through todo list app project. Git is listed in skills section. Excluded vague claims like 'made website faster' or 'improved UX' as they don't indicate specific technical skills. Resume shows internship experience but lacks technical detail about what was actually built or used."
+}

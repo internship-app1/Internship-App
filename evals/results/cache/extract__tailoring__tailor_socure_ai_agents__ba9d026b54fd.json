@@ -1,0 +1,84 @@
+{
+  "name": "Sujan Nandikol Sunilkumar",
+  "email": "sujan.nandikolsunilkumar@sjsu.edu",
+  "phone": "(925)-967-6795",
+  "website": "https://suqjan.com",
+  "github": "https://github.com/sujan",
+  "linkedin": "https://linkedin.com/in/sujan",
+  "experience": [
+    {
+      "company": "Burnt (YC S25)",
+      "location": "San Francisco, CA",
+      "title": "Full Stack Developer Intern",
+      "dates": "July 2025 \u2013 September 2025",
+      "bullets": [
+        "Shipped AI agent for B2B order automation (Claude Sonnet, RAG) across 7 enterprise clients, 1,000+ orders",
+        "Built React + Python internal tools: Intercom ticketing (5+ min saved/request, 50+ customers), AWS S3 store for 250+ files",
+        "Engineered LLM validation layer with human-in-the-loop QA and vector-store memory, raising precision across 1,000+ orders"
+      ]
+    },
+    {
+      "company": "SJSU College of Engineering",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "June 2025 \u2013 August 2025",
+      "bullets": [
+        "Built Python wrapper around Grafanalib on 3-person team, achieving 83% code reduction (30+ lines to 5)",
+        "Migrated 7+ legacy dashboards across 3 Grafana environments with unit tests on dashboard layer"
+      ]
+    },
+    {
+      "company": "SJSU Software & Computer Engineering Society",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "February 2025 \u2013 Present",
+      "bullets": [
+        "Building professor review platform for 30,000+ students (TypeScript, React, Node.js, Drizzle ORM)",
+        "Shipped review submission flow and Python GraphQL webscraper for course data ingestion across agile sprints"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "school": "San Jose State University",
+      "location": "San Jose, CA",
+      "degree": "Bachelor of Science in Computer Science and Linguistics",
+      "dates": "May 2027"
+    }
+  ],
+  "skills": {
+    "Programming Languages": "Python, TypeScript, JavaScript, SQL, Java",
+    "AI & Machine Learning": "Anthropic/OpenAI/Gemini API, LangChain, RAG, Prompt Engineering, Vector Stores, MCP, Scikit-Learn",
+    "Frameworks & Libraries": "React.js, Node.js, FastAPI, Tailwind CSS, Flask, Spring Boot",
+    "Data & Infrastructure": "PostgreSQL, Redis, AWS (EC2/S3), Docker, Git, GitHub Actions, GCP, Linux"
+  },
+  "projects": [
+    {
+      "name": "Internship Matcher (React, TypeScript, FastAPI, Claude, PostgreSQL, Redis, AWS S3)",
+      "dates": "October 2025 \u2013 Present",
+      "bullets": [
+        "Owned end-to-end AI-powered matching platform: React frontend, FastAPI backend, multi-tier data layer (PostgreSQL, Redis, S3)",
+        "Dual-model Claude pipeline (Haiku 4.5 skill extraction, Sonnet 4.5 re-ranking) at 95%+ accuracy with SSE-streamed progress",
+        "Parallel processing 30+ positions, 52% latency reduction (270s\u2192130s) via dynamic batching and prompt caching"
+      ]
+    },
+    {
+      "name": "Sleep-PSG Scoring (React, FastAPI, MNE, Scikit-Learn, Redis, WebSockets)",
+      "dates": "January 2026 \u2013 April 2026",
+      "bullets": [
+        "Built automated PSG sleep-stage scoring with 98% time reduction (2+ hrs\u21922 min), 83% balanced accuracy vs clinician labels",
+        "Async EEG data processing pipeline (Redis + ARQ): distributed EDF parsing, spectral features, Scikit-Learn classifiers",
+        "Sub-10ms WebSocket streaming to React dashboard rendering live EEG waveforms and hypnograms for QA review"
+      ]
+    },
+    {
+      "name": "Cold Leads Agent (FastAPI, Claude Haiku + Sonnet, Cal.com, Linq, Postgres)",
+      "dates": "May 2026 \u2013 Present",
+      "bullets": [
+        "Built autonomous AI agent for lead-qualification SMS: FSM-driven pipeline with intent classification, Cal.com auto-booking",
+        "Multi-service integration: HMAC-signed Linq webhooks, Cal.com v2 booking, SendGrid escalation; dual-model Claude on Postgres",
+        "Live in production for Bay Area real estate client, auto-booking qualified leads and saving ~5 hrs/week manual outreach"
+      ]
+    }
+  ]
+}

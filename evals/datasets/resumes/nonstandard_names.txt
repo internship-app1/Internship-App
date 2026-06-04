@@ -1,0 +1,30 @@
+Marcus Lee
+marcus.lee@gmail.com | github.com/marcuslee
+
+EDUCATION
+B.S. Computer Science, Georgia Tech | May 2025
+
+EXPERIENCE
+Software Engineering Intern, DataCo (Jun 2024 – Aug 2024)
+- Wrote Py scripts to clean and transform CSV datasets (ETL pipeline)
+- Built a REST API using Flask and deployed it to GCP Cloud Run
+- Used TS for a small admin dashboard in Angular
+- Implemented an ML model (logistic regression) using scikit-learn to predict churn
+
+PROJECTS
+Sentiment Analysis Tool (Feb 2024 – Apr 2024)
+- Fine-tuned a BERT model for sentiment classification using the HuggingFace library
+- Used Py 3.11, PyTorch, and NumPy; processed 80,000 tweets from the Twitter API
+- Results stored in a PostgreSQL DB, queried via SQLAlchemy
+
+Real-Time Chat App (Oct 2023 – Jan 2024)
+- Full-stack app: Node.js backend, React frontend with TS (TSX components)
+- Used WebSockets (Socket.io) and Redis pub/sub for real-time messaging
+- Deployed on AWS EC2 with Docker; CI/CD via GitHub Actions
+
+SKILLS
+Languages: Py, JS/TS, SQL, Java
+Frameworks: React, Angular, Flask, Node.js
+AI/ML: ML, AI, PyTorch, scikit-learn, HuggingFace
+Databases: PostgreSQL, Redis, MySQL
+Cloud: AWS, GCP, Docker, Git

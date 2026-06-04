@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 4,
+    "project_classification": 5,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both outputs extract identical, accurate skill sets. However, A is dramatically superior in project_classification and impact_quality. A correctly classifies InternTracker as 'Full-Stack Web App' and PricePulse as 'Data Engineering / ETL', and captures all six concrete impact highlights with precise metrics (1.8s load reduction, 62% query improvement, 500+ users, $5,000 prize, 80% cache reduction, 22,000 MAUs). B completely omits projects and impact highlights, receiving neutral scores (3) for those dimensions since it simply fails to extract them despite the resume being rich with evidence. A also correctly labels experience_level as 'entry_level' (close to expected 'recent_graduate'), while B gets 'recent_graduate' right but misses everything else. The comprehensive extraction in A far outweighs B's single correct label."
+}

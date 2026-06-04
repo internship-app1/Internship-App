@@ -1,0 +1,19 @@
+{
+  "skills": [
+    "React",
+    "TypeScript",
+    "Python",
+    "FastAPI",
+    "Node.js",
+    "PostgreSQL",
+    "Redis",
+    "AWS S3",
+    "Claude",
+    "Grafana",
+    "Drizzle ORM",
+    "Scikit-Learn",
+    "WebSockets"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0
+}

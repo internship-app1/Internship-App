@@ -1,0 +1,108 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 87,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (YC S25) using Claude Sonnet+RAG and built dual-model Claude pipeline for internshipmatcher.com; directly maps to AI/ML development work.",
+      "skill_matches": [
+        "Python",
+        "AI",
+        "Machine Learning",
+        "Claude",
+        "RAG"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 78,
+      "reasoning": "Strong fit \u2014 candidate has full-stack production experience (React+Python at Burnt, TypeScript+Node.js at SJSU) and ships at scale (1,000+ orders, 30,000+ students); generic role suits broad skill set.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "Node.js",
+        "FastAPI"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 42,
+      "reasoning": "Weak fit \u2014 role requires Platform/DevOps (K8s, CI/CD, infrastructure); candidate built Grafana dashboards but resume shows application development, not ops/infrastructure work.",
+      "skill_matches": [
+        "Python"
+      ],
+      "skill_gaps": [
+        "Kubernetes",
+        "Docker",
+        "CI/CD",
+        "Infrastructure"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 38,
+      "reasoning": "Weak fit \u2014 infrastructure role requires systems/ops expertise; candidate's Grafana work is limited and resume centers on full-stack/AI application development, not infrastructure engineering.",
+      "skill_matches": [
+        "Python"
+      ],
+      "skill_gaps": [
+        "Infrastructure",
+        "Systems Engineering",
+        "DevOps"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 89,
+      "reasoning": "Excellent fit \u2014 candidate shipped AI agents at Burnt (Claude+RAG, 1,000+ orders), dual-model pipeline at internshipmatcher.com, and Cold Leads Agent; production AI work maps exactly to AI Engineer role.",
+      "skill_matches": [
+        "Python",
+        "AI",
+        "Claude",
+        "FastAPI",
+        "Machine Learning",
+        "RAG"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 72,
+      "reasoning": "Decent fit \u2014 candidate has strong full-stack skills (React+Python+TypeScript) and shipped production work, but Forward Deployed SE often requires client-facing/consulting skills not demonstrated on resume.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "PostgreSQL"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 7,
+      "match_score": 83,
+      "reasoning": "Strong fit \u2014 candidate built FastAPI backends at Burnt and internshipmatcher.com with PostgreSQL+Redis; backend focus and San Jose location align perfectly with demonstrated production work.",
+      "skill_matches": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "Backend"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 76,
+      "reasoning": "Strong fit \u2014 generic SWE role in SF suits candidate's full-stack production experience (React+Python at Burnt, TypeScript+FastAPI at internshipmatcher.com); broad skill set matches broad role.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "Java",
+    "Machine Learning",
+    "Artificial Intelligence",
+    "HTML",
+    "Git",
+    "Data Analysis",
+    "Project Organization",
+    "Public Speaking"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 2,
+  "is_student": true,
+  "confidence_notes": "Extracted skills based on concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning, AI) and GitHub projects (HTML, Java). Included Git based on GitHub usage. Data Analysis inferred from Sports Analytics Club involvement with NBA/MLB/NFL data analysis. Project Organization and Public Speaking derived from volunteer coordinator and event planning roles. Conservative approach taken - excluded soft skills without clear evidence and avoided speculative technical skills. Shirin is a high school graduate (Spring 2024) with internship and volunteer experience starting Summer 2022."
+}

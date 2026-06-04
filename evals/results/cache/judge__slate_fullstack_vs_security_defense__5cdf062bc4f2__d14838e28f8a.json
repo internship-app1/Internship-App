@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "baseline",
+  "justification": "Both outputs handle skill accuracy and conservatism similarly, listing relevant demonstrated skills without hallucination. Neither output classifies projects explicitly (both are job-matching outputs, not project extraction), so project_classification is neutral for both. B wins on impact_quality: it surfaces more concrete evidence in its reasoning \u2014 citing '1,000+ orders,' '95%+ accuracy,' '7 enterprise clients,' bio-signal processing from Sleep-PSG, and Grafana monitoring work \u2014 giving richer, more evidence-grounded justifications per role. B also better aligns with expected ranking behavior: it scores Leidos (job 4) at 65 vs A's 42 (A is overly harsh but directionally correct), and more importantly B gives Docugami (job 7) a 76 and LegalZoom AI Enablement (job 8) a 90, while A scores Docugami only 70 and underweights the nuanced reasoning for GenBio (81 vs 76). B's reasoning for GenBio correctly identifies the Sleep-PSG EEG/bio-signal work as a differentiating signal, which A misses entirely. Overall B produces more precise, evidence-backed reasoning that better reflects the candidate's demonstrated strengths."
+}

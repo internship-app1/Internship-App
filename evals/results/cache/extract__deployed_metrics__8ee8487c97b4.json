@@ -1,0 +1,103 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "SQL",
+    "React",
+    "Node.js",
+    "Express",
+    "FastAPI",
+    "PostgreSQL",
+    "Redis",
+    "AWS",
+    "Vercel",
+    "Git",
+    "Docker"
+  ],
+  "experience_level": "entry_level",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Recent graduate (May 2024) with 3 months of internship experience and 2 completed projects. All skills extracted from demonstrated work experience, internship responsibilities, and project implementations. No speculative or aspirational skills included.",
+  "projects": [
+    {
+      "name": "InternTracker \u2014 Job Application Tracker",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "React",
+        "Node.js",
+        "PostgreSQL",
+        "AWS EC2",
+        "Clerk",
+        "SendGrid"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": true,
+      "summary": "Full-stack SaaS application for tracking job applications with authentication, drag-and-drop Kanban board, and automated email reminders. Deployed to AWS EC2 and live at interntracker.io. Achieved 500+ registered users within 2 weeks of launch and won Best Solo Hack at HackUCLA 2024."
+    },
+    {
+      "name": "PricePulse \u2014 E-Commerce Price Monitor",
+      "type": "Data Engineering / ETL",
+      "technologies": [
+        "Python",
+        "AWS Lambda",
+        "Redis",
+        "Email API"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Automated price monitoring system using Python web scraper deployed on AWS Lambda as a cron job. Monitors 3,000+ product listings daily, sends email alerts for price drops >15%, and handles 10,000+ requests per day with Redis caching optimization."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Optimized React dashboard at FinanceApp Inc. through code-splitting and lazy loading of chart components, significantly improving user experience for production application.",
+      "metric": "1.8 seconds reduction in page load time (from 3.2s to 1.4s)",
+      "dimension": "speed"
+    },
+    {
+      "description": "Enhanced database performance at FinanceApp Inc. by adding composite indexes to slow PostgreSQL queries, improving query execution efficiency.",
+      "metric": "62% reduction in average query time (from 850ms to 320ms)",
+      "dimension": "performance"
+    },
+    {
+      "description": "Deployed InternTracker SaaS application to production on AWS EC2 with live domain, achieving rapid user adoption.",
+      "metric": "500+ registered users within 2 weeks of launch",
+      "dimension": "scale"
+    },
+    {
+      "description": "Won competitive hackathon award for InternTracker solo project at HackUCLA 2024.",
+      "metric": "$5,000 prize for Best Solo Hack",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Deployed PricePulse scraper on AWS Lambda handling high-volume daily monitoring with optimized caching strategy.",
+      "metric": "10,000+ requests per day; 80% reduction in repeat API calls via Redis caching",
+      "dimension": "scale"
+    },
+    {
+      "description": "Shipped production feature at FinanceApp Inc. serving substantial user base with optimized performance.",
+      "metric": "22,000 monthly active users",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All skills explicitly listed in resume SKILLS section with direct evidence from internship and project work. No inferred or aspirational skills included."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Projects clearly classified based on technology stack and functionality. Deployment status confirmed through explicit mentions of live URLs, AWS services, and production environments."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.93,
+      "confidence_notes": "Impact metrics extracted directly from resume with concrete numerical evidence (load time reduction, query optimization, user counts, prize money, request volume). All metrics are quantified and verifiable."
+    }
+  ]
+}

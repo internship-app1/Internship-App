@@ -1,0 +1,32 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "SQL",
+    "Java",
+    "React",
+    "Angular",
+    "Flask",
+    "Node.js",
+    "Machine Learning",
+    "PyTorch",
+    "scikit-learn",
+    "HuggingFace",
+    "PostgreSQL",
+    "Redis",
+    "MySQL",
+    "AWS",
+    "GCP",
+    "Docker",
+    "Git",
+    "REST APIs",
+    "ETL",
+    "Socket.io",
+    "SQLAlchemy"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted skills based on concrete work experience (internship) and completed projects with demonstrated technical implementation. Standardized skill names (e.g., 'Python' instead of 'Py', 'TypeScript' instead of 'TS', 'Machine Learning' instead of 'ML'). Included specific libraries and tools with clear project evidence (PyTorch, scikit-learn, HuggingFace, Socket.io, SQLAlchemy). Excluded vague 'AI' in favor of more specific 'Machine Learning'. Student status confirmed by May 2025 graduation date and internship-based experience."
+}

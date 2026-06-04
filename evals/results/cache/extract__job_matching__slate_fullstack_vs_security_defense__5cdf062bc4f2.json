@@ -1,0 +1,138 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 92,
+      "reasoning": "Exceptional fit. Candidate shipped production AI agents at YC startup with Claude (Haiku/Sonnet), RAG, and multi-channel integration across 1,000+ orders. Internship Matcher project demonstrates dual-model Claude pipeline with 95%+ accuracy. Strong full-stack skills (React, Python, FastAPI) complement AI work.",
+      "skill_matches": [
+        "AI/ML",
+        "Claude LLM",
+        "Python",
+        "React",
+        "Production deployment",
+        "RAG"
+      ],
+      "skill_gaps": [
+        "Traditional ML frameworks beyond LLMs"
+      ]
+    },
+    {
+      "job_id": 2,
+      "match_score": 78,
+      "reasoning": "Solid general SWE fit with proven internship experience at YC startup and SJSU. Strong fundamentals in Python, TypeScript, React, databases (PostgreSQL, Redis). However, lacks Oracle-specific enterprise tech stack experience. Projects show good algorithmic thinking but less emphasis on data structures.",
+      "skill_matches": [
+        "Python",
+        "Full-stack development",
+        "Database systems",
+        "API design"
+      ],
+      "skill_gaps": [
+        "Java/enterprise frameworks",
+        "Oracle tech stack",
+        "Large-scale distributed systems"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 71,
+      "reasoning": "Moderate fit for security-focused role. Strong general SWE skills but no demonstrated security, static analysis, or code scanning experience. GraphQL webscraper and validation layers show some relevant thinking. Location (London) may be barrier for US-based student.",
+      "skill_matches": [
+        "TypeScript",
+        "Python",
+        "Code quality tooling",
+        "Testing"
+      ],
+      "skill_gaps": [
+        "Security engineering",
+        "Static analysis",
+        "SAST/DAST tools",
+        "UK work authorization"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 65,
+      "reasoning": "Below-average fit. Systems engineering typically requires hardware/software integration, embedded systems, or defense contractor experience. Candidate's web/AI focus doesn't align. Grafana dashboard work shows some systems monitoring exposure but insufficient depth.",
+      "skill_matches": [
+        "Python",
+        "Monitoring tools (Grafana)",
+        "Testing"
+      ],
+      "skill_gaps": [
+        "Systems architecture",
+        "Hardware integration",
+        "Defense/government clearance",
+        "C/C++"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 88,
+      "reasoning": "Excellent full-stack match. Burnt internship demonstrates end-to-end ownership (React, Python, AWS S3, webhooks) across 7 enterprise clients. Internship Matcher shows production deployment with React, FastAPI, PostgreSQL, Redis. Strong frontend and backend balance.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "AWS",
+        "Full-stack architecture"
+      ],
+      "skill_gaps": [
+        "Canadian work authorization",
+        "Automotive domain knowledge"
+      ]
+    },
+    {
+      "job_id": 6,
+      "match_score": 82,
+      "reasoning": "Strong fit for bio-AI startup. Demonstrated AI production experience with Claude at Burnt (1,000+ orders). Sleep-PSG project shows ML pipeline (Scikit-Learn, feature engineering) with 83% accuracy. Palo Alto location ideal. Lacks specific genomics/bio domain but strong technical foundation.",
+      "skill_matches": [
+        "Python",
+        "AI/ML",
+        "FastAPI",
+        "Data pipelines",
+        "Production ML"
+      ],
+      "skill_gaps": [
+        "Bioinformatics",
+        "Genomics domain knowledge",
+        "TensorFlow/PyTorch"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 76,
+      "reasoning": "Good general SWE fit. Docugami focuses on document AI, which aligns with candidate's LLM experience (Claude, RAG). Strong Python/TypeScript skills. However, no specific document processing or NLP experience beyond LLM APIs. Solid internship track record.",
+      "skill_matches": [
+        "Python",
+        "TypeScript",
+        "AI/LLM integration",
+        "Full-stack"
+      ],
+      "skill_gaps": [
+        "Document processing",
+        "OCR",
+        "NLP libraries",
+        "PDF parsing"
+      ]
+    },
+    {
+      "job_id": 8,
+      "match_score": 90,
+      "reasoning": "Near-perfect fit. AI enablement suggests building AI tooling/infrastructure for internal teams\u2014exactly what candidate did at Burnt (internal tools for ops, validation layers, prompt iteration). Dual-model Claude pipeline and production LLM experience across 1,000+ orders demonstrates AI enablement at scale.",
+      "skill_matches": [
+        "AI/LLM",
+        "Claude",
+        "Production AI systems",
+        "Internal tooling",
+        "Python",
+        "React"
+      ],
+      "skill_gaps": [
+        "Enterprise AI governance",
+        "Model fine-tuning"
+      ]
+    }
+  ]
+}

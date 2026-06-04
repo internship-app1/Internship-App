@@ -1,0 +1,32 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "SQL",
+    "Java",
+    "React",
+    "Angular",
+    "Flask",
+    "Node.js",
+    "Machine Learning",
+    "PyTorch",
+    "scikit-learn",
+    "HuggingFace",
+    "PostgreSQL",
+    "Redis",
+    "MySQL",
+    "AWS",
+    "GCP",
+    "Docker",
+    "Git",
+    "REST APIs",
+    "ETL",
+    "Socket.io",
+    "SQLAlchemy"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Marcus is a current student (graduating May 2025) with one internship and two substantial projects. Extracted skills based on concrete work experience: internship involved Python ETL, Flask APIs, TypeScript/Angular, and ML with scikit-learn; projects demonstrate full-stack development (React, Node.js, TypeScript), deep learning (PyTorch, HuggingFace, BERT), databases (PostgreSQL, Redis), and cloud deployment (AWS, GCP, Docker). Removed vague 'AI' in favor of 'Machine Learning' which is more specific to demonstrated work. All skills have clear evidence of hands-on use."
+}

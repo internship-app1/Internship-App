@@ -1,0 +1,139 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 92,
+      "reasoning": "Exceptional fit. Candidate shipped production AI agents at YC startup with Claude, RAG, and LLM validation layers across 1,000+ orders. Internship Matcher project demonstrates end-to-end AI pipeline with dual-model Claude architecture. Strong full-stack foundation supports AI engineering work.",
+      "skill_matches": [
+        "Python",
+        "Claude AI",
+        "RAG",
+        "FastAPI",
+        "React",
+        "Production AI deployment",
+        "LLM prompt engineering"
+      ],
+      "skill_gaps": [
+        "Traditional ML frameworks beyond Scikit-Learn"
+      ]
+    },
+    {
+      "job_id": 2,
+      "match_score": 72,
+      "reasoning": "Solid general SWE fit with strong fundamentals. Multiple production internships, full-stack experience, and algorithmic work (PSG scoring, parallel processing optimization). However, lacks Amazon-specific tech stack exposure (Java, AWS services beyond S3) and no distributed systems projects at scale.",
+      "skill_matches": [
+        "Python",
+        "Data structures",
+        "System design",
+        "AWS S3",
+        "PostgreSQL"
+      ],
+      "skill_gaps": [
+        "Java",
+        "AWS ecosystem depth",
+        "Large-scale distributed systems"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 28,
+      "reasoning": "Poor fit. Zero iOS/Swift experience. All projects are web-based (React, TypeScript, Python backend). Mobile development requires fundamentally different skillset. Strong general programming ability doesn't translate without platform-specific experience.",
+      "skill_matches": [
+        "General programming fundamentals",
+        "API integration"
+      ],
+      "skill_gaps": [
+        "Swift",
+        "iOS SDK",
+        "UIKit/SwiftUI",
+        "Mobile architecture",
+        "Xcode"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 25,
+      "reasoning": "Very poor fit. Same iOS gap as job 3. No mobile development experience whatsoever. All demonstrated work is web full-stack or backend Python. Would require complete platform retraining.",
+      "skill_matches": [
+        "Programming fundamentals",
+        "Version control"
+      ],
+      "skill_gaps": [
+        "Swift",
+        "iOS development",
+        "Mobile UI/UX",
+        "Apple frameworks"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 90,
+      "reasoning": "Near-perfect fit for AI-native role in San Jose. Shipped production AI agents at Burnt with multi-channel integration, built dual-model Claude pipelines with 95%+ accuracy, and demonstrated LLM failure mode handling. Local to San Jose (SJSU student). Strong AI + full-stack combination.",
+      "skill_matches": [
+        "Python",
+        "Claude AI",
+        "FastAPI",
+        "Production AI systems",
+        "LLM engineering",
+        "Vector stores",
+        "RAG"
+      ],
+      "skill_gaps": [
+        "Specific Kognitos tech stack details unknown"
+      ]
+    },
+    {
+      "job_id": 6,
+      "match_score": 70,
+      "reasoning": "Decent general SWE fit. Strong CS fundamentals from SJSU, multiple internships with measurable impact, and full-stack experience. However, no Apple ecosystem exposure, lacks C++/Objective-C, and projects don't demonstrate systems-level programming Apple typically values.",
+      "skill_matches": [
+        "Python",
+        "Data structures",
+        "Algorithms",
+        "System design",
+        "React"
+      ],
+      "skill_gaps": [
+        "C++",
+        "Objective-C",
+        "Systems programming",
+        "Apple frameworks"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 88,
+      "reasoning": "Excellent fit. Literally held 'Full Stack Developer Intern' title at YC startup where he shipped end-to-end features across 7 enterprise clients. Internship Matcher demonstrates complete ownership: React/TypeScript frontend, FastAPI backend, multi-tier data (Postgres, Redis, S3), auth. SF-based role matches location.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "AWS S3",
+        "Full-stack architecture"
+      ],
+      "skill_gaps": [
+        "Node.js backend (uses Python/FastAPI instead)"
+      ]
+    },
+    {
+      "job_id": 8,
+      "match_score": 85,
+      "reasoning": "Strong fit. Proven full-stack delivery at Burnt (React + Python tools for ops stakeholders, 50+ customers). Multiple projects demonstrate end-to-end ownership with modern stack. Professor review platform shows TypeScript/React/Node.js/Drizzle ORM. SF location available.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "Node.js",
+        "PostgreSQL",
+        "Full-stack development"
+      ],
+      "skill_gaps": [
+        "Specific domain knowledge in minerals/resources industry"
+      ]
+    }
+  ]
+}

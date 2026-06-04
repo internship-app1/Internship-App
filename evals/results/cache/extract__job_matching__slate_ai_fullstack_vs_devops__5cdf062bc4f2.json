@@ -1,0 +1,146 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 92,
+      "reasoning": "Exceptional fit. Candidate has production AI experience at YC startup building multi-channel AI agents with Claude, RAG, and LLM validation. Shipped features across 1,000+ orders with measurable impact. Internship Matcher project shows deep Claude pipeline expertise (Haiku/Sonnet dual-model, 95%+ accuracy). Real-world AI deployment experience rare for undergrad.",
+      "skill_matches": [
+        "Python",
+        "Claude AI",
+        "RAG",
+        "FastAPI",
+        "Production AI Systems",
+        "LLM Prompt Engineering"
+      ],
+      "skill_gaps": [
+        "Traditional ML frameworks if required"
+      ]
+    },
+    {
+      "job_id": 2,
+      "match_score": 85,
+      "reasoning": "Strong match. Full-stack experience at YC startup with React/Python across 7 enterprise clients. Built scalable systems (webhooks, multi-channel integrations). Location match (San Jose). Demonstrated ability to ship production features. Lacks specific TikTok-scale distributed systems experience but has solid foundation.",
+      "skill_matches": [
+        "React",
+        "Python",
+        "TypeScript",
+        "Full-stack development",
+        "Production deployment",
+        "API development"
+      ],
+      "skill_gaps": [
+        "Large-scale distributed systems",
+        "Mobile development"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 68,
+      "reasoning": "Moderate fit. Has some DevOps exposure (AWS S3, Redis, PostgreSQL deployment) but limited infrastructure-specific experience. Grafana dashboard work shows monitoring awareness. Lacks deep Kubernetes, CI/CD pipeline, or platform engineering experience that DevOps roles typically require.",
+      "skill_matches": [
+        "AWS S3",
+        "Redis",
+        "PostgreSQL",
+        "Grafana",
+        "Python"
+      ],
+      "skill_gaps": [
+        "Kubernetes",
+        "Docker",
+        "CI/CD pipelines",
+        "Infrastructure as Code",
+        "Deep platform engineering"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 72,
+      "reasoning": "Decent fit. Infrastructure experience through multi-tier data layers (PostgreSQL, Redis, S3), async processing (ARQ), and WebSocket systems. Built scalable backends handling 1,000+ orders. However, lacks specialized infrastructure tooling (Kubernetes, Terraform) and monitoring systems beyond Grafana dashboards.",
+      "skill_matches": [
+        "PostgreSQL",
+        "Redis",
+        "AWS S3",
+        "Async processing",
+        "Backend systems",
+        "Python"
+      ],
+      "skill_gaps": [
+        "Kubernetes",
+        "Infrastructure automation",
+        "Large-scale monitoring",
+        "Network engineering"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 94,
+      "reasoning": "Near-perfect fit. Extensive production AI engineering: Claude-based agents at Burnt (1,000+ orders), dual-model pipeline with 95%+ accuracy, RAG implementation, LLM validation layers. Sleep-PSG project shows ML fundamentals (Scikit-Learn, 83% accuracy). Remote-friendly location. Demonstrates both AI theory and production deployment.",
+      "skill_matches": [
+        "Claude AI",
+        "RAG",
+        "LLM systems",
+        "FastAPI",
+        "Machine Learning",
+        "Production AI",
+        "Python",
+        "Prompt engineering"
+      ],
+      "skill_gaps": [
+        "None significant for intern level"
+      ]
+    },
+    {
+      "job_id": 6,
+      "match_score": 78,
+      "reasoning": "Good fit for FDSE role requiring client-facing technical work. Burnt experience shows enterprise client interaction (7 clients), building tools for non-technical stakeholders, and shipping production features. Strong full-stack skills. However, lacks government/defense domain experience Palantir often values. Location mismatch (DC vs CA).",
+      "skill_matches": [
+        "Full-stack development",
+        "Client-facing work",
+        "React",
+        "Python",
+        "Enterprise software",
+        "Production deployment"
+      ],
+      "skill_gaps": [
+        "Government/defense domain",
+        "Data integration at Palantir scale",
+        "Location (DC)"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 88,
+      "reasoning": "Excellent backend fit. Built multiple production backends: FastAPI at Burnt handling 1,000+ orders, Internship Matcher with PostgreSQL/Redis/S3 multi-tier architecture, async EEG pipeline with distributed processing. Location match (San Jose). Demonstrates scalability focus (52% latency reduction, parallel processing).",
+      "skill_matches": [
+        "FastAPI",
+        "Python",
+        "PostgreSQL",
+        "Redis",
+        "AWS S3",
+        "API development",
+        "Async processing",
+        "Database design"
+      ],
+      "skill_gaps": [
+        "Specific backend frameworks if not Python-based"
+      ]
+    },
+    {
+      "job_id": 8,
+      "match_score": 82,
+      "reasoning": "Strong general fit. Broad full-stack experience (React, Python, TypeScript), production deployments, and diverse project portfolio. SF location match. Built end-to-end systems from frontend to database. Generic job description makes it hard to assess specific requirements, but candidate's versatility is asset.",
+      "skill_matches": [
+        "React",
+        "Python",
+        "TypeScript",
+        "Full-stack",
+        "FastAPI",
+        "PostgreSQL",
+        "Production experience"
+      ],
+      "skill_gaps": [
+        "Unknown due to vague job description"
+      ]
+    }
+  ]
+}

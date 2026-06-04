@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "B is clearly better on skill accuracy and conservatism. A bloats the list with vague meta-skills ('Full Stack Development', 'AI/LLM Integration') that are job-description-style labels rather than demonstrated technical skills, plus niche items like 'EDF parsing' and 'Clerk JWT' that are very peripheral. A also includes 'MNE' and 'RAG' and 'Vector Databases' and 'Prompt Engineering' \u2014 some of these are real but the total count of 22 is excessive for a student with ~1 year of experience. B's 13 skills are well-calibrated, accurate, and all clearly demonstrated in the resume. Neither output extracts project classifications or impact highlights as structured fields, so both score neutral (3) on those dimensions. B's 'student' experience_level is also more accurate per the expected behavior guidelines."
+}

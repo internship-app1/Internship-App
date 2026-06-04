@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "B is more faithful to the source resume across skill accuracy and conservatism. B preserves the AI Tools category (Anthropic/OpenAI/Gemini API, LangChain, RAG, Prompt Engineering, Vector Stores, MCP) exactly as listed, which A collapses into Frameworks \u2014 losing important signal. A also smuggles in 'infrastructure-as-code best practices' in the Grafanalib bullet, which is a fabrication not supported by the resume text (a direct violation of the expected behavior stress test for truthfulness). B's bullets stay closer to the original wording without editorializing. Both outputs capture all concrete metrics equally well (98% time reduction, 52% latency reduction, 83% accuracy, 5 hrs/week saved, etc.), so impact_quality is tied. Neither output attempts project type classification taxonomy, so both score neutral there. B's skill list is better calibrated \u2014 it does not fold AI tooling into Frameworks, and it does not invent characterizations like 'infrastructure-as-code' for what is simply a Python wrapper. The conservatism advantage for B is meaningful given the expected behavior note about not fabricating infrastructure experience."
+}

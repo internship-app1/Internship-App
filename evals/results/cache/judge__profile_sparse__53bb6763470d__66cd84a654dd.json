@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "A correctly omits Git, which the candidate explicitly qualifies as 'some familiarity from a YouTube tutorial' \u2014 a very weak signal that barely constitutes a skill. B includes Git, which inflates the skill list with something the candidate themselves hedges heavily. Both correctly identify HTML, CSS, and Python, and both set years_of_experience to 0 and experience_level to student. Neither has projects to classify or impact metrics to capture, so those dimensions are neutral for both. A is more conservative and accurate given the extremely limited evidence."
+}

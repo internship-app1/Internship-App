@@ -1,0 +1,120 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 86,
+      "reasoning": "Excellent fit \u2014 candidate shipped production full-stack systems at Burnt (YC S25) serving 1,000+ orders and owns internshipmatcher.com with React+FastAPI+PostgreSQL; Forward Deployed Engineer roles value end-to-end ownership and client-facing technical work, which maps directly to their B2B agent deployment across 7 enterprise clients.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "PostgreSQL",
+        "AWS"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 42,
+      "reasoning": "Weak fit \u2014 role focuses on data platform/ML infrastructure (likely Spark, Hadoop, distributed systems); candidate builds LLM applications (Claude API, RAG, agents) but has no experience with large-scale data pipelines, model training infrastructure, or distributed ML systems.",
+      "skill_matches": [
+        "Python",
+        "Redis"
+      ],
+      "skill_gaps": [
+        "Spark",
+        "Hadoop",
+        "Distributed systems",
+        "Data pipeline frameworks",
+        "ML infrastructure"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI applications at Burnt (multi-channel B2B agent with Claude+RAG serving 1,000+ orders), Internship Matcher (dual-model Claude pipeline at 95%+ accuracy), and Cold Leads Agent (autonomous SMS qualification); this AI Applications role maps exactly to their LLM application development expertise.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "RAG",
+        "FastAPI",
+        "React",
+        "TypeScript",
+        "PostgreSQL"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 4,
+      "match_score": 78,
+      "reasoning": "Strong fit \u2014 candidate has shipped multiple AI agents (Burnt B2B order agent across 7 clients, Cold Leads SMS agent with FSM pipeline) and owns end-to-end production systems; startup accelerator context aligns with YC S25 experience, though role's innovation/fellowship focus may emphasize research exploration over pure production engineering.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "FastAPI",
+        "RAG",
+        "Agent development"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 5,
+      "match_score": 91,
+      "reasoning": "Excellent fit \u2014 candidate built production AI agents at Burnt (multi-channel B2B agent with Claude+RAG, 1,000+ orders) and Cold Leads Agent (autonomous SMS qualification with FSM-driven pipeline); this AI Agents role at Socure maps precisely to their demonstrated agent architecture and LLM orchestration work.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "Agent development",
+        "FastAPI",
+        "PostgreSQL",
+        "RAG"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 84,
+      "reasoning": "Strong fit \u2014 candidate shipped production agentic systems (Burnt B2B order agent with Claude+RAG across 7 enterprise clients, Cold Leads Agent with FSM pipeline); Agentic AI focus aligns directly, though Neural-Symbolic Systems may require symbolic reasoning frameworks the candidate has not explicitly demonstrated.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "Agent development",
+        "FastAPI",
+        "RAG"
+      ],
+      "skill_gaps": [
+        "Symbolic reasoning frameworks",
+        "Knowledge graphs"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 85,
+      "reasoning": "Strong fit \u2014 candidate built production AI systems at Burnt (Claude+RAG B2B agent serving 1,000+ orders), Internship Matcher (dual-model Claude pipeline with 95%+ accuracy, 52% latency reduction via parallel processing), and Sleep-PSG platform (83% balanced accuracy); this AI Engineer role maps to their LLM application and ML deployment experience.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "FastAPI",
+        "RAG",
+        "Machine Learning",
+        "Scikit-Learn"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 82,
+      "reasoning": "Strong fit \u2014 candidate shipped production AI applications at Burnt (Claude+RAG B2B agent, 1,000+ orders), Internship Matcher (dual-model pipeline at 95%+ accuracy), and Sleep-PSG (98% time reduction with ML classifiers); Fortinet's AI Intern role likely values applied AI/ML work, matching their LLM and ML deployment portfolio.",
+      "skill_matches": [
+        "Python",
+        "Claude API",
+        "FastAPI",
+        "Machine Learning",
+        "Scikit-Learn",
+        "RAG"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

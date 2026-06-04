@@ -1,0 +1,59 @@
+{
+  "skills": [
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "React",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with explicit project or work experience evidence. Python excluded because resume explicitly states 'learning' (aspirational). All extracted skills are corroborated by projects or internship experience.",
+  "projects": [
+    {
+      "name": "Personal Portfolio Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Personal portfolio website built with HTML and CSS. No deployment evidence or metrics provided."
+    },
+    {
+      "name": "Todo List App",
+      "type": "Frontend Only",
+      "technologies": [
+        "React",
+        "JavaScript"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Todo list application built with React. Included user-requested features and passed testing, but no deployment evidence or specific metrics provided."
+    },
+    {
+      "name": "Weather Dashboard",
+      "type": "Frontend Only",
+      "technologies": [
+        "JavaScript",
+        "React"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Weather dashboard consuming a public API. Visually designed and improved over initial version, but no deployment evidence or specific metrics provided."
+    }
+  ],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Skills extracted directly from projects with explicit technology mentions. Python excluded due to 'learning' status. No metrics or deployment evidence found in resume to populate impact_highlights."
+    }
+  ]
+}

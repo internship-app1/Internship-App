@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A is clearly superior across most dimensions. On conservatism, A extracts 12 well-evidenced skills matching the expected 10-14 range, while B dumps all 22 items from the skills section including tools like Bash, MySQL, Elasticsearch, Terraform, Datadog, and PagerDuty that appear only in a self-reported list with no corroboration in the work experience narrative \u2014 this is exactly the bloating the scoring penalizes. On impact_quality, A captures all five concrete numeric metrics (120K RPS, P99 380ms\u219295ms, 2M+ daily connections, 99.99% uptime, 500K DAU) with structured dimension labels, while B extracts no impact highlights at all. On project_classification, A correctly tags the rate-limiting system and PostgreSQL migration as System/Infrastructure and the ingestion pipeline as Data Engineering/ETL; the LinkedIn recommendation engine is debatable (AI/ML Traditional/Analytics might be more precise than Full-Stack Web App, hence a minor deduction), but B extracts no projects at all, earning a neutral 3. Skill accuracy is high for both, but B's inclusion of undemonstrated tools like PagerDuty and Elasticsearch warrants a slight penalty."
+}

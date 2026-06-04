@@ -1,0 +1,86 @@
+{
+  "name": "Sujan Nandikol Sunilkumar",
+  "email": "sujan.nandikolsunilkumar@sjsu.edu",
+  "phone": "(925)-967-6795",
+  "website": "https://suqjan.com",
+  "github": "https://github.com/sujan",
+  "linkedin": "https://linkedin.com/in/sujan",
+  "experience": [
+    {
+      "company": "Burnt (YC S25)",
+      "location": "San Francisco, CA",
+      "title": "Full Stack Developer Intern",
+      "dates": "July 2025 \u2013 September 2025",
+      "bullets": [
+        "Shipped full stack multi-channel B2B AI order agent (webhooks, WhatsApp, email, phone) with Claude and RAG across 7 clients",
+        "Built React and Python internal tools: Intercom ticketing (5+ min saved/request, 50+ customers), ERP interface, AWS S3 store",
+        "Developed automated validation and QA layer catching LLM failures; iterated prompts, raising precision across 1,000+ orders"
+      ]
+    },
+    {
+      "company": "SJSU College of Engineering",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "June 2025 \u2013 August 2025",
+      "bullets": [
+        "Built Python wrapper around Grafanalib on 3-person team, achieving 83% code reduction (30+ lines to 5)",
+        "Migrated 7+ legacy dashboards across 3 Grafana environments with unit tests on the dashboard layer"
+      ]
+    },
+    {
+      "company": "SJSU Software & Computer Engineering Society",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "February 2025 \u2013 Present",
+      "bullets": [
+        "Building full stack professor review platform for 30,000+ students (TypeScript, React, Node.js, Drizzle ORM)",
+        "Shipped review submission flow and Python GraphQL webscraper for course data ingestion across agile sprints"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "school": "San Jose State University",
+      "location": "San Jose, CA",
+      "degree": "Bachelor of Science in Computer Science and Linguistics",
+      "dates": "May 2027"
+    }
+  ],
+  "skills": {
+    "Programming Languages": "TypeScript, JavaScript, Python, SQL, Java",
+    "Frontend Technologies": "React.js, Tailwind CSS",
+    "Backend Technologies": "Node.js, FastAPI, Flask, Spring Boot",
+    "Databases & Storage": "PostgreSQL, Redis, AWS S3",
+    "Developer Tools": "Git, GitHub Actions, Docker, AWS (EC2/S3), GCP, Linux",
+    "AI & ML": "Anthropic/OpenAI/Gemini API, LangChain, RAG, Prompt Engineering, Vector Stores, MCP"
+  },
+  "projects": [
+    {
+      "name": "Internship Matcher (React, TypeScript, FastAPI, Claude, PostgreSQL, Redis, AWS S3)",
+      "dates": "October 2025 \u2013 Present",
+      "bullets": [
+        "Built full stack application at internshipmatcher.com: React + TypeScript frontend, FastAPI backend, PostgreSQL/Redis/S3 data layer",
+        "Designed dual-model Claude pipeline (Haiku for extraction, Sonnet for re-ranking) at 95%+ accuracy with SSE-streamed progress",
+        "Parallel processing 30+ positions, 52% latency reduction (270s\u2192130s) via dynamic batching and prompt caching"
+      ]
+    },
+    {
+      "name": "Sleep-PSG Scoring (React, FastAPI, MNE, Scikit-Learn, Redis, WebSockets)",
+      "dates": "January 2026 \u2013 April 2026",
+      "bullets": [
+        "Built full stack automated PSG sleep-stage scoring platform with 98% time reduction (2+ hrs\u21922 min) and 83% balanced accuracy",
+        "Async EEG pipeline (Redis + ARQ): distributed EDF parsing, spectral features, Scikit-Learn classifiers per patient",
+        "Sub-10ms WebSocket streaming to React dashboard rendering live EEG waveforms and hypnograms for QA review"
+      ]
+    },
+    {
+      "name": "Cold Leads Agent (FastAPI, Claude, Cal.com, Linq, PostgreSQL)",
+      "dates": "May 2026 \u2013 Present",
+      "bullets": [
+        "Built and deployed full stack autonomous lead-qualification SMS agent: FSM-driven pipeline with intent classification and auto-booking",
+        "Multi-service integration: HMAC-signed Linq webhooks, Cal.com v2 booking API, SendGrid escalation; dual-model Claude on Postgres",
+        "Live in production for Bay Area real estate client, auto-booking qualified leads and saving ~5 hrs/week of manual outreach"
+      ]
+    }
+  ]
+}

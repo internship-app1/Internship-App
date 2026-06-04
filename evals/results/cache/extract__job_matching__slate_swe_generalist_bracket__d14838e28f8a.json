@@ -1,0 +1,104 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 72,
+      "reasoning": "Decent fit \u2014 candidate has strong Python/React production work at Burnt and internshipmatcher.com, but role is generic with no specific stack mentioned; algorithms/data structures focus not heavily demonstrated in resume.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "algorithms",
+        "data structures"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 70,
+      "reasoning": "Decent fit \u2014 candidate shipped production React/Python/TypeScript at Burnt and owns internshipmatcher.com, but Apple role is extremely generic with no specific tech stack or domain mentioned.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 81,
+      "reasoning": "Strong fit \u2014 candidate built data pipelines with PostgreSQL, Redis, AWS S3 at internshipmatcher.com and async EEG pipeline with Redis+ARQ at Sleep-PSG; directly maps to data infra/pipeline work.",
+      "skill_matches": [
+        "Python",
+        "PostgreSQL",
+        "Redis",
+        "data pipelines",
+        "AWS S3"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 4,
+      "match_score": 79,
+      "reasoning": "Strong fit \u2014 candidate built data acquisition systems (GraphQL webscraper, EDF parsing pipeline, S3 attachment store) and owns multi-tier data layer with PostgreSQL/Redis across three projects.",
+      "skill_matches": [
+        "Python",
+        "PostgreSQL",
+        "Redis",
+        "data pipelines",
+        "databases"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 5,
+      "match_score": 86,
+      "reasoning": "Excellent fit \u2014 candidate shipped full-stack React+Python+FastAPI at Burnt (YC S25) and owns internshipmatcher.com with React+TypeScript frontend and FastAPI backend; exact stack match.",
+      "skill_matches": [
+        "React",
+        "Python",
+        "FastAPI",
+        "TypeScript",
+        "PostgreSQL"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 71,
+      "reasoning": "Decent fit \u2014 candidate has production React/Python/TypeScript experience at Burnt and internshipmatcher.com, but Podium role is generic with no specific stack or domain requirements listed.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 7,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate owns internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL full stack) and shipped React+Python internal tools at Burnt; SF location matches Bay Area work history.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "FastAPI",
+        "Python",
+        "PostgreSQL",
+        "Node.js"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 84,
+      "reasoning": "Strong fit \u2014 candidate built FastAPI backends at internshipmatcher.com, Burnt, and Cold Leads Agent with PostgreSQL/Redis; San Jose location matches SJSU; backend focus aligns with three FastAPI projects.",
+      "skill_matches": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "API development"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

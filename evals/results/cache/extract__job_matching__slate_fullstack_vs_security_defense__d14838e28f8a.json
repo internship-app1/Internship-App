@@ -1,0 +1,100 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 88,
+      "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (Claude Sonnet, RAG, 1,000+ orders) and built dual-model Claude pipeline for internshipmatcher.com; AI/LLM work maps directly to this role.",
+      "skill_matches": [
+        "Python",
+        "AI/ML",
+        "Claude",
+        "RAG"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 2,
+      "match_score": 72,
+      "reasoning": "Decent fit \u2014 candidate has strong full-stack foundation (React, Python, FastAPI across Burnt and internshipmatcher.com) but role is generic with no specific stack mentioned.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 3,
+      "match_score": 68,
+      "reasoning": "Decent fit \u2014 candidate has general SWE skills (React, Python, TypeScript) but no security/code-analysis experience; role focuses on developer security platform which is outside demonstrated domain.",
+      "skill_matches": [
+        "Python",
+        "TypeScript"
+      ],
+      "skill_gaps": [
+        "Security",
+        "Static Analysis"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 42,
+      "reasoning": "Weak fit \u2014 Leidos typically requires defense clearance and systems engineering focus; candidate's web/AI application work at Burnt and internshipmatcher.com does not align with systems-level requirements.",
+      "skill_matches": [
+        "Python"
+      ],
+      "skill_gaps": [
+        "Security Clearance",
+        "Systems Engineering"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 85,
+      "reasoning": "Strong fit \u2014 candidate shipped full-stack React+Python apps at Burnt and owns internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL); production experience maps exactly to full-stack role.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 6,
+      "match_score": 76,
+      "reasoning": "Strong fit \u2014 candidate has solid SWE foundation (React, Python, FastAPI) and AI experience (Claude agents at Burnt); GenBio AI likely values both but role description is generic.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "AI/ML"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 7,
+      "match_score": 70,
+      "reasoning": "Decent fit \u2014 candidate has general SWE skills (React, Python, TypeScript, FastAPI) but Docugami role is generic with no specific requirements to match against demonstrated work.",
+      "skill_matches": [
+        "Python",
+        "React",
+        "TypeScript"
+      ],
+      "skill_gaps": []
+    },
+    {
+      "job_id": 8,
+      "match_score": 90,
+      "reasoning": "Excellent fit \u2014 candidate built production AI agents at Burnt (Claude, RAG, 1,000+ orders), dual-model pipeline at internshipmatcher.com, and autonomous SMS agent; AI enablement work is exact match.",
+      "skill_matches": [
+        "Python",
+        "AI/ML",
+        "Claude",
+        "FastAPI",
+        "RAG"
+      ],
+      "skill_gaps": []
+    }
+  ]
+}

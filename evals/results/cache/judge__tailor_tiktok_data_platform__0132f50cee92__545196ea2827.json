@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A faithfully reproduces the resume's own language and metrics without embellishment, preserving exact numbers (83% code reduction from 30+ lines to 5, 52% latency reduction 270s\u2192130s, 98% time reduction, sub-10ms WebSocket, ~5 hrs/week) and deployment evidence (internshipmatcher.com live in production). B rewrites bullets with data-engineering framing ('scalable data infrastructure', 'data platform reliability', 'distributed data pipeline', 'ML inference pipeline') that inflates the data-engineering angle beyond what the resume demonstrates \u2014 exactly the fabrication risk flagged in the expected behavior. B also adds Scikit-Learn and MNE to the skills section, which are legitimate but push the list slightly beyond the core demonstrated set, and its GitHub/LinkedIn URLs are truncated/guessed. A's skills section is clean and directly mirrors the resume's own Technical Skills section. On impact quality, A preserves every concrete metric verbatim while B occasionally softens or reframes them. Both classify projects reasonably (Full-Stack/AI-ML hybrids), so project_classification is roughly equal. Overall A is more accurate, conservative, and faithful to the source."
+}

@@ -1,0 +1,14 @@
+{
+  "scores_baseline": {
+    "ranking_accuracy": 3,
+    "reasoning_quality": 3,
+    "skill_gap_accuracy": 3
+  },
+  "scores_candidate": {
+    "ranking_accuracy": 4,
+    "reasoning_quality": 4,
+    "skill_gap_accuracy": 5
+  },
+  "winner": "candidate",
+  "justification": "A correctly places Leidos (job 4) at 38 \u2014 well below the good-fit cluster \u2014 while B gives it 65, failing to adequately penalize a defense/clearance role for a web/AI candidate. A also correctly scores Snyk (job 3) at 72 vs good-fit jobs at 85-88, creating meaningful separation, whereas B's spread is compressed (65-92) with Leidos too high. A's skill_gap_accuracy is superior: it lists no fabricated gaps for strong matches and correctly identifies security tooling gaps for Snyk. B fabricates gaps like 'Canadian work authorization' for Magna (job 5), 'UK work authorization' for Snyk (job 3), 'Enterprise AI governance' and 'Model fine-tuning' for LegalZoom AI (job 8), and 'Traditional ML frameworks beyond LLMs' for a strong AI match (job 1) \u2014 these are either irrelevant or not genuine skill gaps. B's reasoning is also more generic in places ('Solid general SWE fit', 'Good general SWE fit') while A consistently references specific candidate artifacts like 'internshipmatcher.com', 'Burnt (YC S25)', and concrete metrics."
+}

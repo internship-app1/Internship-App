@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "A adds vague meta-skills ('Full-stack development', 'Database optimization', 'Performance optimization') that are inferred behaviors rather than discrete technical skills \u2014 these inflate the list with soft categorizations not appropriate for a skills taxonomy. B sticks to concrete, named technologies actually used in the resume. B also correctly captures Clerk and SendGrid, which are real demonstrated tools from the InternTracker project. Both outputs omit project classification and impact highlights entirely (the schema doesn't include those fields), so those dimensions are neutral for both. B is more accurate and better calibrated overall."
+}

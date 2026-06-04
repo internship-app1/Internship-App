@@ -1,0 +1,26 @@
+{
+  "skills": [
+    "Python",
+    "HTML",
+    "CSS",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with documented coursework or completed projects. Python is from current enrollment in Introduction to Programming. HTML and CSS are from completed Web Design Basics course (A grade). Git is from self-reported YouTube tutorial learning but included due to explicit mention of hands-on practice. Excluded any aspirational skills or future coursework (Data Structures is 'next semester', not completed). No professional software engineering experience to extract.",
+  "projects": [],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Clear coursework documentation for HTML, CSS, and Python. Web Design Basics explicitly shows completion with grade. Python enrollment is current and verifiable."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.7,
+      "confidence_notes": "Git included based on self-reported YouTube tutorial practice, but no project evidence of actual Git usage. Included conservatively as it represents hands-on learning beyond just 'familiarity'."
+    }
+  ]
+}

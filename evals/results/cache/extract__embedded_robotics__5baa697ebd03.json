@@ -1,0 +1,22 @@
+{
+  "skills": [
+    "C",
+    "C++",
+    "Python",
+    "ROS 2",
+    "FreeRTOS",
+    "STM32 HAL",
+    "Arduino",
+    "MQTT",
+    "Git",
+    "GDB",
+    "Embedded Systems",
+    "Firmware Development",
+    "Sensor Fusion",
+    "Real-time Operating Systems"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted skills based on concrete project work and internship experience. Focused on embedded systems, microcontroller programming, and robotics where Arjun has demonstrated hands-on experience. Included domain knowledge (Embedded Systems, Firmware Development, Sensor Fusion, RTOS) based on project implementations. Excluded hardware components (Raspberry Pi, STM32, LiDAR, IMU) as these are tools/platforms rather than skills. All skills have clear evidence from projects or internship work."
+}

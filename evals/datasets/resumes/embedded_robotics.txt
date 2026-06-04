@@ -1,0 +1,34 @@
+Arjun Patel
+arjun.patel@email.com | github.com/arjunpatel
+
+EDUCATION
+B.S. Electrical & Computer Engineering, Purdue University | May 2025
+
+PROJECTS
+Autonomous Drone Navigation (Jan 2025 – May 2025)
+- Developed obstacle avoidance firmware for a custom quadcopter using ROS 2 (Robot Operating System) and C++
+- Integrated LiDAR (RPLiDAR A2) and IMU sensor fusion using an Extended Kalman Filter
+- Deployed on Raspberry Pi 4 running Ubuntu 22.04 real-time kernel; achieves 50Hz control loop
+- Won 2nd place at Purdue Robotics Competition 2025
+
+Smart Irrigation System (Sep 2024 – Dec 2024)
+- Built an IoT soil-moisture monitoring network using 8 Arduino Mega nodes and a central Raspberry Pi hub
+- Wrote C firmware for ATmega2560 to read ADC sensor data and transmit via MQTT over WiFi
+- Central Pi hub aggregates sensor readings and triggers solenoid valves via GPIO
+- System monitors 0.5 acres of greenhouse plants; reduced water usage by ~30% (estimated from flow meter readings)
+
+Custom RTOS Scheduler (Feb 2024 – May 2024)
+- Implemented a preemptive RTOS kernel in C for ARM Cortex-M4 (STM32F411 board)
+- Features: round-robin scheduling, semaphores, mutexes, priority inheritance
+- Validated with oscilloscope probing of task-switch timing (<5μs context switch overhead)
+
+EXPERIENCE
+Hardware Engineering Intern, Bosch (Jun 2024 – Aug 2024)
+- Wrote C drivers for SPI and I2C peripherals on STM32 microcontrollers
+- Debugged firmware issues with oscilloscope, logic analyzer, and GDB
+
+SKILLS
+Languages: C, C++, Python
+Embedded: ROS 2, FreeRTOS, STM32 HAL, Arduino, MQTT
+Hardware: Raspberry Pi, STM32, Arduino Mega, LiDAR, IMU
+Tools: Git, GDB, oscilloscope, logic analyzer

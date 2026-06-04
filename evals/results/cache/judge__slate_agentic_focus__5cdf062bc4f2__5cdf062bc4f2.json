@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "winner": "baseline",
+  "justification": "Both outputs handle skill accuracy and conservatism similarly, extracting well-evidenced skills without bloat. Neither output classifies projects into the required taxonomy (both use inline skill tags instead), so both score neutral on project_classification. B wins on impact_quality: for job_id 5 (Attentive AI), B explicitly cites the 52% latency reduction, 98% time savings, and FSM-driven autonomous agent with concrete metrics, while A gives a vaguer summary. B also correctly scores Kognitos (job_id 8) at 94 vs A's 90, better reflecting the near-perfect alignment with the candidate's agentic AI work, and B's reasoning for job_id 8 explicitly ties in the Cold Leads Agent FSM and end-to-end ownership with business impact. B's ranking order (8 > 1 > 5 > 2 > 6 > 7 > 3 > 4) more closely matches the expected behavior where Kognitos and Socure/Attentive AI-native roles rank highest and Cloudforce/General Dynamics rank lowest."
+}

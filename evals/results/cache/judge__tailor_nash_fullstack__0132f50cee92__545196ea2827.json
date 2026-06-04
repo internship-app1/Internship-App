@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A is slightly better overall. On skill_accuracy, A preserves the MCP tool from the resume's skills section which B omits \u2014 a real demonstrated skill. On conservatism, A's skill groupings are more precise (separating Frontend from Backend technologies) and better calibrated to the evidence. Both outputs capture concrete metrics faithfully (1,000+ orders, 52% latency reduction, 98% time reduction, ~5 hrs/week saved) giving equal impact_quality scores. Project classification is equivalent across both \u2014 neither output uses the taxonomy labels explicitly, but both correctly identify the nature of each project. The github/linkedin URLs in B are truncated/guessed ('sujan' vs the more complete attempt in A), which is a minor accuracy issue. Overall A is the cleaner, more complete extraction."
+}

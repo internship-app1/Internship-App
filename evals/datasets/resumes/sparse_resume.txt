@@ -1,0 +1,22 @@
+Sam Taylor
+sam.taylor@email.com
+
+EDUCATION
+B.S. Computer Science, Community College Transfer to State University | Expected 2027
+First-generation college student, currently completing transfer requirements.
+
+COURSEWORK (in progress)
+- Introduction to Programming (Python) — currently enrolled
+- Data Structures — next semester
+- Web Design Basics — completed (A grade)
+
+EXPERIENCE
+None in software engineering yet.
+
+Part-time barista, Coffee House (2022 – Present)
+- Prepared beverages and provided customer service
+
+SKILLS
+Basic HTML and CSS from Web Design class
+Python — very beginner level, currently in first programming course
+Some familiarity with Git from a YouTube tutorial I followed

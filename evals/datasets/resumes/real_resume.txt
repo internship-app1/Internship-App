@@ -1,0 +1,42 @@
+Shirin Alapati, Fremont, CA
+Ph: 415-747-4457 Email: salapati22@gmail.com
+Education
+Mission San Jose High School, Fremont, CA; Diploma received Spring 2024
+Music Teachers Association of California Completed all 10 levels of instruction and graduated March 2023
+Academic Honors and Awards
+AP Scholar, 2022-2023
+AP Scholar with Honor, 2024
+Level 3, State Honors in Piano, Music Teachers Association of California, 2021-2022
+WORK EXPERIENCE
+ATELIA SOFTWARE, Fremont, CA
+Summer 2022-Present
+Intern
+• Utilized Python and Javascript libraries, assisted in meeting client goal of saving doctors’ time by building AI
+scribes to create an automatic summary of physician-patient consultations
+• Developed models for patient data using machine learning principles in Java
+MSJ SPORTS ANALYTICS CLUB, Fremont, CA August 2022-2024
+Volunteer Activities Coordinator, Volunteer Blogger
+• Set up presentations by executives and analysts from the Oakland A’s, Phillies, and Lakers
+• Organized the club’s annual Datathon, where members analyzed NBA, MLB, and NFL data, judged by sports
+professionals
+MSJ Civics Club, Fremont, CA August 2023-2024
+Treasurer
+● Taught history/political science using unique artifacts to enhance engagement for club members
+● Hosted local politicians and museum workers as guest speakers for insightful presentations.
+SHIRIN ALAPATI WORDPRESS, Fremont, CA 2015-Present
+Blogger https://shirinalapati.wordpress.com/author/shirinalapati/
+• Drafted and published articles on topics including history, political science, sports, technology, and science
+Software and Computer Engineering Society, San Jose, CA
+2024-Present
+Event Planning and Public Relations Officer
+● Helped organize events to promote the club throughout campus and set up various fundraising events to
+raise money for the club
+● Involved in coding projects, such as one where students can use a filtering tool to select teachers best for
+them across campus
+Github
+2024-Present
+https://github.com/shirinalapati/Personal
+● Created projects using HTML and Java, involving interests in history and sports
+● Formed a website to explain historical process of decolonization
+● Created a game where users take control of their favorite team for the 2021 NFL Draft, showing them how
+their team would be different today if they chose a different player

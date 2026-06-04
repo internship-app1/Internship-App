@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 4
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A preserves all concrete metrics faithfully and verbatim where appropriate (1,000+ orders, 83% code reduction, 30,000+ students, 52% latency reduction, 98% time reduction, sub-10ms WebSocket), which is exactly what the expected behavior calls for. B paraphrases these metrics but occasionally softens or obscures them (e.g., 'reducing code complexity by 83%' vs the cleaner '83% code reduction (30+ lines to 5)'). A also retains AI-specific skills like LangChain, RAG, Prompt Engineering, Vector Stores, and MCP \u2014 all genuinely demonstrated in the resume \u2014 whereas B drops the entire AI Tools category from its skills section, which is a significant omission for a candidate whose strongest work is AI/LLM-driven. B's github and linkedin fields contain placeholder-style shortened URLs rather than real ones, reducing data fidelity. Both outputs classify projects similarly (Full-Stack Web App with AI components), so project_classification is roughly equal. A is clearly superior on skill completeness and impact metric preservation."
+}

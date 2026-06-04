@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "B is better calibrated on skills: it correctly separates AI/Data tools (Anthropic/OpenAI/Gemini API, LangChain, RAG, Prompt Engineering, Vector Stores, Scikit-Learn) into their own category rather than burying them, and includes MCP only implicitly via the AI tools listing \u2014 avoiding inflation. A omits the AI tools category almost entirely from the skills section (no Anthropic/OpenAI/Gemini API, no Prompt Engineering, no Vector Stores listed), which is a meaningful omission for this candidate's profile. Both outputs capture concrete metrics faithfully (52% latency, 98% time reduction, 83% accuracy, 5 hrs/week saved, 1,000+ orders). Neither output explicitly classifies projects by taxonomy label, so both score neutrally on project_classification. B's conservatism is better \u2014 it avoids inflating bullet language with phrases like 'architected,' 'engineered,' and 'optimized' that A adds beyond what the resume states, staying closer to the source. Overall B is more accurate and honest to the resume text."
+}

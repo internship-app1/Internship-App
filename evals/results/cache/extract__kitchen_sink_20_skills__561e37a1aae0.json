@@ -1,0 +1,45 @@
+{
+  "skills": [
+    "Python",
+    "Java",
+    "JavaScript",
+    "C"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with concrete project evidence. Self-reported skills section excluded entirely per instructions\u2014no corroborating work experience, internships, or substantial projects. Only 'Hello World App' (Python, JavaScript) and 'Calculator' (Java) have documented evidence. C included based on typical CS curriculum coursework at Ohio State, though not explicitly mentioned in projects.",
+  "projects": [
+    {
+      "name": "Hello World App",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Python",
+        "JavaScript"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Basic introductory program demonstrating language syntax in Python and JavaScript. Minimal complexity, typical beginner exercise."
+    },
+    {
+      "name": "Calculator",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Command-line calculator built in Java for class assignment. Implements basic arithmetic operations. Typical introductory coursework project."
+    }
+  ],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Strict application of inclusion burden. Self-reported skills section (19 languages, 20+ frameworks, 10+ databases, 8+ cloud platforms, 8+ DevOps tools, 13+ AI/ML tools) completely excluded\u2014zero corroborating evidence from work, internships, or substantial projects. Only skills with documented project evidence extracted: Python and JavaScript (Hello World App), Java (Calculator). No deployment evidence, no metrics, no impact data available."
+    }
+  ]
+}

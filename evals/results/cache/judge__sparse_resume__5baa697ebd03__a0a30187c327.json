@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "tie",
+  "justification": "Both extractions are functionally identical in their skill lists (HTML, CSS, Python, Git), correctly set experience_level='student', years_of_experience=0, is_student=true, and return empty projects and impact_highlights. Both provide appropriate confidence notes reflecting the beginner/limited nature of the skills. Neither hallucinates skills from the barista job or from aspirational goals. The only difference is that A includes a structured confidence_metrics array while B integrates that nuance into prose \u2014 both approaches adequately satisfy the expected behavior. No dimension separates them by more than 0 points, making this a genuine tie."
+}

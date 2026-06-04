@@ -1,0 +1,94 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "Java",
+    "Machine Learning",
+    "HTML"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted skills from concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning) and GitHub projects (HTML, Java). Excluded CSS despite likely use in web projects\u2014not explicitly mentioned. Excluded any self-reported skills without project/work evidence.",
+  "projects": [
+    {
+      "name": "AI Scribe for Physician-Patient Consultations",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built AI-powered medical scribe system to automatically summarize physician-patient consultations, reducing doctors' administrative time. Developed machine learning models for patient data processing using Java and Python/JavaScript libraries."
+    },
+    {
+      "name": "Historical Decolonization Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": true,
+      "summary": "Created an educational website explaining the historical process of decolonization using HTML and Java. Demonstrates ability to build informational web content on historical topics."
+    },
+    {
+      "name": "NFL Draft Team Simulator Game",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": true,
+      "summary": "Interactive game allowing users to simulate their favorite NFL team's 2021 draft decisions and visualize alternative team compositions. Combines sports analytics interest with web development."
+    },
+    {
+      "name": "Teacher Selection Filtering Tool",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Developed a filtering tool enabling students to search and select teachers best suited to their needs across campus. Part of Software and Computer Engineering Society coding projects."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built AI scribe system at Atelia Software that automatically summarizes physician-patient consultations, directly addressing the client goal of saving doctors' time through machine learning and natural language processing.",
+      "metric": "Reduced physician administrative burden through automated consultation summarization",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Organized and judged MSJ Sports Analytics Club's annual Datathon where members analyzed professional sports data (NBA, MLB, NFL) with judges from major sports organizations.",
+      "metric": "Coordinated multi-sport data analysis competition with professional sports industry judges",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Python, JavaScript, and Java explicitly mentioned in Atelia Software work experience with concrete project context (AI scribe development). Machine Learning confirmed through 'machine learning principles' language in job description."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "HTML and Java confirmed through GitHub projects section with specific project descriptions (decolonization website, NFL draft game, teacher filtering tool)."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.7,
+      "confidence_notes": "No CSS explicitly mentioned despite likely use in web projects. Excluded to maintain strict evidence-based extraction. No databases, frameworks, or deployment platforms explicitly mentioned."
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "skills": [
+    "Python",
+    "HTML",
+    "CSS",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with explicit coursework or learning evidence. Python from 'Introduction to Programming' course (currently enrolled). HTML and CSS from completed 'Web Design Basics' course (A grade). Git from YouTube tutorial self-study. Excluded 'barista' role as non-technical. Conservative extraction due to very early stage of CS education.",
+  "projects": [],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Python, HTML, CSS extraction backed by explicit coursework with grades/enrollment status. Git extraction backed by self-directed learning (YouTube tutorial). No projects or professional experience to extract."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Correctly excluded skills from aspirational 'next semester' coursework (Data Structures) per instructions. No vague skill claims detected."
+    }
+  ]
+}

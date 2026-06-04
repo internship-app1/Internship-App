@@ -1,0 +1,30 @@
+{
+  "skills": [
+    "Python",
+    "Go",
+    "Java",
+    "SQL",
+    "Bash",
+    "FastAPI",
+    "Flask",
+    "Spring Boot",
+    "Celery",
+    "PostgreSQL",
+    "Redis",
+    "MySQL",
+    "Elasticsearch",
+    "AWS",
+    "Kubernetes",
+    "Docker",
+    "Terraform",
+    "Kafka",
+    "RabbitMQ",
+    "Git",
+    "Datadog",
+    "PagerDuty"
+  ],
+  "experience_level": "experienced",
+  "years_of_experience": 6,
+  "is_student": false,
+  "confidence_notes": "High confidence extraction based on explicit skills section and strong corroboration from work experience. All listed skills have demonstrated project/work experience at Stripe and Plaid. Extracted skills directly from resume's stated skills section and verified against job responsibilities (e.g., Go for rate-limiting system, Python for ingestion pipeline, PostgreSQL migration, AWS infrastructure, Kubernetes/Docker for microservices). No speculative skills added. Experience level determined from 6+ years of professional software engineering roles at major tech companies."
+}

@@ -1,0 +1,108 @@
+{
+  "skills": [
+    "C",
+    "C++",
+    "Python",
+    "ROS 2",
+    "FreeRTOS",
+    "STM32 HAL",
+    "Arduino",
+    "MQTT",
+    "Raspberry Pi",
+    "Git",
+    "GDB"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "Extracted skills from concrete work experience (Bosch internship), university projects with demonstrated implementations, and explicit skills section. All skills have evidence of hands-on use in embedded systems and robotics contexts.",
+  "projects": [
+    {
+      "name": "Autonomous Drone Navigation",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C++",
+        "ROS 2",
+        "LiDAR",
+        "IMU",
+        "Extended Kalman Filter",
+        "Raspberry Pi 4",
+        "Ubuntu"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Developed obstacle avoidance firmware for custom quadcopter with sensor fusion (LiDAR + IMU) using Extended Kalman Filter. Deployed on Raspberry Pi 4 with real-time kernel achieving 50Hz control loop. Won 2nd place at Purdue Robotics Competition 2025."
+    },
+    {
+      "name": "Smart Irrigation System",
+      "type": "Embedded Systems / IoT / Robotics",
+      "technologies": [
+        "C",
+        "Arduino Mega",
+        "Raspberry Pi",
+        "MQTT",
+        "ADC",
+        "GPIO",
+        "WiFi"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built IoT soil-moisture monitoring network with 8 Arduino Mega nodes and central Raspberry Pi hub. Implemented C firmware for ATmega2560 sensor data acquisition and MQTT transmission. System monitors 0.5 acres of greenhouse with automated solenoid valve control."
+    },
+    {
+      "name": "Custom RTOS Scheduler",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "C",
+        "ARM Cortex-M4",
+        "STM32F411",
+        "Oscilloscope"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Implemented preemptive RTOS kernel in C for ARM Cortex-M4 with round-robin scheduling, semaphores, mutexes, and priority inheritance. Validated context switch timing with oscilloscope probing."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Autonomous Drone Navigation system achieved 50Hz control loop frequency on Raspberry Pi 4 with real-time kernel, demonstrating efficient sensor fusion and embedded systems optimization.",
+      "metric": "50Hz control loop",
+      "dimension": "performance"
+    },
+    {
+      "description": "Smart Irrigation System reduced water usage in greenhouse monitoring application through automated sensor-based valve control.",
+      "metric": "~30% water usage reduction across 0.5 acres",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Custom RTOS Scheduler achieved sub-microsecond context switch overhead, validating real-time kernel performance.",
+      "metric": "<5\u03bcs context switch overhead",
+      "dimension": "performance"
+    },
+    {
+      "description": "Autonomous Drone Navigation project won 2nd place at Purdue Robotics Competition 2025, demonstrating competitive-level embedded systems and robotics implementation.",
+      "metric": "2nd place award",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Skills extracted from explicit skills section and directly demonstrated in project implementations with concrete technical details (ROS 2, C++, sensor fusion, real-time kernel)."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Projects classified with high confidence based on clear embedded systems/robotics focus with specific hardware (Raspberry Pi, Arduino, STM32, LiDAR, IMU) and deployment evidence."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Impact metrics extracted from quantifiable performance data (50Hz loop, <5\u03bcs context switch, 30% water reduction) and competition award. All metrics have concrete technical basis."
+    }
+  ]
+}

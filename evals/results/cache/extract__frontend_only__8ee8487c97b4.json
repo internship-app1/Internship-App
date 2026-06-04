@@ -1,0 +1,100 @@
+{
+  "skills": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Figma",
+    "Git",
+    "npm"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "Emma is a current CS student at NYU (expected May 2026) with ~1 year of demonstrated project experience. All skills extracted from concrete project work and internship experience. No backend, database, or advanced frameworks mentioned. Strong focus on frontend design and CSS mastery.",
+  "projects": [
+    {
+      "name": "Personal Portfolio Site",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS",
+        "JavaScript"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Low",
+      "has_link": true,
+      "summary": "Static portfolio website with smooth scroll animations, CSS Grid layout, and custom dark mode toggle. Deployed on GitHub Pages at emmawalsh.design. Demonstrates strong visual design and vanilla JavaScript skills."
+    },
+    {
+      "name": "UI Component Library",
+      "type": "Frontend Only",
+      "technologies": [
+        "CSS",
+        "npm"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "CSS-only reusable component library (buttons, cards, modals, tooltips) published to npm with zero JavaScript dependencies. All components meet WCAG 2.1 AA accessibility standards. Demonstrates advanced CSS expertise and accessibility knowledge."
+    },
+    {
+      "name": "Landing Page Clones",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "CSS"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Pixel-perfect recreations of Stripe, Linear, and Vercel landing pages using only HTML and CSS. Focused on mastering flexbox, grid, custom properties, and CSS animations without frameworks."
+    },
+    {
+      "name": "Framer Motion Showcase",
+      "type": "Frontend Only",
+      "technologies": [
+        "React",
+        "Framer Motion"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Collection of React page transition animations exploring Framer Motion animation APIs. Pure frontend exploration project with no backend or data persistence."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Published UI Component Library to npm with zero JavaScript dependencies, demonstrating ability to create production-ready, reusable code.",
+      "metric": "Published npm package with WCAG 2.1 AA compliance",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Personal portfolio deployed and live at custom domain (emmawalsh.design), showcasing professional presence and deployment capability.",
+      "metric": "Live deployment on GitHub Pages",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Internship experience converting Figma designs to production HTML/CSS code, demonstrating ability to translate design specifications into functional code.",
+      "metric": "2 landing pages coded from design specs",
+      "dimension": "business_value"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All skills directly listed in resume SKILLS section and demonstrated through concrete project work. No speculative or inferred skills included."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Project classifications based on explicit descriptions (e.g., 'purely static', 'no backend', 'pure frontend'). All projects are Frontend Only category with clear evidence of deployment or completion."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Impact highlights extracted from concrete evidence: published npm package, live GitHub Pages deployment, and internship deliverables. No vague claims included."
+    }
+  ]
+}

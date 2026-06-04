@@ -1,0 +1,93 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "Java",
+    "Machine Learning",
+    "HTML"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted skills from concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning) and GitHub projects (HTML, Java). Excluded CSS despite likely use in web projects\u2014not explicitly mentioned. Excluded any self-reported skills without project/work evidence.",
+  "projects": [
+    {
+      "name": "AI Scribe for Physician-Patient Consultations",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built AI models to automatically summarize physician-patient consultations, helping doctors save time. Developed machine learning models for patient data processing using Java and Python/JavaScript libraries."
+    },
+    {
+      "name": "Teacher Filtering Tool",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Java",
+        "HTML"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Developed a web-based filtering tool allowing students to select teachers best suited for them across campus. Demonstrates both frontend (HTML) and backend logic (Java)."
+    },
+    {
+      "name": "Historical Decolonization Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Created a website explaining the historical process of decolonization. Static informational site focused on content presentation."
+    },
+    {
+      "name": "NFL Draft Simulation Game",
+      "type": "Game Development",
+      "technologies": [
+        "Java",
+        "HTML"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Interactive game allowing users to control their favorite NFL team's 2021 draft picks and visualize how different player selections would impact the team today. Combines game logic with historical sports data."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built AI scribe system at Atelia Software to automatically summarize physician-patient consultations, directly addressing the client goal of saving doctors' time.",
+      "metric": "Automated consultation summarization for healthcare professionals",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Organized and judged MSJ Sports Analytics Club's annual Datathon where members analyzed NBA, MLB, and NFL data with participation from sports professionals as judges.",
+      "metric": "Multi-sport data analysis competition with professional oversight",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Python, JavaScript, and Java explicitly mentioned in Atelia Software work experience with concrete project context (AI scribes, patient data models). Machine Learning directly stated as principle used in model development."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "HTML confirmed through GitHub projects (decolonization website, NFL draft game). Java corroborated across both Atelia work and multiple GitHub projects."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.7,
+      "confidence_notes": "AI Scribe project classified as NLP/GenAI based on 'automatic summary of physician-patient consultations' language, though specific NLP techniques not detailed. Teacher filtering tool classified as Full-Stack due to explicit mention of 'filtering tool' with both UI and backend logic requirements."
+    }
+  ]
+}

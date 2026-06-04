@@ -1,0 +1,117 @@
+{
+  "skills": [
+    "Python",
+    "Go",
+    "Java",
+    "SQL",
+    "PostgreSQL",
+    "Redis",
+    "AWS",
+    "Kubernetes",
+    "Docker",
+    "Git",
+    "Kafka",
+    "RabbitMQ"
+  ],
+  "experience_level": "experienced",
+  "years_of_experience": 6,
+  "is_student": false,
+  "confidence_notes": "All skills extracted from concrete work experience at Stripe, Plaid, and LinkedIn. Each skill is corroborated by specific project/job responsibilities with measurable outcomes. Self-reported skills section validated against job descriptions.",
+  "projects": [
+    {
+      "name": "Distributed Rate-Limiting System (Stripe)",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "Go",
+        "Redis"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Designed and implemented distributed rate-limiting system handling 120,000 RPS in production for Billing API microservices processing $4B+ in annual transactions."
+    },
+    {
+      "name": "Bank Connection Ingestion Pipeline (Plaid)",
+      "type": "Data Engineering / ETL",
+      "technologies": [
+        "Python",
+        "Celery",
+        "RabbitMQ"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built production ETL pipeline processing 2M+ daily bank connections using Celery and RabbitMQ message queue architecture."
+    },
+    {
+      "name": "PostgreSQL Migration (Plaid)",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "PostgreSQL",
+        "SQL"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Executed zero-downtime migration of 8 services from PostgreSQL 11 to 14 using logical replication in production environment."
+    },
+    {
+      "name": "OAuth Token Encryption (Plaid)",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "Python",
+        "AES-256"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Implemented end-to-end encryption for OAuth token storage using AES-256 cryptography in production system."
+    },
+    {
+      "name": "LinkedIn Learning Recommendation Engine (LinkedIn)",
+      "type": "System/Infrastructure",
+      "technologies": [
+        "Java",
+        "Spring Boot"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Built backend features for recommendation engine with A/B testing instrumentation running experiments on 500,000 daily active users."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Designed distributed rate-limiting system for Stripe Billing API handling massive transaction volume",
+      "metric": "120,000 RPS capacity; $4B+ annual transactions processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Optimized Stripe Billing API latency through profiling and Go hot path rewrites",
+      "metric": "P99 latency reduced from 380ms to 95ms (75% improvement)",
+      "dimension": "performance"
+    },
+    {
+      "description": "Built production ETL pipeline at Plaid for bank connection ingestion",
+      "metric": "2M+ daily connections processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Maintained core transaction aggregation service at Plaid with industry-leading reliability",
+      "metric": "99.99% uptime SLA",
+      "dimension": "deployment"
+    },
+    {
+      "description": "A/B testing instrumentation for LinkedIn Learning recommendation engine",
+      "metric": "500,000 daily active users in experiments",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.98,
+      "confidence_notes": "All 12 skills directly corroborated by specific job responsibilities with measurable outcomes. No aspirational skills included. Experience spans 6 years across tier-1 tech companies (Stripe, Plaid, LinkedIn) with clear progression from intern to senior engineer."
+    }
+  ]
+}

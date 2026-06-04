@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 1
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 5,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A correctly classifies both projects as AI/ML (Computer Vision), captures all key impact highlights with concrete metrics (91% mAP, 12% improvement, 28 FPS, live deployment URL), and extracts a well-calibrated set of 12 demonstrated skills. B over-extracts with 20 skills including Java (listed but never demonstrated in any project), scikit-learn (listed but not demonstrated), AWS S3 (listed but not demonstrated in projects), and vague meta-skills like 'Computer Vision', 'Deep Learning', 'Machine Learning', and 'Data Preprocessing' which are either course names or generic labels rather than discrete technical skills. B also extracts no projects and no impact highlights at all, scoring poorly on project_classification (neutral 3) and impact_quality (1) since the resume clearly has rich metrics and deployment evidence that B completely ignores."
+}

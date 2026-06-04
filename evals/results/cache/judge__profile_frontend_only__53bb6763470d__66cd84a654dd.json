@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "A extracts a clean, accurate set of 7 skills that are all directly demonstrated in the resume with no inflation. B pads the list to 13 entries: 'Web design' and 'UI/UX' are vague inferred labels not explicitly claimed as skills, 'GitHub Pages' is a hosting tool rather than a skill, and 'Accessibility (WCAG)' is a stretch from a single project note. While Framer Motion and CSS animations are real and demonstrated, the overall bloat in B hurts conservatism and introduces questionable entries that lower skill_accuracy. Neither output extracts projects or impact highlights, so both score neutral (3) on those dimensions. A wins on the two most relevant dimensions for this frontend-only resume."
+}

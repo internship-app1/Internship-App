@@ -1,0 +1,56 @@
+[
+  {
+    "id": "tailor_nash_fullstack",
+    "resume_file": "sujan_resume.txt",
+    "job_title": "Full Stack Engineer Intern",
+    "company": "Nash",
+    "job_description": "Software Engineering internship at Nash. Role: Full Stack Engineer Intern. Location: SF. This role involves full stack development covering both frontend and backend technologies. You'll work on complete web applications from database to user interface. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.",
+    "description": "Strong full-stack match \u2014 React, Python, Node.js all present in resume and job",
+    "expectations": "Tailored bullets should front-load React/Node.js/Python keywords from the job description. The Internship Matcher and Burnt experience should be prominently surfaced. Bullets must remain truthful \u2014 no fabricated 'led a team of 5' or new skills. Experience descriptions should be specific (actual metrics like '250+ files', '1000+ orders') not vague. JSON structure must be complete with all required fields."
+  },
+  {
+    "id": "tailor_kognitos_ai_native",
+    "resume_file": "sujan_resume.txt",
+    "job_title": "Software Engineer Intern - AI-Native",
+    "company": "Kognitos",
+    "job_description": "Software Engineering internship at Kognitos. Role: Software Engineer Intern - AI-Native. Location: San Jose, CA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.",
+    "description": "AI-native SWE role at San Jose company \u2014 strong Python/AI overlap",
+    "expectations": "Tailored bullets should emphasize Claude API, RAG pipeline, and LLM integration work from Burnt and Internship Matcher. The agentic AI work (multi-channel order agent, FSM-driven SMS agent) should be prominently featured. No fabrication of ML/model-training experience. Keywords from the job like 'AI-native' or 'intelligent systems' can be woven in authentically."
+  },
+  {
+    "id": "tailor_socure_ai_agents",
+    "resume_file": "sujan_resume.txt",
+    "job_title": "Engineering Intern - AI Agents - Data & Riskos \ud83c\udf93",
+    "company": "Socure",
+    "job_description": "Software Engineering internship at Socure. Role: Engineering Intern - AI Agents - Data & Riskos \ud83c\udf93. Location: Remote in USA. This role involves artificial intelligence and machine learning development. You'll work on AI models, data processing, and intelligent software systems. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.",
+    "description": "AI Agents / data focus \u2014 good match for agentic work, weaker on data/SQL",
+    "expectations": "Bullets should highlight the multi-channel order agent (Burnt) and Cold Leads Agent projects, as those are the clearest agentic AI matches. The SSE streaming pipeline in Internship Matcher is relevant for data-related aspects. Should NOT fabricate SQL/ETL pipeline experience the candidate lacks. Reasoning bullets should be specific to the role, not generic."
+  },
+  {
+    "id": "tailor_amazon_sde",
+    "resume_file": "sujan_resume.txt",
+    "job_title": "Software Development Engineer Intern",
+    "company": "Amazon",
+    "job_description": "Software Engineering internship at Amazon. Role: Software Development Engineer Intern. Location: 6 locationsWinnipeg, MB, CanadaToronto, ON, CanadaVictoria, BC, CanadaCalgary, AB, CanadaOttawa, ON, CanadaVancouver, BC, Canada. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.",
+    "description": "Generic FAANG SWE role \u2014 ok match, no specific AI requirement",
+    "expectations": "Bullets should surface the strongest technical achievements (Burnt full-stack, SJSU Engineering Python work, CS Society platform) in Amazon SDE language \u2014 scalability, reliability, customer impact. Metrics like '1000+ orders', '30,000+ students', '83% code reduction' are exactly what Amazon values and should be foregrounded. No need to fabricate Java experience \u2014 the Python work is sufficient."
+  },
+  {
+    "id": "tailor_tiktok_data_platform",
+    "resume_file": "sujan_resume.txt",
+    "job_title": "AI/ML Software Engineer Intern - Data Platform",
+    "company": "TikTok",
+    "job_description": "Software Engineering internship at TikTok. Role: AI/ML Software Engineer Intern - Data Platform. Location: San Jose, CA. ByteDance is a global technology company known for TikTok and other popular apps. This role involves developing software for global e-commerce and social media platforms. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.",
+    "description": "Data platform role (Python/SQL/ETL) \u2014 ok-to-borderline fit; tests that model does not fabricate Spark/ETL skills",
+    "expectations": "The tailored resume should surface what data-adjacent work genuinely exists: Redis async pipeline in Sleep-PSG project, PostgreSQL in Internship Matcher, distributed EDF parsing. Should NOT fabricate Spark, Kafka, or ETL pipeline experience. The model should acknowledge the gap rather than invent missing skills. Bullets should still be compelling using real work."
+  },
+  {
+    "id": "tailor_axiomatic_devops",
+    "resume_file": "sujan_resume.txt",
+    "job_title": "Software Engineering Internship \u2013 Platform/DevOps \ud83d\udec2",
+    "company": "Axiomatic AI",
+    "job_description": "Software Engineering internship at Axiomatic AI. Role: Software Engineering Internship \u2013 Platform/DevOps \ud83d\udec2. Location: Boston, MA. This role involves general software engineering with programming, algorithms, and data structures. This position is suitable for students and recent graduates with strong programming skills and a passion for technology.",
+    "description": "DevOps/K8s/CI-CD role \u2014 poor fit; tests that model does not fabricate infrastructure experience",
+    "expectations": "The tailored resume should surface whatever infrastructure-adjacent work exists (Docker in Internship Matcher, AWS S3, Railway deployment, nginx.conf) but must NOT fabricate Kubernetes, Terraform, or CI/CD pipeline engineering experience. The result will be honest about the thin overlap. Bullets should still be well-structured even if the fit is weak. This is a stress test for truthfulness."
+  }
+]

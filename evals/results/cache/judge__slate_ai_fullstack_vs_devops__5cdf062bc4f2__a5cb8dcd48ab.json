@@ -1,0 +1,14 @@
+{
+  "scores_baseline": {
+    "ranking_accuracy": 3,
+    "reasoning_quality": 4,
+    "skill_gap_accuracy": 3
+  },
+  "scores_candidate": {
+    "ranking_accuracy": 5,
+    "reasoning_quality": 4,
+    "skill_gap_accuracy": 5
+  },
+  "winner": "candidate",
+  "justification": "A correctly separates the good-fit AI/backend roles (jobs 1,5,7 at 84-88) from the bad-fit infrastructure roles (jobs 3,4 at 34-38), achieving a 46-54 point spread that matches the expected behavior. B collapses this discrimination: Neuralink Infrastructure (job 4) scores 72 and Axiomatic DevOps (job 3) scores 68, both clustering near the good-fit jobs (88-94), which directly contradicts the expectation that these should rank lowest. B's reasoning for job 4 even frames the candidate's app-layer Redis/Postgres usage as infrastructure experience, which is misleading. On skill_gap_accuracy, A correctly lists [] gaps for strong AI/backend matches and precise gaps for infrastructure mismatches; B fabricates gaps like 'Traditional ML frameworks if required' for job 1 and 'None significant for intern level' as a listed gap string for job 5, and over-credits job 4 as a decent infrastructure fit. Both outputs have similarly specific reasoning referencing Burnt (YC), Internship Matcher, and concrete metrics, so reasoning quality is roughly equal. A's clear ranking discrimination is the decisive factor."
+}

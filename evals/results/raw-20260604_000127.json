@@ -1,0 +1,1563 @@
+[
+  {
+    "id": "slate_ai_fullstack_vs_mobile",
+    "description": "AI/full-stack roles (Python+React+AI) vs mobile-only iOS/Android roles \u2014 tests whether model recognizes React/Python experience over Swift/Kotlin requirement",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 92,
+          "reasoning": "Exceptional fit. Candidate shipped production AI agents at YC startup with Claude, RAG, and LLM validation layers across 1,000+ orders. Internship Matcher project demonstrates end-to-end AI pipeline with dual-model Claude architecture. Strong full-stack foundation supports AI engineering work.",
+          "skill_matches": [
+            "Python",
+            "Claude AI",
+            "RAG",
+            "FastAPI",
+            "Production AI deployment",
+            "LLM prompt engineering",
+            "Vector stores"
+          ],
+          "skill_gaps": [
+            "Traditional ML frameworks beyond Scikit-Learn"
+          ]
+        },
+        {
+          "job_id": 2,
+          "match_score": 72,
+          "reasoning": "Solid general SWE fit with strong fundamentals. Multiple production internships, full-stack experience, and algorithmic work (PSG scoring, data processing). However, lacks specific AWS/distributed systems depth that Amazon typically values. Location mismatch (Canada vs US-based candidate).",
+          "skill_matches": [
+            "Python",
+            "Data structures",
+            "Backend development",
+            "PostgreSQL",
+            "Redis"
+          ],
+          "skill_gaps": [
+            "AWS services depth",
+            "Large-scale distributed systems",
+            "Java/C++"
+          ]
+        },
+        {
+          "job_id": 3,
+          "match_score": 35,
+          "reasoning": "Poor fit. Candidate has zero iOS/Swift experience. All projects are web-based (React, TypeScript, Python backend). No mobile development background. Strong general programming skills don't translate to specialized iOS role.",
+          "skill_matches": [
+            "General programming fundamentals",
+            "TypeScript"
+          ],
+          "skill_gaps": [
+            "Swift",
+            "iOS SDK",
+            "UIKit/SwiftUI",
+            "Mobile development",
+            "Xcode"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 35,
+          "reasoning": "Poor fit. Same as job 3 - no iOS development experience. Entire portfolio is web/backend focused. Would require complete technology stack pivot.",
+          "skill_matches": [
+            "General programming fundamentals"
+          ],
+          "skill_gaps": [
+            "Swift",
+            "iOS development",
+            "Mobile frameworks",
+            "Apple ecosystem"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 90,
+          "reasoning": "Near-perfect fit for local AI-native role. Shipped production AI agents with Claude at Burnt, built dual-model pipelines, implemented RAG and vector stores. San Jose location matches. Strong full-stack foundation supports AI-native development. Demonstrated real-world AI impact across 1,000+ production orders.",
+          "skill_matches": [
+            "Python",
+            "Claude AI",
+            "RAG",
+            "FastAPI",
+            "LLM engineering",
+            "Production AI systems",
+            "Vector databases"
+          ],
+          "skill_gaps": [
+            "Potentially other AI frameworks like LangChain"
+          ]
+        },
+        {
+          "job_id": 6,
+          "match_score": 75,
+          "reasoning": "Good general fit. Strong CS fundamentals, multiple production internships, full-stack experience. However, Apple typically seeks depth in specific areas (systems, ML, or mobile). Candidate is generalist with AI lean. Competitive but not specialized.",
+          "skill_matches": [
+            "Python",
+            "TypeScript",
+            "React",
+            "Backend systems",
+            "Database design"
+          ],
+          "skill_gaps": [
+            "C++/Objective-C",
+            "Systems programming",
+            "Apple-specific technologies"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 88,
+          "reasoning": "Excellent fit. Candidate was Full Stack Intern at YC startup, shipped end-to-end features across React/Python stack. Internship Matcher demonstrates production full-stack ownership (React + TypeScript frontend, FastAPI backend, multi-tier data). SF location matches. Proven ability to ship customer-facing features.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "AWS S3",
+            "Full-stack architecture"
+          ],
+          "skill_gaps": [
+            "Node.js backend (uses Python/FastAPI instead)"
+          ]
+        },
+        {
+          "job_id": 8,
+          "match_score": 86,
+          "reasoning": "Strong fit. Multiple full-stack projects in production (Internship Matcher, professor review platform). Demonstrated ownership from frontend to database layer. React, TypeScript, Python, PostgreSQL stack aligns well. SF location option matches. Slightly lower than job 7 due to less specific full-stack role description.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Node.js (professor platform)",
+            "Full-stack development"
+          ],
+          "skill_gaps": [
+            "Specific domain knowledge for minerals industry"
+          ]
+        }
+      ]
+    },
+    "candidate_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 88,
+          "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (YC S25) using Claude Sonnet+Haiku, RAG, and prompt engineering across 1,000+ orders; internshipmatcher.com uses dual-model Claude pipeline with 95%+ accuracy.",
+          "skill_matches": [
+            "Python",
+            "AI/ML",
+            "Claude API",
+            "FastAPI",
+            "RAG"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 2,
+          "match_score": 62,
+          "reasoning": "Decent fit \u2014 candidate has strong algorithms/data structures foundation and production Python+React work at Burnt and SJSU, but role is generic SDE with no specific stack mentioned; no Canada work authorization indicated.",
+          "skill_matches": [
+            "Python",
+            "Algorithms",
+            "Data Structures"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 3,
+          "match_score": 18,
+          "reasoning": "Poor fit \u2014 role requires iOS/Swift development; resume shows zero mobile experience across all projects (React web, Python backends, FastAPI); entire portfolio is web-based full-stack work.",
+          "skill_matches": [],
+          "skill_gaps": [
+            "Swift",
+            "iOS",
+            "Mobile Development"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 15,
+          "reasoning": "Poor fit \u2014 role requires iOS development; candidate has no Swift, Objective-C, or mobile experience; all projects are React web frontends with Python/FastAPI backends.",
+          "skill_matches": [],
+          "skill_gaps": [
+            "Swift",
+            "iOS",
+            "Objective-C",
+            "Mobile Development"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 90,
+          "reasoning": "Excellent fit \u2014 candidate shipped AI agents at Burnt (Claude, RAG, 1,000+ orders), built dual-model Claude pipeline at internshipmatcher.com, and deployed autonomous SMS agent with FSM-driven intent classification; San Jose location matches.",
+          "skill_matches": [
+            "Python",
+            "AI/ML",
+            "Claude API",
+            "FastAPI",
+            "LLM Applications"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 6,
+          "match_score": 58,
+          "reasoning": "Decent fit \u2014 candidate has strong CS fundamentals and production experience at Burnt and SJSU, but Apple role is extremely generic with no stack specified; candidate's React+Python portfolio may not align with Apple's varied tech needs.",
+          "skill_matches": [
+            "Python",
+            "Algorithms",
+            "Data Structures"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 7,
+          "match_score": 86,
+          "reasoning": "Strong fit \u2014 candidate shipped full-stack React+Python apps at Burnt (YC S25) and owns internshipmatcher.com (React+TypeScript frontend, FastAPI backend, PostgreSQL); professor review platform uses TypeScript+React+Node.js.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "Node.js",
+            "PostgreSQL"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 8,
+          "match_score": 84,
+          "reasoning": "Strong fit \u2014 candidate has production full-stack work at Burnt (React+Python internal tools, 50+ customers) and internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL); SJSU project uses TypeScript+React+Node.js stack.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "Node.js",
+            "PostgreSQL"
+          ],
+          "skill_gaps": []
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 4,
+        "conservatism": 4,
+        "project_classification": 4,
+        "impact_quality": 5
+      },
+      "scores_candidate": {
+        "skill_accuracy": 4,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 4
+      },
+      "winner": "baseline",
+      "justification": "A consistently captures concrete metrics from the resume (1,000+ orders, 83% code reduction, 52% latency reduction, 5 hrs/week saved) in its reasoning, earning a higher impact_quality score. A also better calibrates match scores to the expected ranking \u2014 AI-native roles (jobs 1, 5) score highest, full-stack roles (7, 8) score next, generic big-tech (2, 6) score mid-range, and iOS roles (3, 4) score lowest, closely matching expected behavior. B's scores for Amazon (62) and Apple (58) are too low relative to the expected 'generic ok match' framing, and B's skill_matches lists are thinner (e.g., job 3 has no matches at all, which is overly harsh). A's reasoning is richer and more evidence-grounded throughout, and its conservatism is better calibrated with meaningful skill gap identification rather than B's frequent empty skill_gaps arrays."
+    }
+  },
+  {
+    "id": "slate_ai_fullstack_vs_devops",
+    "description": "Full-stack/AI roles vs DevOps/infrastructure roles \u2014 tests whether model recognizes application-layer experience over ops/infra tooling",
+    "judged": false,
+    "gate_failed": false,
+    "baseline_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 92,
+          "reasoning": "Exceptional fit. Candidate shipped production AI agents at YC startup with Claude (Haiku/Sonnet), RAG, and LLM validation across 1,000+ orders. Internship Matcher project demonstrates dual-model Claude pipeline with 95%+ accuracy. Strong AI/ML fundamentals with real production impact.",
+          "skill_matches": [
+            "Python",
+            "AI/ML",
+            "Claude",
+            "RAG",
+            "FastAPI",
+            "Production deployment"
+          ],
+          "skill_gaps": [
+            "Traditional ML frameworks beyond Scikit-Learn"
+          ]
+        },
+        {
+          "job_id": 2,
+          "match_score": 85,
+          "reasoning": "Strong match. Full-stack experience at YC startup with React, Python, and production systems serving 1,000+ orders. Built scalable platforms (Internship Matcher live in production, professor review for 30K+ students). Local to San Jose. Proven ability to ship features end-to-end.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "Full-stack"
+          ],
+          "skill_gaps": [
+            "Mobile development",
+            "Video processing"
+          ]
+        },
+        {
+          "job_id": 3,
+          "match_score": 68,
+          "reasoning": "Moderate fit. Has DevOps exposure (AWS S3, Redis, multi-tier architecture) but limited infrastructure-specific experience. Grafana work shows some platform tooling. Lacks Kubernetes, CI/CD pipelines, or deep infrastructure projects. Location mismatch (Boston vs CA-based).",
+          "skill_matches": [
+            "Python",
+            "AWS S3",
+            "Redis",
+            "Grafana"
+          ],
+          "skill_gaps": [
+            "Kubernetes",
+            "Docker",
+            "CI/CD",
+            "Terraform",
+            "Infrastructure-as-code"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 70,
+          "reasoning": "Decent fit. Some infrastructure exposure through multi-tier systems (PostgreSQL, Redis, AWS S3) and async processing (ARQ workers). However, lacks deep infrastructure/systems experience. Neuralink likely needs lower-level systems work. Strong fundamentals but not infrastructure-specialized.",
+          "skill_matches": [
+            "Python",
+            "AWS S3",
+            "Redis",
+            "Distributed systems",
+            "WebSockets"
+          ],
+          "skill_gaps": [
+            "Systems programming",
+            "C/C++",
+            "Embedded systems",
+            "Hardware integration"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 94,
+          "reasoning": "Near-perfect fit. Shipped production AI agent at Burnt (YC) with Claude, RAG, and LLM validation. Built Internship Matcher with dual-model Claude pipeline (95%+ accuracy). Sleep-PSG shows ML fundamentals (Scikit-Learn, 83% accuracy). Remote-friendly, SF-based, proven AI production impact.",
+          "skill_matches": [
+            "Python",
+            "Claude",
+            "RAG",
+            "FastAPI",
+            "AI/ML",
+            "Production AI systems",
+            "LLM validation"
+          ],
+          "skill_gaps": [
+            "None significant for intern level"
+          ]
+        },
+        {
+          "job_id": 6,
+          "match_score": 78,
+          "reasoning": "Good fit for FDSE role requiring client-facing engineering. Burnt experience shows enterprise client work (7 clients). Built tools for non-technical stakeholders (Intercom, ERP interface). Strong full-stack skills. However, DC location is far from CA base. Year-long commitment may conflict with school.",
+          "skill_matches": [
+            "Full-stack",
+            "Client-facing tools",
+            "React",
+            "Python",
+            "Enterprise experience"
+          ],
+          "skill_gaps": [
+            "Data analysis/visualization",
+            "Consulting experience",
+            "DC location"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 88,
+          "reasoning": "Excellent backend fit. Built production FastAPI backends (Internship Matcher, Sleep-PSG, Cold Leads). Strong database experience (PostgreSQL, Redis). Async processing (ARQ workers), WebSockets, and API design. Local to San Jose. Proven ability to build scalable backend systems.",
+          "skill_matches": [
+            "FastAPI",
+            "Python",
+            "PostgreSQL",
+            "Redis",
+            "WebSockets",
+            "API development",
+            "Async processing"
+          ],
+          "skill_gaps": [
+            "Microservices architecture",
+            "gRPC"
+          ]
+        },
+        {
+          "job_id": 8,
+          "match_score": 82,
+          "reasoning": "Strong general fit. Full-stack experience at YC startup, multiple production projects (Internship Matcher live, professor review platform). SF-based. Versatile across frontend (React/TypeScript) and backend (FastAPI, databases). Generic role description matches broad skillset well.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "Full-stack",
+            "Production experience"
+          ],
+          "skill_gaps": [
+            "Role too generic to identify specific gaps"
+          ]
+        }
+      ]
+    },
+    "candidate_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 88,
+          "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (Claude Sonnet+RAG, 1,000+ orders) and built dual-model Claude pipeline for internshipmatcher.com; AI/ML development maps exactly to this role.",
+          "skill_matches": [
+            "Python",
+            "AI",
+            "Machine Learning",
+            "Claude",
+            "RAG"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 2,
+          "match_score": 76,
+          "reasoning": "Strong fit \u2014 candidate has full-stack production experience (React+Python at Burnt, TypeScript+FastAPI at internshipmatcher.com) suitable for multiple teams; San Jose location matches current school.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "Node.js"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 3,
+          "match_score": 42,
+          "reasoning": "Weak fit \u2014 role requires Platform/DevOps focus; candidate has AWS S3 and Redis experience but no demonstrated Kubernetes, Docker orchestration, or infrastructure-as-code work across any project.",
+          "skill_matches": [
+            "Python",
+            "AWS"
+          ],
+          "skill_gaps": [
+            "Kubernetes",
+            "Docker",
+            "Terraform",
+            "CI/CD pipelines"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 48,
+          "reasoning": "Weak fit \u2014 infrastructure role likely requires systems/DevOps depth; candidate's Redis and AWS S3 usage is application-layer, not infrastructure engineering; no demonstrated low-level systems work.",
+          "skill_matches": [
+            "Python",
+            "AWS"
+          ],
+          "skill_gaps": [
+            "Infrastructure engineering",
+            "Systems programming",
+            "Kubernetes"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 90,
+          "reasoning": "Excellent fit \u2014 candidate built production AI agents at Burnt (Claude+RAG, 1,000+ orders), dual-model Claude pipeline at internshipmatcher.com, and autonomous SMS agent; SF location and AI stack match perfectly.",
+          "skill_matches": [
+            "Python",
+            "AI",
+            "Claude",
+            "FastAPI",
+            "RAG",
+            "Machine Learning"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 6,
+          "match_score": 58,
+          "reasoning": "Decent fit \u2014 candidate has strong full-stack skills (React+Python+FastAPI) but Forward Deployed role typically requires client-facing consulting and domain expertise not demonstrated in resume.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript"
+          ],
+          "skill_gaps": [
+            "Client consulting experience",
+            "Domain expertise"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 82,
+          "reasoning": "Strong fit \u2014 candidate shipped FastAPI backends at Burnt and internshipmatcher.com with PostgreSQL, Redis, and AWS S3; San Jose location matches school; backend stack aligns exactly.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "AWS"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 8,
+          "match_score": 72,
+          "reasoning": "Decent fit \u2014 generic SWE role in SF matches candidate's full-stack skills (React+Python+TypeScript) but lacks specificity; candidate's production work at Burnt and internshipmatcher.com applies broadly.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript",
+            "FastAPI"
+          ],
+          "skill_gaps": []
+        }
+      ]
+    },
+    "error": "judge failed: Expecting value: line 1 column 1 (char 0)\nTraceback (most recent call last):\n  File \"/Users/sujannandikolsunilkumar/internship_matcher_v3/Internship-App/evals/run.py\", line 568, in run_evals\n    raw_verdict = pairwise_judge(\n  File \"/Users/sujannandikolsunilkumar/internship_matcher_v3/Internship-App/evals/judge.py\", line 127, in pairwise_judge\n    return json.loads(raw)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py\", line 337, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py\", line 355, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n"
+  },
+  {
+    "id": "slate_llm_native_vs_deep_ml",
+    "description": "LLM/AI-native application roles vs pure deep learning research roles \u2014 tests whether model distinguishes LLM integration work from training/research ML",
+    "judged": false,
+    "gate_failed": false,
+    "baseline_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 82,
+          "reasoning": "Strong fit: candidate has production full-stack experience at YC startup, shipped real features to 7 enterprise clients. Forward deployed role aligns with customer-facing work at Burnt. Solid fundamentals from CS degree.",
+          "skill_matches": [
+            "Full-stack development",
+            "React",
+            "Python",
+            "FastAPI",
+            "Production deployment",
+            "Customer-facing engineering"
+          ],
+          "skill_gaps": [
+            "Specific Labelbox platform knowledge"
+          ]
+        },
+        {
+          "job_id": 2,
+          "match_score": 78,
+          "reasoning": "Good match: demonstrated AI/ML production experience with Claude pipelines, RAG systems, and vector stores at Burnt (1,000+ orders). Built data processing systems with Redis, PostgreSQL. Location match (San Jose). Lacks deep ML infrastructure experience.",
+          "skill_matches": [
+            "AI/ML",
+            "Python",
+            "Data pipelines",
+            "Redis",
+            "PostgreSQL",
+            "Production systems"
+          ],
+          "skill_gaps": [
+            "Large-scale distributed systems",
+            "TikTok-scale infrastructure",
+            "Deep ML frameworks"
+          ]
+        },
+        {
+          "job_id": 3,
+          "match_score": 85,
+          "reasoning": "Excellent fit: multiple production AI applications (order agent with Claude, internship matcher with dual-model pipeline, PSG scoring). Proven ability to ship end-to-end AI products with measurable impact (95%+ accuracy, 52% latency reduction). Remote flexibility.",
+          "skill_matches": [
+            "AI/ML applications",
+            "Claude/LLM integration",
+            "React",
+            "FastAPI",
+            "Production AI systems",
+            "Model optimization"
+          ],
+          "skill_gaps": [
+            "Education-specific domain knowledge"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 72,
+          "reasoning": "Moderate fit: strong AI innovation background with multiple shipped projects. Startup experience at YC company aligns with accelerator environment. However, location mismatch (MD vs CA-based candidate) and less clear startup-building focus vs engineering execution.",
+          "skill_matches": [
+            "AI development",
+            "Startup experience",
+            "Full-stack",
+            "Product development"
+          ],
+          "skill_gaps": [
+            "Location (Hyattsville, MD)",
+            "Startup founding/accelerator experience",
+            "Fellowship-specific requirements"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 88,
+          "reasoning": "Excellent match: built production AI agent (Cold Leads Agent with FSM-driven pipeline, intent classification). Multi-channel agent experience at Burnt (WhatsApp, email, phone). Strong data processing background. Remote role removes location barrier.",
+          "skill_matches": [
+            "AI agents",
+            "LLM integration",
+            "Production systems",
+            "Data processing",
+            "FastAPI",
+            "PostgreSQL",
+            "Multi-channel systems"
+          ],
+          "skill_gaps": [
+            "Risk/fraud-specific domain knowledge"
+          ]
+        },
+        {
+          "job_id": 6,
+          "match_score": 75,
+          "reasoning": "Good fit: demonstrated agentic AI experience (order agent, lead qualification agent). Strong technical foundation with LLMs and production systems. Remote works well. Healthcare domain is new, and neural-symbolic systems are not explicitly shown in resume.",
+          "skill_matches": [
+            "Agentic AI",
+            "LLM systems",
+            "Production deployment",
+            "Python",
+            "System architecture"
+          ],
+          "skill_gaps": [
+            "Healthcare domain",
+            "Neural-symbolic systems",
+            "Medical data compliance"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 76,
+          "reasoning": "Solid fit: proven AI engineering with production LLM systems, model optimization (prompt caching, dual-model pipelines), and measurable results. Strong full-stack foundation. Location mismatch (Philadelphia) is a concern for in-person internship.",
+          "skill_matches": [
+            "AI/ML engineering",
+            "LLM integration",
+            "Model optimization",
+            "Python",
+            "Production systems"
+          ],
+          "skill_gaps": [
+            "Location (Philadelphia, PA)",
+            "Insurance/Guidewire domain"
+          ]
+        },
+        {
+          "job_id": 8,
+          "match_score": 73,
+          "reasoning": "Moderate-good fit: strong AI development background with multiple production systems. Location advantage (Sunnyvale near San Jose). However, cybersecurity/networking domain at Fortinet not demonstrated. Less specific agent/ML infrastructure depth than top matches.",
+          "skill_matches": [
+            "AI development",
+            "Python",
+            "Production systems",
+            "Location proximity"
+          ],
+          "skill_gaps": [
+            "Cybersecurity domain",
+            "Network security AI",
+            "Fortinet-specific technologies"
+          ]
+        }
+      ]
+    },
+    "candidate_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 86,
+          "reasoning": "Excellent fit \u2014 candidate shipped production full-stack work at Burnt (YC S25) with React+Python+Claude and owns internshipmatcher.com; forward-deployed role maps directly to their client-facing B2B agent work across 7 enterprise clients.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "FastAPI",
+            "PostgreSQL",
+            "AWS"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 2,
+          "match_score": 72,
+          "reasoning": "Decent fit \u2014 candidate built data pipelines (Redis+ARQ, PostgreSQL) and async processing at scale, but lacks demonstrated ML platform/infrastructure work; experience is LLM application layer, not data platform engineering.",
+          "skill_matches": [
+            "Python",
+            "PostgreSQL",
+            "Redis"
+          ],
+          "skill_gaps": [
+            "Distributed systems",
+            "Spark/Hadoop"
+          ]
+        },
+        {
+          "job_id": 3,
+          "match_score": 88,
+          "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (Claude+RAG across 1,000+ orders) and built internshipmatcher.com with dual-model Claude pipeline; AI application development is their core strength.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "Claude",
+            "React",
+            "TypeScript"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 4,
+          "match_score": 81,
+          "reasoning": "Strong fit \u2014 candidate built autonomous AI agents (Cold Leads SMS agent, Burnt B2B order agent) with Claude and FSM-driven pipelines; startup accelerator context aligns with YC S25 experience.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "Claude",
+            "PostgreSQL"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 5,
+          "match_score": 85,
+          "reasoning": "Strong fit \u2014 candidate shipped production AI agents at Burnt (multi-channel B2B agent) and Cold Leads Agent with intent classification and FSM pipelines; agent architecture is demonstrated across multiple projects.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "Claude",
+            "PostgreSQL",
+            "Redis"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 6,
+          "match_score": 78,
+          "reasoning": "Strong fit \u2014 candidate built agentic systems (Burnt order agent, Cold Leads agent) with Claude and validation layers, but lacks neural-symbolic or healthcare domain experience; core agent work translates well.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "Claude"
+          ],
+          "skill_gaps": [
+            "Neural-symbolic systems",
+            "Healthcare domain"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 83,
+          "reasoning": "Strong fit \u2014 candidate shipped AI applications at Burnt (Claude+RAG) and internshipmatcher.com (dual-model pipeline with 95%+ accuracy); production AI engineering across multiple projects maps directly.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "Claude",
+            "React"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 8,
+          "match_score": 80,
+          "reasoning": "Strong fit \u2014 candidate built production AI systems (Burnt B2B agent, internshipmatcher.com Claude pipeline, Sleep-PSG ML classifier) with validation and QA layers; Sunnyvale location is local to San Jose.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "Claude",
+            "Scikit-Learn"
+          ],
+          "skill_gaps": []
+        }
+      ]
+    },
+    "error": "judge failed: Expecting value: line 1 column 1 (char 0)\nTraceback (most recent call last):\n  File \"/Users/sujannandikolsunilkumar/internship_matcher_v3/Internship-App/evals/run.py\", line 568, in run_evals\n    raw_verdict = pairwise_judge(\n  File \"/Users/sujannandikolsunilkumar/internship_matcher_v3/Internship-App/evals/judge.py\", line 127, in pairwise_judge\n    return json.loads(raw)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py\", line 337, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py\", line 355, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n"
+  },
+  {
+    "id": "slate_fullstack_vs_security_defense",
+    "description": "Full-stack/AI roles vs security and defense/aerospace roles \u2014 tests model's ability to penalize clearance-required and cybersecurity-specialized positions",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 92,
+          "reasoning": "Exceptional fit. Candidate shipped production AI agents at YC startup with Claude (Haiku/Sonnet), RAG, and multi-channel integration across 1,000+ orders. Internship Matcher project demonstrates dual-model Claude pipeline with 95%+ accuracy. Strong full-stack skills (React, Python, FastAPI) complement AI work.",
+          "skill_matches": [
+            "AI/ML",
+            "Claude LLM",
+            "Python",
+            "React",
+            "Production deployment",
+            "RAG"
+          ],
+          "skill_gaps": [
+            "Traditional ML frameworks beyond LLMs"
+          ]
+        },
+        {
+          "job_id": 2,
+          "match_score": 78,
+          "reasoning": "Solid general SWE fit. Three internships with production deployments, strong full-stack foundation (React, Python, TypeScript, FastAPI), and system design experience (Redis, PostgreSQL, AWS S3). Lacks Oracle-specific enterprise tech stack exposure but demonstrates breadth across modern technologies.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript",
+            "PostgreSQL",
+            "AWS",
+            "System design"
+          ],
+          "skill_gaps": [
+            "Java/enterprise frameworks",
+            "Oracle tech stack"
+          ]
+        },
+        {
+          "job_id": 3,
+          "match_score": 71,
+          "reasoning": "Moderate fit for security-focused role. Strong general SWE skills and code quality focus (unit tests, validation layers). Built production systems with proper auth (Clerk JWT/JWKS). However, no direct security tooling, static analysis, or DevSecOps experience. Location (London) may be barrier.",
+          "skill_matches": [
+            "Python",
+            "TypeScript",
+            "Testing",
+            "Authentication systems"
+          ],
+          "skill_gaps": [
+            "Security tooling",
+            "Static analysis",
+            "SAST/DAST",
+            "DevSecOps"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 65,
+          "reasoning": "Below-average fit. Systems engineering typically requires embedded systems, hardware integration, or defense-specific experience. Candidate's web/AI focus doesn't align. Grafana dashboard work shows some systems monitoring exposure but insufficient for systems engineer role.",
+          "skill_matches": [
+            "Python",
+            "Monitoring (Grafana)",
+            "System integration"
+          ],
+          "skill_gaps": [
+            "Embedded systems",
+            "Hardware integration",
+            "Defense/aerospace domain",
+            "Systems architecture"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 88,
+          "reasoning": "Excellent full-stack match. Burnt internship demonstrates end-to-end ownership (React, Python, webhooks, integrations) across 7 enterprise clients. Multiple projects show modern full-stack patterns: React + TypeScript frontends, FastAPI backends, PostgreSQL/Redis data layers, real-time features (WebSockets, SSE).",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "Full-stack architecture"
+          ],
+          "skill_gaps": [
+            "Canadian work authorization",
+            "Automotive domain knowledge"
+          ]
+        },
+        {
+          "job_id": 6,
+          "match_score": 81,
+          "reasoning": "Strong fit for biotech AI startup. Demonstrated AI production experience (Claude agents, RAG, prompt engineering) and full-stack skills. Sleep-PSG project shows bio-signal processing (EEG, MNE library) with ML pipelines. Palo Alto location ideal. Lacks genomics-specific domain knowledge.",
+          "skill_matches": [
+            "AI/ML",
+            "Python",
+            "React",
+            "Bio-signal processing",
+            "Scikit-Learn",
+            "Production ML"
+          ],
+          "skill_gaps": [
+            "Genomics domain",
+            "Bioinformatics tools",
+            "Computational biology"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 76,
+          "reasoning": "Good general SWE fit. Strong full-stack foundation and production experience align with document AI company needs. Built multiple end-to-end systems with modern tech stack. No direct document processing or NLP experience beyond LLM agents, but transferable AI skills.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript",
+            "AI/LLM integration",
+            "FastAPI"
+          ],
+          "skill_gaps": [
+            "Document processing",
+            "OCR",
+            "NLP pipelines",
+            "Document understanding"
+          ]
+        },
+        {
+          "job_id": 8,
+          "match_score": 90,
+          "reasoning": "Near-perfect fit. AI enablement role matches candidate's strength: building AI tooling for non-technical users (Burnt ops tools, Intercom integration). Production LLM deployment experience (Claude agents, validation layers, prompt iteration) across 1,000+ orders. Strong full-stack skills enable internal AI platform development.",
+          "skill_matches": [
+            "AI/LLM",
+            "Claude",
+            "Python",
+            "React",
+            "Internal tooling",
+            "Production AI",
+            "Prompt engineering"
+          ],
+          "skill_gaps": [
+            "Legal domain knowledge",
+            "Enterprise AI governance"
+          ]
+        }
+      ]
+    },
+    "candidate_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 88,
+          "reasoning": "Excellent fit \u2014 candidate shipped production AI agents at Burnt (Claude Sonnet, RAG, 1,000+ orders) and built dual-model Claude pipeline for internshipmatcher.com; AI/LLM work maps directly to this role.",
+          "skill_matches": [
+            "Python",
+            "AI/ML",
+            "Claude",
+            "RAG"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 2,
+          "match_score": 72,
+          "reasoning": "Decent fit \u2014 candidate has strong full-stack foundation (React, Python, FastAPI across Burnt and internshipmatcher.com) but role is generic with no specific stack mentioned.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 3,
+          "match_score": 68,
+          "reasoning": "Decent fit \u2014 candidate has general SWE skills (React, Python, TypeScript) but no security/code-analysis experience; role focuses on developer security platform which is outside demonstrated domain.",
+          "skill_matches": [
+            "Python",
+            "TypeScript"
+          ],
+          "skill_gaps": [
+            "Security",
+            "Static Analysis"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 42,
+          "reasoning": "Weak fit \u2014 Leidos typically requires defense clearance and systems engineering focus; candidate's web/AI application work at Burnt and internshipmatcher.com does not align with systems-level requirements.",
+          "skill_matches": [
+            "Python"
+          ],
+          "skill_gaps": [
+            "Security Clearance",
+            "Systems Engineering"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 85,
+          "reasoning": "Strong fit \u2014 candidate shipped full-stack React+Python apps at Burnt and owns internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL); production experience maps exactly to full-stack role.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "PostgreSQL"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 6,
+          "match_score": 76,
+          "reasoning": "Strong fit \u2014 candidate has solid SWE foundation (React, Python, FastAPI) and AI experience (Claude agents at Burnt); GenBio AI likely values both but role description is generic.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "AI/ML"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 7,
+          "match_score": 70,
+          "reasoning": "Decent fit \u2014 candidate has general SWE skills (React, Python, TypeScript, FastAPI) but Docugami role is generic with no specific requirements to match against demonstrated work.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 8,
+          "match_score": 90,
+          "reasoning": "Excellent fit \u2014 candidate built production AI agents at Burnt (Claude, RAG, 1,000+ orders), dual-model pipeline at internshipmatcher.com, and autonomous SMS agent; AI enablement work is exact match.",
+          "skill_matches": [
+            "Python",
+            "AI/ML",
+            "Claude",
+            "FastAPI",
+            "RAG"
+          ],
+          "skill_gaps": []
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 4,
+        "conservatism": 4,
+        "project_classification": 3,
+        "impact_quality": 4
+      },
+      "scores_candidate": {
+        "skill_accuracy": 4,
+        "conservatism": 4,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "winner": "baseline",
+      "justification": "Both outputs handle skill accuracy and conservatism similarly, listing relevant demonstrated skills without hallucination. Neither output classifies projects explicitly (both are job-matching outputs, not project extraction), so project_classification is neutral for both. B wins on impact_quality: it surfaces more concrete evidence in its reasoning \u2014 citing '1,000+ orders,' '95%+ accuracy,' '7 enterprise clients,' bio-signal processing from Sleep-PSG, and Grafana monitoring work \u2014 giving richer, more evidence-grounded justifications per role. B also better aligns with expected ranking behavior: it scores Leidos (job 4) at 65 vs A's 42 (A is overly harsh but directionally correct), and more importantly B gives Docugami (job 7) a 76 and LegalZoom AI Enablement (job 8) a 90, while A scores Docugami only 70 and underweights the nuanced reasoning for GenBio (81 vs 76). B's reasoning for GenBio correctly identifies the Sleep-PSG EEG/bio-signal work as a differentiating signal, which A misses entirely. Overall B produces more precise, evidence-backed reasoning that better reflects the candidate's demonstrated strengths."
+    }
+  },
+  {
+    "id": "slate_agentic_focus",
+    "description": "AI agent/agentic system roles vs cloud ops and defense \u2014 specifically tests recognition of agentic AI work given the candidate's multi-agent pipeline experience",
+    "judged": false,
+    "gate_failed": false,
+    "baseline_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 92,
+          "reasoning": "Exceptional fit: shipped production AI agent at YC startup handling 1,000+ orders, built RAG pipeline with Claude, and Internship Matcher shows dual-model Claude architecture with real metrics. Direct AI agent experience with measurable impact.",
+          "skill_matches": [
+            "AI Agents",
+            "Claude/LLM",
+            "Python",
+            "FastAPI",
+            "Production ML",
+            "RAG",
+            "Data Processing"
+          ],
+          "skill_gaps": [
+            "Specific risk modeling domain knowledge"
+          ]
+        },
+        {
+          "job_id": 2,
+          "match_score": 85,
+          "reasoning": "Strong general SWE fit with full-stack production experience at YC startup, multiple deployed projects (internshipmatcher.com live), and solid fundamentals across React, Python, databases. NYC location may require relocation from Bay Area.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Full-stack"
+          ],
+          "skill_gaps": [
+            "No specific Haize Labs domain context provided"
+          ]
+        },
+        {
+          "job_id": 3,
+          "match_score": 68,
+          "reasoning": "Moderate fit: has AWS S3 experience and general backend skills, but limited cloud infrastructure depth. Projects focus on application layer rather than cloud solutions architecture. Location in Maryland requires relocation.",
+          "skill_matches": [
+            "AWS S3",
+            "Python",
+            "Backend development"
+          ],
+          "skill_gaps": [
+            "Cloud architecture",
+            "Kubernetes",
+            "Terraform",
+            "Multi-cloud platforms",
+            "Security clearance likely required"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 62,
+          "reasoning": "Generic defense contractor role with likely security clearance requirement. Candidate has strong SWE fundamentals but no defense/aerospace domain experience. Location requires relocation to VA.",
+          "skill_matches": [
+            "Python",
+            "General programming",
+            "Software development"
+          ],
+          "skill_gaps": [
+            "Defense domain knowledge",
+            "Security clearance",
+            "Embedded systems potentially",
+            "C/C++ possibly required"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 90,
+          "reasoning": "Excellent AI fit: production AI agent at Burnt with 1,000+ orders, multiple LLM projects with Claude (Haiku/Sonnet), RAG implementation, and measurable accuracy metrics (95%+, 83%). Strong ML engineering fundamentals.",
+          "skill_matches": [
+            "AI/ML",
+            "LLM integration",
+            "Claude",
+            "Python",
+            "Production AI systems",
+            "Prompt engineering"
+          ],
+          "skill_gaps": [
+            "Attentive-specific SMS marketing domain"
+          ]
+        },
+        {
+          "job_id": 6,
+          "match_score": 88,
+          "reasoning": "Strong fit for large tech: full-stack production experience, React/TypeScript frontend, Python backend, scaled systems (30K+ users platform), and local to San Jose. Demonstrates ability to ship features end-to-end with real user impact.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "Full-stack",
+            "PostgreSQL",
+            "Redis",
+            "Scalable systems"
+          ],
+          "skill_gaps": [
+            "TikTok-scale distributed systems experience"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 83,
+          "reasoning": "Good fit for SF startup: YC startup experience, shipped production features, full-stack skills, and local to Bay Area. Generic job description limits assessment, but candidate's startup experience and end-to-end ownership aligns well.",
+          "skill_matches": [
+            "Full-stack",
+            "React",
+            "Python",
+            "Startup experience",
+            "Product development"
+          ],
+          "skill_gaps": [
+            "Context-specific domain unknown from description"
+          ]
+        },
+        {
+          "job_id": 8,
+          "match_score": 94,
+          "reasoning": "Near-perfect fit: AI-native role matches production AI agent experience at YC startup, multiple LLM projects with Claude, RAG implementation, and local to San Jose. Demonstrated ability to build and deploy AI systems with measurable business impact (1,000+ orders, 7 enterprise clients).",
+          "skill_matches": [
+            "AI-native development",
+            "LLM/Claude",
+            "Python",
+            "FastAPI",
+            "Production AI",
+            "RAG",
+            "Full-stack AI systems"
+          ],
+          "skill_gaps": [
+            "Kognitos-specific automation platform knowledge"
+          ]
+        }
+      ]
+    },
+    "candidate_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 88,
+          "reasoning": "Excellent fit \u2014 candidate shipped production AI agent at Burnt (YC S25) with Claude+RAG across 1,000+ orders and built autonomous SMS agent with FSM pipeline; AI Agents focus maps exactly to their work.",
+          "skill_matches": [
+            "Python",
+            "AI/LLM",
+            "Claude",
+            "FastAPI",
+            "Data Processing"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 2,
+          "match_score": 72,
+          "reasoning": "Decent match \u2014 candidate has strong full-stack foundation (React, Python, TypeScript) across Burnt and internshipmatcher.com, but role description is generic with no specific stack mentioned.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript",
+            "Algorithms",
+            "Data Structures"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 3,
+          "match_score": 24,
+          "reasoning": "Poor fit \u2014 \ud83d\udec2 flag indicates clearance requirement; candidate has AWS S3 experience but no defense/government background, and clearance roles typically require U.S. citizenship.",
+          "skill_matches": [
+            "AWS"
+          ],
+          "skill_gaps": [
+            "Security Clearance",
+            "Government/Defense Experience"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 18,
+          "reasoning": "Misaligned \u2014 General Dynamics is defense contractor requiring clearance; candidate has no defense/aerospace background and likely cannot obtain required clearance as international student.",
+          "skill_matches": [],
+          "skill_gaps": [
+            "Security Clearance",
+            "Defense Industry Experience"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 86,
+          "reasoning": "Strong fit \u2014 candidate built production AI agents at Burnt with Claude+RAG and autonomous SMS agent with intent classification; AI internship at Attentive maps directly to their LLM application work.",
+          "skill_matches": [
+            "Python",
+            "AI/LLM",
+            "Claude",
+            "Machine Learning",
+            "FastAPI"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 6,
+          "match_score": 78,
+          "reasoning": "Strong match \u2014 candidate has production full-stack experience (React+TypeScript+Python) at Burnt and internshipmatcher.com; TikTok's scale fits their distributed systems work (Redis, PostgreSQL, async pipelines).",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript",
+            "PostgreSQL",
+            "Redis",
+            "Distributed Systems"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 7,
+          "match_score": 70,
+          "reasoning": "Decent fit \u2014 candidate has solid full-stack foundation across multiple projects, but Context role is extremely generic with no specific requirements to assess alignment beyond general programming.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript",
+            "Algorithms"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 8,
+          "match_score": 90,
+          "reasoning": "Excellent fit \u2014 candidate shipped AI-native products at Burnt (multi-channel agent with Claude+RAG) and built autonomous SMS agent; San Jose location + AI-Native focus perfectly matches their production LLM work.",
+          "skill_matches": [
+            "Python",
+            "AI/LLM",
+            "Claude",
+            "FastAPI",
+            "React",
+            "TypeScript"
+          ],
+          "skill_gaps": []
+        }
+      ]
+    },
+    "error": "judge failed: Expecting value: line 1 column 1 (char 0)\nTraceback (most recent call last):\n  File \"/Users/sujannandikolsunilkumar/internship_matcher_v3/Internship-App/evals/run.py\", line 568, in run_evals\n    raw_verdict = pairwise_judge(\n  File \"/Users/sujannandikolsunilkumar/internship_matcher_v3/Internship-App/evals/judge.py\", line 127, in pairwise_judge\n    return json.loads(raw)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py\", line 337, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py\", line 355, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n"
+  },
+  {
+    "id": "slate_swe_generalist_bracket",
+    "description": "Strong full-stack matches vs generic SWE generalists vs data-only roles \u2014 tests fine-grained ranking within similar-looking 'software engineering intern' roles",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 72,
+          "reasoning": "Strong general SWE fundamentals with production experience at YC startup. Shipped features across 7 enterprise clients with measurable impact (1,000+ orders). Solid algorithms/data structures foundation evident in projects. Amazon values scalable systems experience.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "FastAPI",
+            "PostgreSQL",
+            "AWS S3",
+            "System Design"
+          ],
+          "skill_gaps": [
+            "Java",
+            "Distributed Systems at Scale",
+            "AWS Core Services"
+          ]
+        },
+        {
+          "job_id": 2,
+          "match_score": 74,
+          "reasoning": "Excellent fit for Apple's high bar. Multiple production deployments (Burnt with 7 clients, Internship Matcher live). Strong full-stack with TypeScript/React. Demonstrated quality focus (98% accuracy in Sleep-PSG, 95%+ in matching). Apple values polish and impact.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "System Architecture",
+            "Production Experience"
+          ],
+          "skill_gaps": [
+            "Swift/iOS",
+            "macOS Development",
+            "Apple Frameworks"
+          ]
+        },
+        {
+          "job_id": 3,
+          "match_score": 81,
+          "reasoning": "Exceptional match for data infra role. Built async EEG pipeline with Redis+ARQ, parallel processing with 52% latency reduction, vector stores for RAG. Real production data systems (250+ files S3, 1,000+ orders). SF location matches. Strong data engineering fundamentals.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "AWS S3",
+            "Data Pipelines",
+            "Async Processing"
+          ],
+          "skill_gaps": [
+            "Spark",
+            "Airflow",
+            "Kafka"
+          ]
+        },
+        {
+          "job_id": 4,
+          "match_score": 78,
+          "reasoning": "Strong data acquisition fit. Built GraphQL webscraper for course data ingestion, EDF parsing pipeline, multi-tier data layer (PostgreSQL/Redis/S3). Healthcare tech experience translates well to Zus Health. Proven ability to handle complex data workflows.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "Data Pipelines",
+            "API Integration"
+          ],
+          "skill_gaps": [
+            "Healthcare Data Standards",
+            "FHIR",
+            "ETL Tools"
+          ]
+        },
+        {
+          "job_id": 5,
+          "match_score": 86,
+          "reasoning": "Near-perfect match. Burnt internship proves full-stack chops (React + Python, webhooks, multi-channel). Internship Matcher shows end-to-end ownership (frontend, backend, auth, data layer). 3 production systems shipped. Strong B2B SaaS experience with measurable impact.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "AWS S3",
+            "Full-Stack Architecture"
+          ],
+          "skill_gaps": [
+            "Mobile Development"
+          ]
+        },
+        {
+          "job_id": 6,
+          "match_score": 70,
+          "reasoning": "Solid general SWE fit. Production experience at YC startup, multiple shipped projects. Strong fundamentals across stack. However, less specific alignment with Podium's likely focus areas. Geographic distance (UT) may be factor.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript",
+            "PostgreSQL",
+            "API Development"
+          ],
+          "skill_gaps": [
+            "Go",
+            "Messaging Platforms",
+            "Podium-Specific Stack"
+          ]
+        },
+        {
+          "job_id": 7,
+          "match_score": 88,
+          "reasoning": "Excellent SF full-stack match. Burnt internship in SF proves local market fit. Three production full-stack systems (Burnt, Internship Matcher, Professor Review). Strong React/TypeScript frontend + Python/FastAPI backend. Real user impact (30K+ students, 7 enterprise clients).",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "Node.js",
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "Full-Stack",
+            "Production Deployment"
+          ],
+          "skill_gaps": [
+            "GraphQL Server Implementation"
+          ]
+        },
+        {
+          "job_id": 8,
+          "match_score": 84,
+          "reasoning": "Strong backend match in San Jose (local). Built 4+ production backend systems (FastAPI expertise across all projects). Async processing, Redis queues, PostgreSQL, S3 integration. Demonstrated scalability focus (52% latency reduction, parallel processing). Real production load (1,000+ orders).",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "AWS S3",
+            "Async Processing",
+            "API Design",
+            "WebSockets"
+          ],
+          "skill_gaps": [
+            "Microservices",
+            "Kubernetes",
+            "gRPC"
+          ]
+        }
+      ]
+    },
+    "candidate_output": {
+      "job_scores": [
+        {
+          "job_id": 1,
+          "match_score": 72,
+          "reasoning": "Decent fit \u2014 candidate has strong Python/React production work at Burnt and internshipmatcher.com, but role is generic with no specific stack mentioned; algorithms/data structures focus not heavily demonstrated in resume.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "algorithms",
+            "data structures"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 2,
+          "match_score": 70,
+          "reasoning": "Decent fit \u2014 candidate shipped production React/Python/TypeScript at Burnt and owns internshipmatcher.com, but Apple role is extremely generic with no specific tech stack or domain mentioned.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 3,
+          "match_score": 81,
+          "reasoning": "Strong fit \u2014 candidate built data pipelines with PostgreSQL, Redis, AWS S3 at internshipmatcher.com and async EEG pipeline with Redis+ARQ at Sleep-PSG; directly maps to data infra/pipeline work.",
+          "skill_matches": [
+            "Python",
+            "PostgreSQL",
+            "Redis",
+            "data pipelines",
+            "AWS S3"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 4,
+          "match_score": 79,
+          "reasoning": "Strong fit \u2014 candidate built data acquisition systems (GraphQL webscraper, EDF parsing pipeline, S3 attachment store) and owns multi-tier data layer with PostgreSQL/Redis across three projects.",
+          "skill_matches": [
+            "Python",
+            "PostgreSQL",
+            "Redis",
+            "data pipelines",
+            "databases"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 5,
+          "match_score": 86,
+          "reasoning": "Excellent fit \u2014 candidate shipped full-stack React+Python+FastAPI at Burnt (YC S25) and owns internshipmatcher.com with React+TypeScript frontend and FastAPI backend; exact stack match.",
+          "skill_matches": [
+            "React",
+            "Python",
+            "FastAPI",
+            "TypeScript",
+            "PostgreSQL"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 6,
+          "match_score": 71,
+          "reasoning": "Decent fit \u2014 candidate has production React/Python/TypeScript experience at Burnt and internshipmatcher.com, but Podium role is generic with no specific stack or domain requirements listed.",
+          "skill_matches": [
+            "Python",
+            "React",
+            "TypeScript"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 7,
+          "match_score": 88,
+          "reasoning": "Excellent fit \u2014 candidate owns internshipmatcher.com (React+TypeScript+FastAPI+PostgreSQL full stack) and shipped React+Python internal tools at Burnt; SF location matches Bay Area work history.",
+          "skill_matches": [
+            "React",
+            "TypeScript",
+            "FastAPI",
+            "Python",
+            "PostgreSQL",
+            "Node.js"
+          ],
+          "skill_gaps": []
+        },
+        {
+          "job_id": 8,
+          "match_score": 84,
+          "reasoning": "Strong fit \u2014 candidate built FastAPI backends at internshipmatcher.com, Burnt, and Cold Leads Agent with PostgreSQL/Redis; San Jose location matches SJSU; backend focus aligns with three FastAPI projects.",
+          "skill_matches": [
+            "Python",
+            "FastAPI",
+            "PostgreSQL",
+            "Redis",
+            "API development"
+          ],
+          "skill_gaps": []
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 4,
+        "conservatism": 4,
+        "project_classification": 4,
+        "impact_quality": 5
+      },
+      "scores_candidate": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "winner": "baseline",
+      "justification": "A consistently captures concrete numeric metrics from the resume (1,000+ orders, 52% latency reduction, 98% time reduction, 30K+ students, 83% code reduction) and maps them to specific job matches, earning high impact_quality marks. B's reasoning is vaguer and rarely references specific metrics. A also provides more precise and standardized skill matches per job (e.g., WebSockets, Async Processing, Full-Stack Architecture) and meaningful skill gaps that reflect real role requirements, whereas B lists almost no skill gaps at all \u2014 a suspicious omission that hurts conservatism and accuracy. B's skill_matches are also shallower (e.g., 'algorithms', 'data structures', 'databases' as generic terms rather than demonstrated specifics). Both outputs rank jobs 7 and 5 highest and 3/4 lower, roughly aligning with expected behavior, but A's per-job reasoning is more grounded in resume evidence. A wins on skill_accuracy, conservatism, and impact_quality; project_classification is roughly tied since neither output explicitly classifies project types in a taxonomy field, but A's reasoning better reflects the nature of each project."
+    }
+  }
+]

@@ -1,0 +1,30 @@
+Sofia Rivera
+sofia.rivera@email.com | sofiarivera.dev | github.com/sofiarivera
+
+EDUCATION
+B.S. Computer Science, UCLA | May 2024
+
+EXPERIENCE
+Software Engineer Intern, FinanceApp Inc. (Jun 2023 – Aug 2023)
+- Rebuilt the user dashboard with React and TypeScript; reduced page load time by 1.8 seconds (from 3.2s to 1.4s) by code-splitting and lazy loading heavy chart components
+- Optimized 3 slow PostgreSQL queries by adding composite indexes; reduced average query time by 62% (from 850ms to 320ms)
+- Shipped feature to production environment (Vercel) serving 22,000 monthly active users
+
+PROJECTS
+InternTracker — Job Application Tracker (Jan 2024 – Mar 2024)
+- Built a full-stack SaaS using React, Node.js, and PostgreSQL; deployed to AWS EC2
+- Live at interntracker.io; reached 500+ registered users within 2 weeks of launch
+- Implemented Clerk authentication, drag-and-drop Kanban board, and email reminders via SendGrid
+- Won Best Solo Hack at HackUCLA 2024, $5,000 prize
+
+PricePulse — E-Commerce Price Monitor (Sep 2023 – Dec 2023)
+- Python scraper deployed as a cron job on AWS Lambda; monitors 3,000+ product listings daily
+- Sends email alerts when price drops > 15%; handles 10,000+ requests per day
+- Redis caching layer reduced repeat scraping API calls by 80%
+
+SKILLS
+Languages: Python, JavaScript, TypeScript, SQL
+Frameworks: React, Node.js, Express, FastAPI
+Databases: PostgreSQL, Redis
+Cloud: AWS (EC2, Lambda, S3), Vercel
+Tools: Git, Docker

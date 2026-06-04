@@ -1,0 +1,87 @@
+{
+  "name": "Sujan Nandikol Sunilkumar",
+  "email": "sujan.nandikolsunilkumar@sjsu.edu",
+  "phone": "(925)-967-6795",
+  "website": "https://suqjan.com",
+  "github": "https://github.com/sujan",
+  "linkedin": "https://linkedin.com/in/sujan",
+  "experience": [
+    {
+      "company": "Burnt (YC S25)",
+      "location": "San Francisco, CA",
+      "title": "Full Stack Developer Intern",
+      "dates": "July 2025 \u2013 September 2025",
+      "bullets": [
+        "AI agent development: shipped multi-channel B2B order agent (Claude Sonnet, RAG) across 7 clients, 1,000+ orders",
+        "Built React + Python internal tools: Intercom ticketing (5+ min saved/request, 50+ customers), AWS S3 store (250+ files)",
+        "Automated LLM validation layer with human-in-the-loop QA; iterated prompts, vector-store memory for 1,000+ production orders",
+        "Data processing pipeline: webhook ingestion, intelligent routing, multi-format order parsing for enterprise ERP systems"
+      ]
+    },
+    {
+      "company": "SJSU College of Engineering",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "June 2025 \u2013 August 2025",
+      "bullets": [
+        "Built Python wrapper around Grafanalib on 3-person team, achieving 83% code reduction (30+ lines to 5)",
+        "Migrated 7+ legacy dashboards across 3 Grafana environments with unit tests on dashboard layer",
+        "Data visualization automation: programmatic dashboard generation reducing manual configuration time"
+      ]
+    },
+    {
+      "company": "SJSU Software & Computer Engineering Society",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "February 2025 \u2013 Present",
+      "bullets": [
+        "Building professor review platform for 30,000+ students (TypeScript, React, Node.js, Drizzle ORM)",
+        "Shipped review submission flow and Python GraphQL webscraper for course data ingestion across agile sprints",
+        "Data processing: automated scraping, validation, and ingestion pipeline for academic course metadata"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "school": "San Jose State University",
+      "location": "San Jose, CA",
+      "degree": "Bachelor of Science in Computer Science and Linguistics",
+      "dates": "May 2027"
+    }
+  ],
+  "skills": {
+    "Programming Languages": "Python, TypeScript, JavaScript, SQL, Java",
+    "AI & Machine Learning": "Claude/OpenAI/Gemini API, LangChain, RAG, Prompt Engineering, Vector Stores, MCP, Scikit-Learn",
+    "Frameworks & Libraries": "FastAPI, React.js, Node.js, Flask, Tailwind CSS, Spring Boot",
+    "Data & Developer Tools": "PostgreSQL, Redis, AWS (EC2/S3), Docker, Git, GitHub Actions, GCP, Linux"
+  },
+  "projects": [
+    {
+      "name": "Internship Matcher (React, TypeScript, FastAPI, Claude, PostgreSQL, Redis, AWS S3)",
+      "dates": "October 2025 \u2013 Present",
+      "bullets": [
+        "AI model pipeline: dual-model Claude (Haiku 4.5 skill extraction, Sonnet 4.5 deep re-ranking) at 95%+ accuracy",
+        "Data processing: parallel processing 30+ positions, 52% latency reduction (270s\u2192130s) via dynamic batching, prompt caching",
+        "Full-stack production system at internshipmatcher.com: FastAPI backend, multi-tier data layer, SSE-streamed progress events"
+      ]
+    },
+    {
+      "name": "Sleep-PSG Scoring (React, FastAPI, MNE, Scikit-Learn, Redis, WebSockets)",
+      "dates": "January 2026 \u2013 April 2026",
+      "bullets": [
+        "Machine learning model: automated PSG sleep-stage scoring with 83% balanced accuracy, 98% time reduction (2+ hrs\u21922 min)",
+        "Data processing pipeline: async EEG (Redis + ARQ), distributed EDF parsing, spectral feature extraction, per-patient classifiers",
+        "Real-time data streaming: sub-10ms WebSocket delivery to React dashboard rendering live EEG waveforms and hypnograms"
+      ]
+    },
+    {
+      "name": "Cold Leads Agent (FastAPI, Claude Haiku + Sonnet, Cal.com, Linq, Postgres)",
+      "dates": "May 2026 \u2013 Present",
+      "bullets": [
+        "AI agent: autonomous lead-qualification SMS agent with FSM-driven pipeline, intent classification, Cal.com auto-booking",
+        "Intelligent software system: dual-model Claude (Haiku + Sonnet), async Postgres, APScheduler, saving ~5 hrs/week manual work",
+        "Data integration: HMAC-signed Linq webhooks, Cal.com v2 booking API, SendGrid escalation; live in production for client"
+      ]
+    }
+  ]
+}

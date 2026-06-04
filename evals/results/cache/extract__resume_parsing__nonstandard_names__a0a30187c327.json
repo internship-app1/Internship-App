@@ -1,0 +1,86 @@
+{
+  "skills": [
+    "Python",
+    "TypeScript",
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Flask",
+    "PostgreSQL",
+    "Docker",
+    "AWS",
+    "PyTorch",
+    "Git",
+    "SQL"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Extracted skills with explicit project or work experience backing. Excluded 'Java' (listed in skills but no project evidence), 'Angular' (mentioned once in internship but minimal detail), 'scikit-learn' (used in internship but logistic regression is basic), 'Redis' (mentioned but secondary to core tech), 'GCP' (mentioned but AWS is primary), 'HuggingFace' (framework wrapper, PyTorch is core), 'SQLAlchemy' (ORM tool, SQL is core), 'Socket.io' (library, not a primary skill), and 'GitHub Actions' (CI/CD tool, Git is core). Standardized 'Py' to 'Python', 'JS/TS' to separate skills, 'ML/AI' removed as vague self-reported terms without concrete backing.",
+  "projects": [
+    {
+      "name": "Real-Time Chat App",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Node.js",
+        "React",
+        "TypeScript",
+        "Docker",
+        "AWS",
+        "Git"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Full-stack real-time messaging application with Node.js backend and React frontend. Deployed on AWS EC2 with Docker containerization and GitHub Actions CI/CD pipeline. Demonstrates proficiency in modern web architecture, DevOps practices, and real-time communication patterns."
+    },
+    {
+      "name": "Sentiment Analysis Tool",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "PyTorch",
+        "PostgreSQL",
+        "SQL"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "NLP project fine-tuning BERT model for sentiment classification on 80,000 tweets. Processed data using PyTorch and NumPy, stored results in PostgreSQL. Demonstrates machine learning pipeline development and large-scale text processing."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Processed and analyzed 80,000 tweets using fine-tuned BERT model for sentiment classification, demonstrating ability to handle large-scale NLP datasets.",
+      "metric": "80,000 tweets processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Deployed real-time chat application to AWS EC2 with Docker containerization and automated CI/CD pipeline via GitHub Actions, demonstrating production-ready deployment practices.",
+      "metric": "Production deployment on AWS EC2",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Built and deployed REST API using Flask to GCP Cloud Run during internship, handling ETL pipeline for CSV data transformation.",
+      "metric": "REST API deployed to production",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Core skills (Python, TypeScript, React, Node.js, Docker, AWS) are explicitly mentioned in multiple projects with clear technical details. Work experience at DataCo provides additional validation."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "PyTorch and PostgreSQL are project-specific; limited breadth of evidence but clear usage context. Excluded scikit-learn despite internship mention due to minimal detail (basic logistic regression)."
+    },
+    {
+      "confidence_level": "low",
+      "confidence_score": 0.6,
+      "confidence_notes": "SQL included as foundational skill evidenced by SQLAlchemy usage and PostgreSQL work, though not explicitly highlighted. Git included based on GitHub Actions CI/CD mention, though not explicitly detailed."
+    }
+  ]
+}

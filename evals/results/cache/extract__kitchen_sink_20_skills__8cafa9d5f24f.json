@@ -1,0 +1,54 @@
+{
+  "skills": [
+    "Python",
+    "Java",
+    "JavaScript"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with concrete project evidence. The self-reported skills list is extensive but lacks corroborating work experience or detailed project descriptions. Only Python, Java, and JavaScript have explicit project mentions (Hello World App and Calculator). All other skills in the self-reported list are treated as aspirational without supporting evidence of actual use.",
+  "projects": [
+    {
+      "name": "Hello World App",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Python",
+        "JavaScript"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Basic introductory project implementing a Hello World application in Python and JavaScript. Demonstrates foundational programming knowledge but minimal complexity."
+    },
+    {
+      "name": "Calculator",
+      "type": "Developer Tool / Automation",
+      "technologies": [
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": false,
+      "summary": "Command-line calculator built in Java as a class assignment. Implements basic arithmetic operations with minimal scope."
+    }
+  ],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "High confidence in extracted skills because they are directly mentioned in project descriptions. Python and JavaScript are explicitly used in the Hello World App; Java is explicitly used in the Calculator project."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.98,
+      "confidence_notes": "High confidence in rejecting the extensive self-reported skills list. The resume contains no work experience, no detailed project descriptions, no certifications, and no evidence of using the 40+ technologies listed. This pattern is consistent with aspirational skill claims common in student resumes without supporting evidence."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "High confidence in project classification and complexity assessment. Both projects are explicitly described as basic/introductory work with no deployment, no metrics, and no evidence of production use or significant complexity."
+    }
+  ]
+}

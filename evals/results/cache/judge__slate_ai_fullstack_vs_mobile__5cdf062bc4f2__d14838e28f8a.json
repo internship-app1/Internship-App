@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "winner": "baseline",
+  "justification": "A consistently captures concrete metrics from the resume (1,000+ orders, 83% code reduction, 52% latency reduction, 5 hrs/week saved) in its reasoning, earning a higher impact_quality score. A also better calibrates match scores to the expected ranking \u2014 AI-native roles (jobs 1, 5) score highest, full-stack roles (7, 8) score next, generic big-tech (2, 6) score mid-range, and iOS roles (3, 4) score lowest, closely matching expected behavior. B's scores for Amazon (62) and Apple (58) are too low relative to the expected 'generic ok match' framing, and B's skill_matches lists are thinner (e.g., job 3 has no matches at all, which is overly harsh). A's reasoning is richer and more evidence-grounded throughout, and its conservatism is better calibrated with meaningful skill gap identification rather than B's frequent empty skill_gaps arrays."
+}

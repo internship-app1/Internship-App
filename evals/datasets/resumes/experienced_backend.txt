@@ -1,0 +1,30 @@
+David Chen
+david.chen@email.com | linkedin.com/in/davidchen | github.com/davidchen
+
+EXPERIENCE
+Senior Software Engineer, Stripe (Mar 2022 – Present)
+- Lead engineer on the Billing API team; own 3 microservices processing $4B+ in annual transactions
+- Designed and implemented distributed rate-limiting system in Go using Redis, handling 120,000 RPS
+- Reduced P99 API latency from 380ms to 95ms by profiling and rewriting hot paths in Go
+- Mentor 4 junior engineers; conduct weekly technical design reviews
+
+Software Engineer, Plaid (Jul 2019 – Mar 2022)
+- Built bank connection ingestion pipeline in Python (Celery + RabbitMQ); processed 2M+ daily connections
+- Migrated 8 services from PostgreSQL 11 to 14; zero-downtime migration using logical replication
+- Implemented end-to-end encryption for OAuth token storage using AES-256
+- On-call rotation for core transaction aggregation service (99.99% uptime SLA)
+
+Software Engineer Intern, LinkedIn (Jun 2018 – Aug 2018)
+- Built backend features for LinkedIn Learning recommendation engine in Java/Spring Boot
+- Added A/B testing instrumentation that ran experiments on 500,000 daily active users
+
+EDUCATION
+B.S. Computer Science, Carnegie Mellon University | May 2019
+
+SKILLS
+Languages: Python, Go, Java, SQL, Bash
+Frameworks: FastAPI, Flask, Spring Boot, Celery
+Databases: PostgreSQL, Redis, MySQL, Elasticsearch
+Infrastructure: AWS (EKS, RDS, SQS, S3), Kubernetes, Docker, Terraform
+Messaging: Kafka, RabbitMQ
+Tools: Git, Datadog, PagerDuty

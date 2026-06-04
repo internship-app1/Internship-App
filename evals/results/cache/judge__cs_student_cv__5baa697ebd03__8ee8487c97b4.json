@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 1
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 5,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "B is superior across all four dimensions. On skill_accuracy, A adds 'Computer Vision', 'Deep Learning', 'Machine Learning', and 'Data Preprocessing' which are either course names or inferred abstractions rather than discrete demonstrated skills \u2014 B correctly omits these. On conservatism, A's 20 skills is bloated with those inferred additions; B's 16 skills maps cleanly to the explicit SKILLS section. On project_classification, B correctly classifies both projects as AI/ML (Computer Vision) with full detail; A extracts no projects at all (neutral score 3). On impact_quality, B captures all key concrete metrics \u2014 91% mAP, 12% improvement over baseline, 28 FPS on NVIDIA T4, live deployment URL at traffic-demo.priya.dev, and 88% accuracy on FER2013 \u2014 while A extracts no impact highlights whatsoever, earning the minimum score."
+}

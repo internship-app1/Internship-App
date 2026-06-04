@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "B is clearly better calibrated. It extracts 15 well-demonstrated backend skills that map directly to the candidate's actual work. A bloats the list to 32 entries by splitting AWS sub-services (EKS, RDS, SQS, S3) into separate skills, adding soft/inferred concepts like 'Distributed Systems', 'API Design', 'Performance Optimization', and 'Encryption' that are not standardized skill tags, and including tools like FastAPI and Flask that appear only in the skills section with no demonstrated project evidence. B omits some minor tools (Datadog, PagerDuty, Bash, Git) that are real but lower-signal, which is a reasonable conservative tradeoff. Both outputs correctly identify 'experienced' level and 6 years. Neither extracts projects or impact highlights, so project_classification and impact_quality are neutral (3) for both."
+}

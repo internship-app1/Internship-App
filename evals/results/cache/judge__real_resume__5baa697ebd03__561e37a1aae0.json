@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 4,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "B strictly follows the expected behavior: only 5 well-evidenced technical skills (Python, JavaScript, Java, Machine Learning, HTML), no soft skills, and correct student classification. A bloats the list with 'Artificial Intelligence' (redundant/vague), 'Git' (not mentioned), 'Data Analysis' (not demonstrated technically), 'Project Management', and 'Communication' \u2014 all penalized per instructions. B's project classifications are reasonable (AI/ML NLP/GenAI for the scribe, Frontend Only for the GitHub pages), though 'Java' on a website is slightly suspect. B's impact_highlights are borderline vague (no real numeric metrics), but the expected behavior says no impact_highlights unless a specific metric is stated \u2014 both outputs score neutrally here since the resume genuinely lacks hard metrics. B wins decisively on skill_accuracy and conservatism, which are the most critical dimensions for this student resume."
+}

@@ -1,0 +1,344 @@
+[
+  {
+    "id": "slate_ai_fullstack_vs_mobile",
+    "description": "AI/full-stack roles (Python+React+AI) vs mobile-only iOS/Android roles \u2014 tests whether model recognizes React/Python experience over Swift/Kotlin requirement",
+    "resume_file": "sujan_resume.txt",
+    "slate_file": "slate_ai_fullstack_vs_mobile.xml",
+    "expectations": "Nash Full Stack, Mariana Minerals, Kognitos AI-Native, and Homebase AI Engineer should rank highest \u2014 all require Python+React+TypeScript that the candidate has with production deployments. Amazon and Apple are generic ok matches (no specific skill gap, but also no AI signal). EarnIn iOS and Reply iOS should rank lowest \u2014 they primarily require Swift/Kotlin which the candidate has no experience with.",
+    "labels": [
+      {
+        "job_id": 1,
+        "company": "Homebase",
+        "title": "AI Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 2,
+        "company": "Amazon",
+        "title": "Software Development Engineer Intern",
+        "label": "ok"
+      },
+      {
+        "job_id": 3,
+        "company": "EarnIn",
+        "title": "Mobile Engineer Intern - iOS",
+        "label": "bad"
+      },
+      {
+        "job_id": 4,
+        "company": "Reply",
+        "title": "IOS Developer Intern",
+        "label": "bad"
+      },
+      {
+        "job_id": 5,
+        "company": "Kognitos",
+        "title": "Software Engineer Intern - AI-Native",
+        "label": "good"
+      },
+      {
+        "job_id": 6,
+        "company": "Apple",
+        "title": "Software Undergrad Engineer Intern",
+        "label": "ok"
+      },
+      {
+        "job_id": 7,
+        "company": "Nash",
+        "title": "Full Stack Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 8,
+        "company": "Mariana Minerals",
+        "title": "Full-Stack Software Engineer Intern",
+        "label": "good"
+      }
+    ]
+  },
+  {
+    "id": "slate_ai_fullstack_vs_devops",
+    "description": "Full-stack/AI roles vs DevOps/infrastructure roles \u2014 tests whether model recognizes application-layer experience over ops/infra tooling",
+    "resume_file": "sujan_resume.txt",
+    "slate_file": "slate_ai_fullstack_vs_devops.xml",
+    "expectations": "Tessera Labs Backend, Context, Great Question AI Engineer, and Attentive AI Intern should rank highest \u2014 all align with the candidate's Python/FastAPI/AI background. TikTok and Palantir are generic SWE ok matches. Axiomatic AI (DevOps/K8s/CI-CD) and Neuralink Infrastructure should rank lowest \u2014 they primarily require cloud infrastructure/ops work not demonstrated in the resume.",
+    "labels": [
+      {
+        "job_id": 1,
+        "company": "Attentive",
+        "title": "AI Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 2,
+        "company": "TikTok",
+        "title": "Software Engineer Intern - Multiple Teams",
+        "label": "ok"
+      },
+      {
+        "job_id": 3,
+        "company": "Axiomatic AI",
+        "title": "Software Engineering Internship \u2013 Platform/DevOps ",
+        "label": "bad"
+      },
+      {
+        "job_id": 4,
+        "company": "Neuralink",
+        "title": "Software Engineer Intern - Infrastructure",
+        "label": "bad"
+      },
+      {
+        "job_id": 5,
+        "company": "Great Question",
+        "title": "AI Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 6,
+        "company": "Palantir",
+        "title": "Year at Palantir Intern - Forward Deployed Softwar",
+        "label": "ok"
+      },
+      {
+        "job_id": 7,
+        "company": "Tessera Labs",
+        "title": "Software Engineer Intern - Backend",
+        "label": "good"
+      },
+      {
+        "job_id": 8,
+        "company": "Context",
+        "title": "Intern",
+        "label": "good"
+      }
+    ]
+  },
+  {
+    "id": "slate_llm_native_vs_deep_ml",
+    "description": "LLM/AI-native application roles vs pure deep learning research roles \u2014 tests whether model distinguishes LLM integration work from training/research ML",
+    "resume_file": "sujan_resume.txt",
+    "slate_file": "slate_llm_native_vs_deep_ml.xml",
+    "expectations": "Guidewire AI, Fortinet AI Intern, Socure AI Agents, and Labelbox Forward Deployed Engineer should rank highest \u2014 these are LLM/AI application roles that align with the candidate's Claude API + RAG + agentic work. TikTok Data Platform and Cotiviti are ok \u2014 some AI overlap but heavier on data. Cambium (PyTorch/TF deep learning) and Rackner (ML model training) should rank lowest \u2014 they require ML research/training experience the candidate lacks.",
+    "labels": [
+      {
+        "job_id": 1,
+        "company": "Labelbox",
+        "title": "Forward Deployed Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 2,
+        "company": "TikTok",
+        "title": "AI/ML Software Engineer Intern - Data Platform",
+        "label": "ok"
+      },
+      {
+        "job_id": 3,
+        "company": "Cambium Learning Group",
+        "title": "Software Engineer Intern - AI Applications \ud83c\udf93",
+        "label": "bad"
+      },
+      {
+        "job_id": 4,
+        "company": "Rackner",
+        "title": "Rackner AI Innovation Fellowship \u2013 Startup Acceler",
+        "label": "bad"
+      },
+      {
+        "job_id": 5,
+        "company": "Socure",
+        "title": "Engineering Intern - AI Agents - Data & Riskos \ud83c\udf93",
+        "label": "good"
+      },
+      {
+        "job_id": 6,
+        "company": "Cotiviti",
+        "title": "Temporary Intern - Agentic AI & Neural-Symbolic Sy",
+        "label": "ok"
+      },
+      {
+        "job_id": 7,
+        "company": "Guidewire",
+        "title": "AI Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 8,
+        "company": "Fortinet",
+        "title": "AI Intern",
+        "label": "good"
+      }
+    ]
+  },
+  {
+    "id": "slate_fullstack_vs_security_defense",
+    "description": "Full-stack/AI roles vs security and defense/aerospace roles \u2014 tests model's ability to penalize clearance-required and cybersecurity-specialized positions",
+    "resume_file": "sujan_resume.txt",
+    "slate_file": "slate_fullstack_vs_security_defense.xml",
+    "expectations": "Docugami, LegalZoom AI Enablement, Magna Full Stack, and Attentive AI should rank highest. Oracle and GenBio are generic ok. Snyk (cybersecurity/security analysis focus) and Leidos Defense (system engineering, likely clearance required) should rank at the bottom \u2014 neither aligns with the candidate's full-stack/AI application background.",
+    "labels": [
+      {
+        "job_id": 1,
+        "company": "Attentive",
+        "title": "AI Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 2,
+        "company": "Oracle",
+        "title": "Software Engineer Intern",
+        "label": "ok"
+      },
+      {
+        "job_id": 3,
+        "company": "Snyk",
+        "title": "Software Engineer Intern - Code Rules - Developer ",
+        "label": "bad"
+      },
+      {
+        "job_id": 4,
+        "company": "Leidos",
+        "title": "System Engineer Intern",
+        "label": "bad"
+      },
+      {
+        "job_id": 5,
+        "company": "Magna",
+        "title": "Junior Full Stack Developer Co-op",
+        "label": "good"
+      },
+      {
+        "job_id": 6,
+        "company": "GenBio AI",
+        "title": "Software Engineer Intern \ud83c\udf93",
+        "label": "ok"
+      },
+      {
+        "job_id": 7,
+        "company": "Docugami",
+        "title": "Software Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 8,
+        "company": "LegalZoom",
+        "title": "AI Enablement Engineer Intern",
+        "label": "good"
+      }
+    ]
+  },
+  {
+    "id": "slate_agentic_focus",
+    "description": "AI agent/agentic system roles vs cloud ops and defense \u2014 specifically tests recognition of agentic AI work given the candidate's multi-agent pipeline experience",
+    "resume_file": "sujan_resume.txt",
+    "slate_file": "slate_agentic_focus.xml",
+    "expectations": "Context, Kognitos AI-Native, Attentive AI, and Socure AI Agents should rank highest \u2014 all involve agentic or AI-native work aligned with the candidate's multi-channel AI order agent at Burnt (YC) and Claude Haiku/Sonnet pipeline work. Haize Labs and TikTok are generic ok. Cloudforce (cloud infrastructure/AWS/Azure) and General Dynamics (defense engineering) should rank lowest.",
+    "labels": [
+      {
+        "job_id": 1,
+        "company": "Socure",
+        "title": "Engineering Intern - AI Agents - Data & Riskos \ud83c\udf93",
+        "label": "good"
+      },
+      {
+        "job_id": 2,
+        "company": "Haize Labs",
+        "title": "Software Engineer Intern",
+        "label": "ok"
+      },
+      {
+        "job_id": 3,
+        "company": "Cloudforce",
+        "title": "Cloud Solutions Intern \ud83d\udec2",
+        "label": "bad"
+      },
+      {
+        "job_id": 4,
+        "company": "General Dynamics Mission Systems",
+        "title": "Engineer Intern",
+        "label": "bad"
+      },
+      {
+        "job_id": 5,
+        "company": "Attentive",
+        "title": "AI Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 6,
+        "company": "TikTok",
+        "title": "Software Engineer Intern - Multiple Teams",
+        "label": "ok"
+      },
+      {
+        "job_id": 7,
+        "company": "Context",
+        "title": "Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 8,
+        "company": "Kognitos",
+        "title": "Software Engineer Intern - AI-Native",
+        "label": "good"
+      }
+    ]
+  },
+  {
+    "id": "slate_swe_generalist_bracket",
+    "description": "Strong full-stack matches vs generic SWE generalists vs data-only roles \u2014 tests fine-grained ranking within similar-looking 'software engineering intern' roles",
+    "resume_file": "sujan_resume.txt",
+    "slate_file": "slate_swe_generalist_bracket.xml",
+    "expectations": "Nash Full Stack, Tessera Labs Backend, and Mariana Minerals should rank highest \u2014 all specifically want Python+React/Node.js full-stack skills matching the candidate. Amazon, Apple, and Podium are generic SWE roles (ok) \u2014 no red flags but also no signal. Meshy Data Infra and Zus Health Data Acquisition should rank lowest \u2014 both primarily require data pipeline/ETL work, not full-stack application development.",
+    "labels": [
+      {
+        "job_id": 1,
+        "company": "Amazon",
+        "title": "Software Development Engineer Intern",
+        "label": "ok"
+      },
+      {
+        "job_id": 2,
+        "company": "Apple",
+        "title": "Software Undergrad Engineer Intern",
+        "label": "ok"
+      },
+      {
+        "job_id": 3,
+        "company": "Meshy",
+        "title": "Data Infra Engineer Intern",
+        "label": "bad"
+      },
+      {
+        "job_id": 4,
+        "company": "Zus Health",
+        "title": "Data Acquisition Software Engineering Co-op",
+        "label": "bad"
+      },
+      {
+        "job_id": 5,
+        "company": "Mariana Minerals",
+        "title": "Full-Stack Software Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 6,
+        "company": "Podium",
+        "title": "Software Engineer Intern",
+        "label": "ok"
+      },
+      {
+        "job_id": 7,
+        "company": "Nash",
+        "title": "Full Stack Engineer Intern",
+        "label": "good"
+      },
+      {
+        "job_id": 8,
+        "company": "Tessera Labs",
+        "title": "Software Engineer Intern - Backend",
+        "label": "good"
+      }
+    ]
+  }
+]

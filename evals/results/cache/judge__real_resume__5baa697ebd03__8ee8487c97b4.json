@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 2,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 2
+  },
+  "winner": "candidate",
+  "justification": "A includes soft skills (Project Management, Communication, Data Analysis) and 'Artificial Intelligence' as a separate skill from Machine Learning, violating the expected behavior of not extracting soft skills and keeping the list conservative. A also includes 'Git' with no evidence in the resume. B is more disciplined \u2014 it drops the soft skills and keeps the list tighter, though it adds 'WordPress' (marginal) and 'Git' (also unsubstantiated). B correctly classifies the AI scribe project as AI/ML (NLP/GenAI) and the GitHub projects as Frontend Only, which is appropriate. B's impact_highlights are vague and lack real numeric metrics (the Datathon highlight is particularly weak \u2014 it's a club event, not a measurable outcome), but A extracts no projects or impact at all, making B more informative overall. B's years_of_experience (0.5) is arguably too low given the internship started Summer 2022, but A's value of 2 is more defensible. Despite B's flaws, it outperforms A on project classification and skill accuracy, and its additional structured project data adds value even if imperfect."
+}

@@ -1,0 +1,95 @@
+{
+  "skills": [
+    "Python",
+    "JavaScript",
+    "Java",
+    "Machine Learning",
+    "HTML",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 2,
+  "is_student": true,
+  "confidence_notes": "Extracted skills from concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning) and GitHub projects (HTML, Java, Git). Excluded WordPress blogging as it does not demonstrate technical coding skills. Conservative approach applied\u2014only included skills with explicit project or work evidence.",
+  "projects": [
+    {
+      "name": "AI Scribe for Physician-Patient Consultations",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Built AI scribes using Python and JavaScript libraries to automatically summarize physician-patient consultations, helping doctors save time. Developed machine learning models for patient data processing in Java. Work completed as intern at Atelia Software."
+    },
+    {
+      "name": "Historical Decolonization Website",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Low",
+      "has_link": true,
+      "summary": "Created a website explaining the historical process of decolonization using HTML and Java. Published on GitHub as a personal project demonstrating interest in history and web development."
+    },
+    {
+      "name": "NFL Draft Team Simulator Game",
+      "type": "Frontend Only",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": true,
+      "summary": "Developed an interactive game allowing users to take control of their favorite NFL team for the 2021 Draft, showing how team rosters would differ with alternative player selections. Demonstrates interest in sports analytics and interactive web applications."
+    },
+    {
+      "name": "Teacher Filtering Tool",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "HTML",
+        "Java"
+      ],
+      "is_deployed": false,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Collaborated on a coding project for the Software and Computer Engineering Society where students can use a filtering tool to select teachers best suited for them across campus. Demonstrates full-stack development involvement."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Built AI scribes at Atelia Software that automatically summarize physician-patient consultations, directly addressing the client goal of saving doctors' time through machine learning and natural language processing.",
+      "metric": "Automated consultation summarization system deployed for healthcare professionals",
+      "dimension": "business_value"
+    },
+    {
+      "description": "Organized and coordinated the MSJ Sports Analytics Club's annual Datathon where members analyzed NBA, MLB, and NFL data, with judging by sports professionals, demonstrating event management and analytics community building.",
+      "metric": "Annual Datathon with professional judges from major sports organizations",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Python, JavaScript, and Java extraction backed by explicit work experience at Atelia Software with detailed project descriptions. Machine Learning confirmed through model development work mentioned in job duties."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.88,
+      "confidence_notes": "HTML and Java extracted from GitHub projects with concrete evidence of website and game development. Git inferred from active GitHub profile with multiple projects."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "Project deployment status marked as false because no explicit deployment keywords (live, production, deployed, URL) are mentioned. Projects appear to be portfolio/educational work rather than production systems."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "tie",
+  "justification": "Both extractions are identical in every field. Neither includes Python, Rust, React, Node.js, or Tailwind CSS (correctly excluded as aspirational/never-used). GraphQL is a mild stretch given the candidate only used read-only queries and noted senior devs wrote them, but both outputs include it equally. localStorage is a minor inclusion that could go either way. Neither output extracts projects or impact highlights, which is neutral given the resume's lack of meaningful metrics. Since the outputs are byte-for-byte identical, a tie is the only defensible verdict."
+}

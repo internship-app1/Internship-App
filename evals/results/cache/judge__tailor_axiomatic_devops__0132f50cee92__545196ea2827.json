@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both outputs are very close across all dimensions \u2014 accurate skills, well-calibrated counts, no project type taxonomy applied (neutral score for both), and strong concrete metrics preserved. The tiebreaker goes to B for two reasons: (1) B preserves the original resume bullets more faithfully without paraphrasing that risks distortion (e.g., A introduces 'production multi-channel B2B AI agent infrastructure' and 'configuration integrity' language not in the source), and (2) B correctly uses the website-matching GitHub handle 'suqjan' consistent with the personal site 'suqjan.com', while A fabricates 'github.com/sujan'. Truthfulness and fidelity to source text \u2014 the core stress-test criterion \u2014 favor B."
+}

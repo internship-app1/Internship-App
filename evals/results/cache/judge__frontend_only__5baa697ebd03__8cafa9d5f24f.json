@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 5,
+    "impact_quality": 4
+  },
+  "winner": "candidate",
+  "justification": "B correctly classifies all four projects as 'Frontend Only' with appropriate complexity ratings (Low/Medium), captures deployment evidence (emmawalsh.design, npm package), and extracts concrete impact highlights including the WCAG 2.1 AA compliance and 2 delivered landing pages. A extracts no project classifications at all and adds marginally inflated skills like 'CSS Grid', 'Flexbox', and 'WCAG Accessibility' as standalone skills \u2014 these are techniques/standards rather than discrete skills, making A slightly over-extracted compared to the expected behavior. B's skill list of 7 items aligns closely with the expected set (HTML, CSS, JavaScript, React, Figma, Git, npm), though it omits Framer Motion which is clearly demonstrated. Overall B is substantially more complete and accurate across project classification and impact quality dimensions."
+}

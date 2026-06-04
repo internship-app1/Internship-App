@@ -1,0 +1,28 @@
+{
+  "skills": [
+    "Python",
+    "C++",
+    "Java",
+    "PyTorch",
+    "TensorFlow",
+    "OpenCV",
+    "NumPy",
+    "Pandas",
+    "scikit-learn",
+    "Git",
+    "Docker",
+    "CUDA",
+    "AWS EC2",
+    "AWS S3",
+    "React",
+    "FastAPI",
+    "Computer Vision",
+    "Deep Learning",
+    "Machine Learning",
+    "Data Preprocessing"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted skills directly from the explicit SKILLS section and validated against demonstrated project work (YOLOv8 object detection, ResNet-50 CNN, FastAPI deployment, React integration). All skills have concrete evidence from recent projects (Jan-May 2025) and coursework. Excluded soft skills as they were not explicitly mentioned. Conservative approach focusing on demonstrated technical competencies rather than aspirational skills."
+}

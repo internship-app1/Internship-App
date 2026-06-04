@@ -1,0 +1,30 @@
+{
+  "skills": [
+    "Python",
+    "C++",
+    "Java",
+    "PyTorch",
+    "TensorFlow",
+    "OpenCV",
+    "NumPy",
+    "Pandas",
+    "scikit-learn",
+    "Git",
+    "Docker",
+    "CUDA",
+    "Jupyter",
+    "AWS EC2",
+    "AWS S3",
+    "React",
+    "FastAPI",
+    "Computer Vision",
+    "Deep Learning",
+    "Object Detection",
+    "CNN",
+    "Data Preprocessing",
+    "Model Training",
+    "Real-time Inference"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0
+}

@@ -1,0 +1,101 @@
+{
+  "skills": [
+    "Python",
+    "C++",
+    "Java",
+    "PyTorch",
+    "TensorFlow",
+    "OpenCV",
+    "NumPy",
+    "Pandas",
+    "scikit-learn",
+    "Git",
+    "Docker",
+    "CUDA",
+    "AWS EC2",
+    "AWS S3",
+    "React",
+    "FastAPI"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 1,
+  "is_student": true,
+  "confidence_notes": "Extracted skills directly from resume with demonstrated project experience. All skills have concrete evidence from coursework, projects, or current research role. No speculative or aspirational skills included.",
+  "projects": [
+    {
+      "name": "Object Detection System for Traffic Analysis",
+      "type": "AI/ML (Computer Vision)",
+      "technologies": [
+        "YOLOv8",
+        "OpenCV",
+        "CUDA",
+        "FastAPI",
+        "AWS EC2",
+        "Python"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": true,
+      "summary": "Trained YOLOv8 model on 12,000 annotated traffic images achieving 91% mAP (12% improvement over YOLOv5). Implemented real-time inference pipeline with 28 FPS performance on NVIDIA T4 GPU. Deployed production model behind FastAPI endpoint on AWS EC2 with live demo at traffic-demo.priya.dev."
+    },
+    {
+      "name": "Facial Expression Classifier",
+      "type": "AI/ML (Computer Vision)",
+      "technologies": [
+        "PyTorch",
+        "ResNet-50",
+        "React",
+        "OpenCV",
+        "Python"
+      ],
+      "is_deployed": true,
+      "project_complexity": "Medium",
+      "has_link": false,
+      "summary": "Fine-tuned ResNet-50 CNN in PyTorch to classify 7 emotional states from webcam frames, achieving 88% accuracy on FER2013 test set. Integrated model into React web application for real-time facial expression demonstration."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Object Detection System achieved 91% mAP on custom traffic dataset, representing a 12% improvement over YOLOv5 baseline model.",
+      "metric": "91% mAP, 12% improvement over baseline",
+      "dimension": "performance"
+    },
+    {
+      "description": "Real-time inference pipeline optimized with CUDA achieved 28 frames per second on NVIDIA T4 GPU, enabling practical deployment for traffic analysis.",
+      "metric": "28 FPS on NVIDIA T4",
+      "dimension": "speed"
+    },
+    {
+      "description": "Object Detection System successfully deployed to production on AWS EC2 with live public endpoint, demonstrating end-to-end deployment capability.",
+      "metric": "Live deployment at traffic-demo.priya.dev",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Facial Expression Classifier achieved 88% accuracy on FER2013 benchmark dataset for 7-class emotion classification task.",
+      "metric": "88% accuracy on FER2013 test set",
+      "dimension": "performance"
+    },
+    {
+      "description": "Preprocessed and augmented 50,000-image medical imaging dataset for monocular depth estimation research contributing to IEEE paper submission.",
+      "metric": "50,000 images processed",
+      "dimension": "scale"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "All skills extracted directly from explicit resume sections (Languages, Libraries, Tools, Cloud, Web). No inference required."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Both projects have concrete evidence of implementation with specific metrics (mAP, accuracy, FPS). Object Detection System has confirmed deployment link. Classified as Computer Vision based on explicit use of YOLOv8, ResNet-50, and facial recognition."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Impact metrics extracted from quantified claims in project descriptions. All metrics are concrete and measurable (91% mAP, 28 FPS, 88% accuracy, 50,000 images). Deployment status confirmed by live URL reference."
+    }
+  ]
+}

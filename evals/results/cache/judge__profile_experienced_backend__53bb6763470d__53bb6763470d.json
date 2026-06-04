@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "tie",
+  "justification": "Both extractions are identical in every field \u2014 same 32 skills, same experience_level, same years_of_experience. Both slightly over-extract by listing AWS sub-services (EKS, RDS, SQS, S3) as separate skills alongside 'AWS', and by adding inferred soft concepts (Distributed Systems, API Design, Performance Optimization) that push the count above the ideal 5\u201312 range. Neither extracts project classifications or impact highlights, which is neutral given the resume format. Since the outputs are byte-for-byte identical, a tie is the only valid verdict."
+}

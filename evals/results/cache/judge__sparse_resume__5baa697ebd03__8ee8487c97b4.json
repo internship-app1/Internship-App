@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 5,
+    "conservatism": 5,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "Both extractions are nearly identical in skill accuracy and conservatism \u2014 both correctly extract exactly the four evidenced skills (HTML, CSS, Python, Git) with no hallucinations, and both correctly set experience_level='student', is_student=true, years_of_experience=0. Project classification and impact quality are neutral (3) for both since neither resume has projects or impact metrics. The tiebreaker goes to B because it explicitly includes empty arrays for 'projects' and 'impact_highlights' as the expected behavior requires, and it provides granular per-skill confidence_metrics with differentiated confidence scores (high for coursework-backed skills, medium for the YouTube Git tutorial), which better reflects the expected low/medium confidence guidance. A's confidence_notes are solid prose but B's structured confidence_metrics add meaningful signal about the varying reliability of each skill claim."
+}

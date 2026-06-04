@@ -1,0 +1,30 @@
+{
+  "skills": [
+    "Python",
+    "Go",
+    "Java",
+    "SQL",
+    "Bash",
+    "FastAPI",
+    "Flask",
+    "Spring Boot",
+    "Celery",
+    "PostgreSQL",
+    "Redis",
+    "MySQL",
+    "Elasticsearch",
+    "AWS",
+    "Kubernetes",
+    "Docker",
+    "Terraform",
+    "Kafka",
+    "RabbitMQ",
+    "Git",
+    "Datadog",
+    "PagerDuty"
+  ],
+  "experience_level": "experienced",
+  "years_of_experience": 6,
+  "is_student": false,
+  "confidence_notes": "High confidence extraction based on explicit skills section and extensive work experience. All skills listed have clear evidence from job descriptions (distributed systems in Go at Stripe, Python pipelines at Plaid, Java backend at LinkedIn). Extracted skills directly from resume's stated skills section and validated against demonstrated project work. No speculative or aspirational skills included."
+}

@@ -1,0 +1,89 @@
+{
+  "skills": [
+    "Python",
+    "TypeScript",
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Flask",
+    "PostgreSQL",
+    "Docker",
+    "AWS",
+    "PyTorch",
+    "Git",
+    "SQL"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0.5,
+  "is_student": true,
+  "confidence_notes": "Extracted skills with explicit project or work experience backing. Excluded 'Java' (listed in skills but no project evidence), 'Angular' (mentioned once in internship but minimal detail), 'scikit-learn' (used in internship but logistic regression is basic), 'Redis' (mentioned but secondary to core tech), 'GCP' (mentioned but AWS is primary), 'HuggingFace' (library, not a skill), 'Machine Learning' (too vague without specific models). Standardized 'Py' to 'Python', 'JS/TS' to separate skills, 'ML' excluded as self-reported only.",
+  "projects": [
+    {
+      "name": "Sentiment Analysis Tool",
+      "type": "AI/ML (NLP/GenAI)",
+      "technologies": [
+        "Python",
+        "PyTorch",
+        "BERT",
+        "PostgreSQL",
+        "Twitter API"
+      ],
+      "is_deployed": false,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Fine-tuned BERT model for sentiment classification on 80,000 tweets. Processed data with PyTorch and NumPy, stored results in PostgreSQL. Demonstrates NLP expertise and large-scale data handling."
+    },
+    {
+      "name": "Real-Time Chat App",
+      "type": "Full-Stack Web App",
+      "technologies": [
+        "Node.js",
+        "React",
+        "TypeScript",
+        "Socket.io",
+        "Redis",
+        "Docker",
+        "AWS EC2",
+        "GitHub Actions"
+      ],
+      "is_deployed": true,
+      "project_complexity": "High",
+      "has_link": false,
+      "summary": "Full-stack real-time messaging application with Node.js backend and React frontend. Implemented WebSockets and Redis pub/sub for live messaging. Deployed on AWS EC2 with Docker containerization and CI/CD automation via GitHub Actions."
+    }
+  ],
+  "impact_highlights": [
+    {
+      "description": "Processed and fine-tuned BERT model on 80,000 tweets for sentiment classification, demonstrating ability to handle large-scale NLP datasets.",
+      "metric": "80,000 tweets processed",
+      "dimension": "scale"
+    },
+    {
+      "description": "Deployed Real-Time Chat App to production on AWS EC2 with Docker containerization and automated CI/CD pipeline via GitHub Actions.",
+      "metric": "Production deployment on AWS EC2",
+      "dimension": "deployment"
+    },
+    {
+      "description": "Built and deployed REST API using Flask to GCP Cloud Run during internship, demonstrating cloud deployment capabilities.",
+      "metric": "REST API deployed to GCP Cloud Run",
+      "dimension": "deployment"
+    }
+  ],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.92,
+      "confidence_notes": "Core skills (Python, TypeScript, React, Node.js, Docker, AWS) have explicit project evidence with detailed technical descriptions. Work experience at DataCo corroborates Flask, GCP, and API development."
+    },
+    {
+      "confidence_level": "medium",
+      "confidence_score": 0.75,
+      "confidence_notes": "PostgreSQL and SQL extracted from project usage but not heavily emphasized. Git mentioned in skills section and used in CI/CD context but no explicit repository management details provided."
+    },
+    {
+      "confidence_level": "low",
+      "confidence_score": 0.6,
+      "confidence_notes": "Excluded 'Java' (skills section only, no project evidence), 'Angular' (mentioned once in internship with minimal context), 'scikit-learn' (basic logistic regression model, not a primary skill), 'Redis' (secondary technology in chat app), 'GCP' (mentioned but AWS is primary cloud platform), 'HuggingFace' (library/framework, not a standalone skill)."
+    }
+  ]
+}

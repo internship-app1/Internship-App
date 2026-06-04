@@ -1,0 +1,26 @@
+{
+  "skills": [
+    "Python",
+    "HTML",
+    "CSS",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with explicit coursework or tutorial evidence. Python from 'Introduction to Programming' course (currently enrolled). HTML and CSS from 'Web Design Basics' (completed). Git from YouTube tutorial mention. Excluded any aspirational skills or inferred knowledge. No professional software engineering experience detected.",
+  "projects": [],
+  "impact_highlights": [],
+  "confidence_metrics": [
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.95,
+      "confidence_notes": "Clear coursework evidence for Python, HTML, CSS. Git explicitly mentioned as learned from tutorial. No ambiguity in skill attribution."
+    },
+    {
+      "confidence_level": "high",
+      "confidence_score": 0.9,
+      "confidence_notes": "Resume explicitly states 'very beginner level' for Python and 'some familiarity' for Git, confirming these are genuine but early-stage skills, not inflated claims."
+    }
+  ]
+}

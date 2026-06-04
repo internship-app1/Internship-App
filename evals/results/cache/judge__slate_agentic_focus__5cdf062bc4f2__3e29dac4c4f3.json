@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 3,
+    "impact_quality": 4
+  },
+  "winner": "baseline",
+  "justification": "Both outputs correctly rank the AI-native roles (Kognitos #8, Attentive #5, Socure #1) highest and the defense/cloud infrastructure roles (General Dynamics #4, Cloudforce #3) lowest, aligning with expected behavior. B is superior on impact_quality: it consistently references concrete metrics (1,000+ orders, 95%+ accuracy, 83% balanced accuracy, 30K+ users) across multiple job reasonings, whereas A mentions metrics more selectively. B also provides richer skill_matches that better reflect the candidate's demonstrated stack (e.g., Redis, async processing, PostgreSQL alongside AI skills). A is slightly more conservative in skill counts per job, which is a mild advantage, but B's skill lists remain grounded in the resume rather than hallucinated. The key differentiator is B's superior capture of concrete impact evidence in its reasoning, and its more nuanced treatment of borderline roles like TikTok (#6, scored 83 vs A's 68) and General Dynamics (#4, scored 62 vs A's 15 \u2014 B's score is more defensible given the generic job description). B's ranking order (8>5>1>2>6>7>4>3) more precisely matches expected behavior than A's (8>1>5>2>7>6>3>4), particularly in correctly elevating Socure (#1) above generic roles."
+}

@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "tie",
+  "justification": "Both extractions are nearly identical in structure, skill sets, and project coverage. Both correctly capture the Claude/RAG/LLM-centric work at Burnt, the dual-model pipeline in Internship Matcher, the FSM-driven SMS agent, and all key numeric metrics (52% latency reduction, 98% time reduction, 83% accuracy, 5 hrs/week saved, 1,000+ orders, 30,000+ students). Both include Scikit-Learn from the Sleep-PSG project (legitimately demonstrated). Neither fabricates skills. The skill lists are well-calibrated at roughly 12\u201315 items across categories. Project classifications are implicit (not explicitly labeled with taxonomy terms) in both, so neither gains an edge there. Minor wording differences in bullets do not meaningfully differentiate quality \u2014 both preserve concrete metrics faithfully. The outputs are genuinely equivalent across all four dimensions."
+}

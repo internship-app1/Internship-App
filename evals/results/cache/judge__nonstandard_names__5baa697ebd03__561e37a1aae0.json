@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 2,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 5,
+    "project_classification": 5,
+    "impact_quality": 4
+  },
+  "winner": "candidate",
+  "justification": "Both outputs correctly standardize skill names (Python, TypeScript, Machine Learning, etc.) and set experience_level to 'student'. However, A extracts 24 skills \u2014 far too many for a student with one internship and two projects, including marginal entries like MySQL (no demonstrated use), SQLAlchemy (ORM helper, not a core skill), and REST APIs/ETL as standalone skills. B is well-calibrated at 12 skills, though it arguably over-excludes scikit-learn and Angular which do have real evidence. B's project classification is excellent: Sentiment Analysis Tool as AI/ML (NLP/GenAI), Real-Time Chat App as Full-Stack Web App, and the internship work as Data Engineering/ETL are all correct. A extracts no projects at all, scoring neutral on that dimension. B also captures concrete impact highlights with real metrics (80,000 tweets, AWS EC2 deployment, GCP Cloud Run deployment), while A provides none. B wins decisively on conservatism, project classification, and impact quality."
+}

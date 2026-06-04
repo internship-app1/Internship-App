@@ -1,0 +1,133 @@
+{
+  "job_scores": [
+    {
+      "job_id": 1,
+      "match_score": 92,
+      "reasoning": "Exceptional fit. Candidate shipped production AI agent at YC startup handling 1,000+ orders across 7 enterprise clients. Built multi-model Claude pipelines, RAG systems, and LLM validation layers. Internship Matcher project demonstrates end-to-end AI system ownership with dual-model architecture and production deployment.",
+      "skill_matches": [
+        "AI Agents",
+        "Claude/LLM",
+        "Python",
+        "FastAPI",
+        "Production ML",
+        "RAG",
+        "Data Processing"
+      ],
+      "skill_gaps": [
+        "Specific risk/fraud domain knowledge"
+      ]
+    },
+    {
+      "job_id": 2,
+      "match_score": 85,
+      "reasoning": "Strong general SWE fit. Proven full-stack delivery at Burnt (React, Python, webhooks, multi-channel integrations). Multiple production projects with real user impact. NYC location may require relocation but candidate has demonstrated ability to ship quality code across stack.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Full-stack development"
+      ],
+      "skill_gaps": [
+        "NYC location preference unclear"
+      ]
+    },
+    {
+      "job_id": 3,
+      "match_score": 45,
+      "reasoning": "Weak fit. No cloud infrastructure experience demonstrated (AWS S3 storage is minimal). No Kubernetes, Terraform, or cloud architecture projects. Candidate's strength is application development and AI, not cloud solutions. Security clearance emoji suggests government work requiring citizenship.",
+      "skill_matches": [
+        "AWS S3 basic usage",
+        "Python"
+      ],
+      "skill_gaps": [
+        "Cloud architecture",
+        "Kubernetes",
+        "Terraform",
+        "DevOps",
+        "Security clearance likely required"
+      ]
+    },
+    {
+      "job_id": 4,
+      "match_score": 50,
+      "reasoning": "Generic defense contractor role with limited details. Candidate has strong SWE fundamentals but no defense/aerospace domain experience. Location in Chantilly suggests cleared work. Candidate's startup/AI focus doesn't align with traditional defense engineering.",
+      "skill_matches": [
+        "Python",
+        "General programming"
+      ],
+      "skill_gaps": [
+        "Defense domain",
+        "Likely security clearance",
+        "Systems engineering",
+        "Embedded systems potentially"
+      ]
+    },
+    {
+      "job_id": 5,
+      "match_score": 88,
+      "reasoning": "Excellent AI fit. Candidate built production AI agents at Burnt, multi-model Claude pipelines, RAG systems, and LLM validation. Internship Matcher shows sophisticated prompt engineering and model orchestration. Attentive's SMS marketing aligns with candidate's SMS agent project for real estate client.",
+      "skill_matches": [
+        "AI/ML",
+        "LLM/Claude",
+        "Python",
+        "Production AI systems",
+        "RAG",
+        "Prompt engineering"
+      ],
+      "skill_gaps": [
+        "Marketing/SMS domain specifics"
+      ]
+    },
+    {
+      "job_id": 6,
+      "match_score": 82,
+      "reasoning": "Solid fit for large tech internship. Strong full-stack credentials (React, TypeScript, Python, PostgreSQL). San Jose location ideal. Shipped features across 7 enterprise clients at Burnt. Multiple production projects demonstrate scale-ready engineering. TikTok's scale matches candidate's ambition.",
+      "skill_matches": [
+        "React",
+        "TypeScript",
+        "Python",
+        "PostgreSQL",
+        "Full-stack",
+        "Production experience"
+      ],
+      "skill_gaps": [
+        "Large-scale distributed systems",
+        "TikTok-specific tech stack"
+      ]
+    },
+    {
+      "job_id": 7,
+      "match_score": 78,
+      "reasoning": "Good SF startup fit. Vague job description but SF location and startup context align with candidate's YC internship experience. Demonstrated ability to ship fast in ambiguous environments. Full-stack skills transferable. Lack of role specifics prevents higher score.",
+      "skill_matches": [
+        "Full-stack development",
+        "Startup experience",
+        "React",
+        "Python",
+        "Fast shipping"
+      ],
+      "skill_gaps": [
+        "Role requirements unclear"
+      ]
+    },
+    {
+      "job_id": 8,
+      "match_score": 94,
+      "reasoning": "Near-perfect fit. AI-native role matches candidate's core strength. Built production AI agents at Burnt with Claude, RAG, and validation layers. Internship Matcher demonstrates sophisticated multi-model orchestration. San Jose location ideal. Kognitos' AI-native automation aligns perfectly with candidate's agent-building experience.",
+      "skill_matches": [
+        "AI-native development",
+        "LLM/Claude",
+        "Python",
+        "Production AI agents",
+        "RAG",
+        "FastAPI",
+        "San Jose location"
+      ],
+      "skill_gaps": [
+        "None significant"
+      ]
+    }
+  ]
+}

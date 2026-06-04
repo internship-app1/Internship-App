@@ -1,0 +1,1452 @@
+[
+  {
+    "id": "cs_student_cv",
+    "description": "CS student with a real computer vision project (YOLO + OpenCV) and research experience",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "Python",
+        "C++",
+        "Java",
+        "PyTorch",
+        "TensorFlow",
+        "OpenCV",
+        "NumPy",
+        "Pandas",
+        "scikit-learn",
+        "Git",
+        "Docker",
+        "CUDA",
+        "AWS EC2",
+        "AWS S3",
+        "React",
+        "FastAPI",
+        "Computer Vision",
+        "Deep Learning",
+        "Machine Learning",
+        "Data Preprocessing"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted skills directly from the explicit SKILLS section and validated against demonstrated project work (YOLOv8 object detection, ResNet-50 CNN, FastAPI deployment, React integration). All skills have concrete evidence from recent projects (Jan-May 2025) and coursework. Excluded soft skills as they were not explicitly mentioned. Conservative approach focusing on demonstrated technical competencies rather than aspirational skills."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "C++",
+        "Java",
+        "PyTorch",
+        "TensorFlow",
+        "OpenCV",
+        "NumPy",
+        "Pandas",
+        "scikit-learn",
+        "Git",
+        "Docker",
+        "CUDA",
+        "AWS EC2",
+        "AWS S3",
+        "React",
+        "FastAPI"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 1,
+      "is_student": true,
+      "confidence_notes": "Extracted skills directly from resume with demonstrated project experience. All skills have concrete evidence from coursework, projects, or current research role. No speculative or aspirational skills included.",
+      "projects": [
+        {
+          "name": "Object Detection System for Traffic Analysis",
+          "type": "AI/ML (Computer Vision)",
+          "technologies": [
+            "YOLOv8",
+            "OpenCV",
+            "CUDA",
+            "FastAPI",
+            "AWS EC2",
+            "Python"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": true,
+          "summary": "Trained YOLOv8 model on 12,000 annotated traffic images achieving 91% mAP (12% improvement over YOLOv5). Implemented real-time inference pipeline with 28 FPS performance on NVIDIA T4 GPU. Deployed production model behind FastAPI endpoint on AWS EC2 with live demo at traffic-demo.priya.dev."
+        },
+        {
+          "name": "Facial Expression Classifier",
+          "type": "AI/ML (Computer Vision)",
+          "technologies": [
+            "PyTorch",
+            "ResNet-50",
+            "React",
+            "OpenCV",
+            "Python"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Medium",
+          "has_link": false,
+          "summary": "Fine-tuned ResNet-50 CNN in PyTorch to classify 7 emotional states from webcam frames, achieving 88% accuracy on FER2013 test set. Integrated model into React web application for real-time facial expression demonstration."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Object Detection System achieved 91% mAP on custom traffic dataset, representing a 12% improvement over YOLOv5 baseline model.",
+          "metric": "91% mAP, 12% improvement over baseline",
+          "dimension": "performance"
+        },
+        {
+          "description": "Real-time inference pipeline optimized with CUDA achieved 28 frames per second on NVIDIA T4 GPU, enabling practical deployment for traffic analysis.",
+          "metric": "28 FPS on NVIDIA T4",
+          "dimension": "speed"
+        },
+        {
+          "description": "Object Detection System successfully deployed to production on AWS EC2 with live public endpoint, demonstrating end-to-end deployment capability.",
+          "metric": "Live deployment at traffic-demo.priya.dev",
+          "dimension": "deployment"
+        },
+        {
+          "description": "Facial Expression Classifier achieved 88% accuracy on FER2013 benchmark dataset for 7-class emotion classification task.",
+          "metric": "88% accuracy on FER2013 test set",
+          "dimension": "performance"
+        },
+        {
+          "description": "Preprocessed and augmented 50,000-image medical imaging dataset for monocular depth estimation research contributing to IEEE paper submission.",
+          "metric": "50,000 images processed",
+          "dimension": "scale"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "All skills extracted directly from explicit resume sections (Languages, Libraries, Tools, Cloud, Web). No inference required."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Both projects have concrete evidence of implementation with specific metrics (mAP, accuracy, FPS). Object Detection System has confirmed deployment link. Classified as Computer Vision based on explicit use of YOLOv8, ResNet-50, and facial recognition."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.9,
+          "confidence_notes": "Impact metrics extracted from quantified claims in project descriptions. All metrics are concrete and measurable (91% mAP, 28 FPS, 88% accuracy, 50,000 images). Deployment status confirmed by live URL reference."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 1
+      },
+      "scores_candidate": {
+        "skill_accuracy": 4,
+        "conservatism": 4,
+        "project_classification": 5,
+        "impact_quality": 5
+      },
+      "winner": "candidate",
+      "justification": "B is superior across all four dimensions. On skill_accuracy, A adds 'Computer Vision', 'Deep Learning', 'Machine Learning', and 'Data Preprocessing' which are either course names or inferred abstractions rather than discrete demonstrated skills \u2014 B correctly omits these. On conservatism, A's 20 skills is bloated with those inferred additions; B's 16 skills maps cleanly to the explicit SKILLS section. On project_classification, B correctly classifies both projects as AI/ML (Computer Vision) with full detail; A extracts no projects at all (neutral score 3). On impact_quality, B captures all key concrete metrics \u2014 91% mAP, 12% improvement over baseline, 28 FPS on NVIDIA T4, live deployment URL at traffic-demo.priya.dev, and 88% accuracy on FER2013 \u2014 while A extracts no impact highlights whatsoever, earning the minimum score."
+    }
+  },
+  {
+    "id": "negative_context",
+    "description": "Resume where Python appears only as 'I have never used Python professionally' and React as 'I want to learn React after graduation'",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "Git",
+        "VS Code",
+        "Chrome DevTools",
+        "GraphQL"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated experience from internship and projects. Excluded: Python (explicitly stated never used professionally), Rust (on future learning list), React (wants to learn after graduation), Node.js (mentioned in job posting, not used), Tailwind CSS (mentioned in job description, not learned yet), and Figma (reviewer only, not a user). GraphQL included as read-only query experience at internship. Conservative extraction focusing on concrete frontend fundamentals."
+    },
+    "candidate_output": {
+      "skills": [
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "Git",
+        "VS Code",
+        "Chrome DevTools",
+        "GraphQL"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0.5,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated work or project experience. Excluded Python (explicitly stated never used professionally), Rust (on future learning list), React (wants to learn after graduation), Node.js (mentioned in job posting, not used), Tailwind CSS (explicitly stated doesn't have yet), and Figma (only reviewed specs, not a user). GraphQL included due to professional API work at Webflow internship.",
+      "projects": [
+        {
+          "name": "Task Manager Website",
+          "type": "Frontend Only",
+          "technologies": [
+            "JavaScript",
+            "HTML",
+            "CSS",
+            "localStorage"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Simple task management webpage with client-side persistence using localStorage. Demonstrates foundational frontend skills with vanilla JavaScript and DOM manipulation."
+        },
+        {
+          "name": "Personal Portfolio",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "CSS",
+            "GitHub Pages"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Static portfolio site hosted on GitHub Pages. Demonstrates basic HTML/CSS skills and deployment experience."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Built interactive UI components at Webflow Corp internship using vanilla JavaScript, HTML, and CSS, contributing to production frontend codebase.",
+          "metric": "3-month internship (May-Aug 2024)",
+          "dimension": "deployment"
+        },
+        {
+          "description": "Implemented client-side data persistence in Task Manager project using localStorage, enabling tasks to survive page refreshes without backend infrastructure.",
+          "metric": "Full feature implementation",
+          "dimension": "performance"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "Resume explicitly states what skills are NOT possessed (Python, Rust, React, Node.js, Tailwind CSS). Extracted only skills with clear evidence: internship work (JavaScript, HTML, CSS, GraphQL, Git, VS Code, Chrome DevTools) and personal projects (JavaScript, HTML, CSS)."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Project classifications are straightforward: both projects are frontend-only with no backend or complex infrastructure. Task Manager uses vanilla JavaScript with localStorage; Portfolio is static HTML/CSS on GitHub Pages."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.75,
+          "confidence_notes": "Limited impact metrics available. Internship duration and feature implementation are documented, but no quantitative performance metrics, user scale, or business outcomes provided in resume."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 5,
+        "impact_quality": 3
+      },
+      "winner": "candidate",
+      "justification": "Both outputs share the same skill list, including the questionable GraphQL inclusion (candidate only ran read-only queries written by senior devs, which is borderline). Both correctly exclude Python, React, Node.js, Rust, and Tailwind. The key differentiator is that A extracts and correctly classifies both projects as 'Frontend Only', which is accurate per the taxonomy, and provides impact highlights (even if modest). B extracts no projects at all, earning a neutral 3 on project_classification and impact_quality by default. Since the resume clearly contains projects, A's extraction of them is a meaningful advantage. A wins on project_classification and impact_quality dimensions, making it the clear overall winner despite both sharing identical skill extraction quality."
+    }
+  },
+  {
+    "id": "nonstandard_names",
+    "description": "Resume that uses abbreviations throughout: Py, JS, TS, ML, AI, and combined JS/TS",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "TypeScript",
+        "SQL",
+        "Java",
+        "React",
+        "Angular",
+        "Flask",
+        "Node.js",
+        "Machine Learning",
+        "PyTorch",
+        "scikit-learn",
+        "HuggingFace",
+        "PostgreSQL",
+        "Redis",
+        "MySQL",
+        "AWS",
+        "GCP",
+        "Docker",
+        "Git",
+        "REST APIs",
+        "ETL",
+        "Socket.io",
+        "SQLAlchemy"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Marcus is a current student (graduating May 2025) with one internship and two substantial projects. Extracted skills based on concrete work experience: internship involved Python ETL, Flask APIs, TypeScript/Angular, and ML with scikit-learn; projects demonstrate full-stack development (React, Node.js, TypeScript), deep learning (PyTorch, HuggingFace, BERT), databases (PostgreSQL, Redis), and cloud deployment (AWS, GCP, Docker). Removed vague 'AI' in favor of 'Machine Learning' which is more specific to demonstrated work. All skills have clear evidence of hands-on use."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "TypeScript",
+        "SQL",
+        "Java",
+        "React",
+        "Angular",
+        "Flask",
+        "Node.js",
+        "PyTorch",
+        "scikit-learn",
+        "HuggingFace",
+        "PostgreSQL",
+        "Redis",
+        "MySQL",
+        "AWS",
+        "GCP",
+        "Docker",
+        "Git",
+        "Machine Learning",
+        "Artificial Intelligence"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0.5,
+      "is_student": true,
+      "confidence_notes": "Extracted skills from concrete work experience (internship) and completed projects with demonstrated implementation. Standardized abbreviations (Py\u2192Python, TS\u2192TypeScript, JS\u2192JavaScript, ML\u2192Machine Learning, AI\u2192Artificial Intelligence). Excluded vague skill claims and focused on technologies with clear project/work evidence.",
+      "projects": [
+        {
+          "name": "Sentiment Analysis Tool",
+          "type": "AI/ML (NLP/GenAI)",
+          "technologies": [
+            "Python",
+            "PyTorch",
+            "HuggingFace",
+            "BERT",
+            "NumPy",
+            "PostgreSQL",
+            "SQLAlchemy",
+            "Twitter API"
+          ],
+          "is_deployed": false,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Fine-tuned a BERT transformer model for sentiment classification on 80,000 tweets. Processed data using PyTorch and NumPy, stored results in PostgreSQL with SQLAlchemy ORM. Demonstrates NLP expertise with large-scale dataset handling and production-ready database integration."
+        },
+        {
+          "name": "Real-Time Chat App",
+          "type": "Full-Stack Web App",
+          "technologies": [
+            "Node.js",
+            "React",
+            "TypeScript",
+            "Socket.io",
+            "Redis",
+            "AWS EC2",
+            "Docker",
+            "GitHub Actions",
+            "Git"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Full-stack real-time messaging application with Node.js backend and React/TypeScript frontend. Implemented WebSocket communication via Socket.io and Redis pub/sub for scalable message distribution. Deployed to AWS EC2 with containerization (Docker) and automated CI/CD pipeline (GitHub Actions)."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Processed and fine-tuned BERT model on large-scale NLP dataset for sentiment classification task.",
+          "metric": "80,000 tweets processed",
+          "dimension": "scale"
+        },
+        {
+          "description": "Deployed full-stack chat application to production cloud infrastructure with containerization and automated deployment pipeline.",
+          "metric": "Deployed on AWS EC2 with Docker and GitHub Actions CI/CD",
+          "dimension": "deployment"
+        },
+        {
+          "description": "Built and deployed REST API for data transformation and ML inference in professional internship setting.",
+          "metric": "Deployed to GCP Cloud Run",
+          "dimension": "deployment"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "Skills extracted directly from work experience and completed projects with clear technical implementation details. All technologies have concrete evidence of use in internship or project work."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Project classifications based on explicit technology stack and project descriptions. Deployment status confirmed by explicit mentions of AWS EC2, GCP Cloud Run, and Docker usage."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.75,
+          "confidence_notes": "Impact metrics extracted from quantifiable evidence (80k tweets, deployment platforms). No explicit performance benchmarks or user metrics provided, so scale and deployment are primary impact dimensions."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 4,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 5,
+        "impact_quality": 4
+      },
+      "winner": "candidate",
+      "justification": "B correctly classifies both projects (Sentiment Analysis Tool as AI/ML NLP/GenAI, Real-Time Chat App as Full-Stack Web App) and captures concrete impact highlights with specific metrics (80,000 tweets, GCP Cloud Run deployment, AWS EC2 with Docker/CI-CD). A extracts no project classifications or impact highlights at all, losing significant value on those dimensions. However, B loses a point on skill_accuracy for including 'Artificial Intelligence' as a standalone skill \u2014 the resume only lists 'AI' as an abbreviation alongside 'ML', and the actual demonstrated work is specifically Machine Learning/NLP, not a broad AI discipline. A correctly omits this vague entry. Both outputs are slightly over-extracted on conservatism (24 and 21 skills respectively, above the 8\u201312 target), though A is marginally worse at 24. Overall B wins decisively on project_classification and impact_quality, which are the dimensions where the most differentiation exists."
+    }
+  },
+  {
+    "id": "deployed_metrics",
+    "description": "Strong student resume with concrete deployment evidence and numeric performance metrics",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "TypeScript",
+        "SQL",
+        "React",
+        "Node.js",
+        "Express",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "AWS",
+        "Vercel",
+        "Git",
+        "Docker"
+      ],
+      "experience_level": "recent_graduate",
+      "years_of_experience": 0.25,
+      "is_student": false,
+      "confidence_notes": "Sofia is a recent graduate (B.S. May 2024) with strong demonstrated experience. All skills extracted are directly supported by concrete work experience (internship at FinanceApp Inc.) and completed projects (InternTracker SaaS, PricePulse scraper). Skills listed in her explicit SKILLS section are all verified by project/work evidence. No speculative or aspirational skills included. High confidence in extraction due to clear documentation of technical implementations and measurable outcomes."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "TypeScript",
+        "SQL",
+        "React",
+        "Node.js",
+        "Express",
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "AWS",
+        "Vercel",
+        "Git",
+        "Docker"
+      ],
+      "experience_level": "entry_level",
+      "years_of_experience": 0.5,
+      "is_student": true,
+      "confidence_notes": "Recent graduate (May 2024) with 3 months of internship experience and 2 completed projects. All skills extracted from demonstrated work experience, internship responsibilities, and project implementations. No speculative or aspirational skills included.",
+      "projects": [
+        {
+          "name": "InternTracker \u2014 Job Application Tracker",
+          "type": "Full-Stack Web App",
+          "technologies": [
+            "React",
+            "Node.js",
+            "PostgreSQL",
+            "AWS EC2",
+            "Clerk",
+            "SendGrid"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": true,
+          "summary": "Full-stack SaaS application for tracking job applications with authentication, drag-and-drop Kanban board, and automated email reminders. Deployed to AWS EC2 and live at interntracker.io. Achieved 500+ registered users within 2 weeks of launch and won Best Solo Hack at HackUCLA 2024."
+        },
+        {
+          "name": "PricePulse \u2014 E-Commerce Price Monitor",
+          "type": "Data Engineering / ETL",
+          "technologies": [
+            "Python",
+            "AWS Lambda",
+            "Redis",
+            "Email API"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Medium",
+          "has_link": false,
+          "summary": "Automated price monitoring system using Python web scraper deployed on AWS Lambda as a cron job. Monitors 3,000+ product listings daily, sends email alerts for price drops >15%, and handles 10,000+ requests per day with Redis caching optimization."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Optimized React dashboard at FinanceApp Inc. through code-splitting and lazy loading of chart components, significantly improving user experience for production application.",
+          "metric": "1.8 seconds reduction in page load time (from 3.2s to 1.4s)",
+          "dimension": "speed"
+        },
+        {
+          "description": "Enhanced database performance at FinanceApp Inc. by adding composite indexes to slow PostgreSQL queries, improving query execution efficiency.",
+          "metric": "62% reduction in average query time (from 850ms to 320ms)",
+          "dimension": "performance"
+        },
+        {
+          "description": "Deployed InternTracker SaaS application to production on AWS EC2 with live domain, achieving rapid user adoption.",
+          "metric": "500+ registered users within 2 weeks of launch",
+          "dimension": "scale"
+        },
+        {
+          "description": "Won competitive hackathon award for InternTracker solo project at HackUCLA 2024.",
+          "metric": "$5,000 prize for Best Solo Hack",
+          "dimension": "business_value"
+        },
+        {
+          "description": "Deployed PricePulse scraper on AWS Lambda handling high-volume daily monitoring with optimized caching strategy.",
+          "metric": "10,000+ requests per day; 80% reduction in repeat API calls via Redis caching",
+          "dimension": "scale"
+        },
+        {
+          "description": "Shipped production feature at FinanceApp Inc. serving substantial user base with optimized performance.",
+          "metric": "22,000 monthly active users",
+          "dimension": "scale"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "All skills explicitly listed in resume SKILLS section with direct evidence from internship and project work. No inferred or aspirational skills included."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Projects clearly classified based on technology stack and functionality. Deployment status confirmed through explicit mentions of live URLs, AWS services, and production environments."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.93,
+          "confidence_notes": "Impact metrics extracted directly from resume with concrete numerical evidence (load time reduction, query optimization, user counts, prize money, request volume). All metrics are quantified and verifiable."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 5,
+        "conservatism": 4,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 5,
+        "conservatism": 4,
+        "project_classification": 5,
+        "impact_quality": 5
+      },
+      "winner": "candidate",
+      "justification": "Both outputs extract identical, accurate skill sets. However, A is dramatically superior in project_classification and impact_quality. A correctly classifies InternTracker as 'Full-Stack Web App' and PricePulse as 'Data Engineering / ETL', and captures all six concrete impact highlights with precise metrics (1.8s load reduction, 62% query improvement, 500+ users, $5,000 prize, 80% cache reduction, 22,000 MAUs). B completely omits projects and impact highlights, receiving neutral scores (3) for those dimensions since it simply fails to extract them despite the resume being rich with evidence. A also correctly labels experience_level as 'entry_level' (close to expected 'recent_graduate'), while B gets 'recent_graduate' right but misses everything else. The comprehensive extraction in A far outweighs B's single correct label."
+    }
+  },
+  {
+    "id": "vague_claims",
+    "description": "Resume with only vague accomplishments: 'made it faster', 'users were happier', no metrics",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "React",
+        "Git"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated project or work experience. JavaScript, HTML, and CSS are evidenced by multiple projects (portfolio website, todo list app, weather dashboard) and internship work. React is confirmed through the todo list app project. Git is explicitly listed in skills section. Python was excluded because the resume explicitly states 'learning' which indicates it's not yet a possessed skill. The resume lacks specific technical details about the internship work, but the listed skills section provides clear confirmation of actual capabilities."
+    },
+    "candidate_output": {
+      "skills": [
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "React",
+        "Git"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 1,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated project experience or explicit claims of possession. Python marked as 'learning' in resume, so excluded per instructions. All extracted skills have concrete project evidence.",
+      "projects": [
+        {
+          "name": "Personal Portfolio Website",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "CSS"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Personal portfolio website built with HTML and CSS. Demonstrates foundational frontend skills and design sensibility."
+        },
+        {
+          "name": "Todo List App",
+          "type": "Frontend Only",
+          "technologies": [
+            "React",
+            "JavaScript"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Todo list application built with React. Includes feature implementation and basic testing validation."
+        },
+        {
+          "name": "Weather Dashboard",
+          "type": "Frontend Only",
+          "technologies": [
+            "JavaScript",
+            "React"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Weather dashboard consuming public API data with visual presentation. Demonstrates API integration and UI design skills."
+        }
+      ],
+      "impact_highlights": [],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "Skills section explicitly lists JavaScript, HTML, CSS, React, and Git as possessed skills. Python explicitly marked as 'learning' so excluded."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.65,
+          "confidence_notes": "Resume lacks concrete metrics, deployment evidence, or specific accomplishments. Phrases like 'significantly faster', 'seemed to like', and 'performed well' are vague without quantifiable data. No links provided to verify projects."
+        },
+        {
+          "confidence_level": "low",
+          "confidence_score": 0.4,
+          "confidence_notes": "Internship experience contains no measurable outcomes or specific technical contributions. Cannot extract meaningful impact highlights due to absence of metrics, timelines, or concrete results."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 5,
+        "conservatism": 5,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 5,
+        "conservatism": 5,
+        "project_classification": 5,
+        "impact_quality": 5
+      },
+      "winner": "candidate",
+      "justification": "Both extractions correctly identify the same 5 skills (excluding Python as 'learning'), set experience_level to 'student', and avoid hallucinating impact highlights. However, A is clearly superior because it actually extracts and classifies the three projects with correct taxonomy (all 'Frontend Only'), provides technology breakdowns, and explicitly returns an empty impact_highlights array. B provides no project extraction at all, earning a neutral 3 on project_classification and impact_quality by default. A's thorough project handling and explicit empty impact_highlights array fully aligns with expected behavior, making it the decisive winner."
+    }
+  },
+  {
+    "id": "experienced_backend",
+    "description": "Senior engineer with 5+ years at Stripe and Plaid; extensive real backend experience",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "Python",
+        "Go",
+        "Java",
+        "SQL",
+        "Bash",
+        "FastAPI",
+        "Flask",
+        "Spring Boot",
+        "Celery",
+        "PostgreSQL",
+        "Redis",
+        "MySQL",
+        "Elasticsearch",
+        "AWS",
+        "Kubernetes",
+        "Docker",
+        "Terraform",
+        "Kafka",
+        "RabbitMQ",
+        "Git",
+        "Datadog",
+        "PagerDuty"
+      ],
+      "experience_level": "experienced",
+      "years_of_experience": 6,
+      "is_student": false,
+      "confidence_notes": "High confidence extraction based on explicit skills section and strong corroboration from work experience. All listed skills have demonstrated project/work experience at Stripe and Plaid. Extracted skills directly from resume's stated skills section and verified against job responsibilities (e.g., Go for rate-limiting system, Python for ingestion pipeline, PostgreSQL migration, AWS infrastructure, Kubernetes/Docker for microservices). No speculative skills added. Experience level determined from 6+ years of professional software engineering roles at major tech companies."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "Go",
+        "Java",
+        "SQL",
+        "Bash",
+        "FastAPI",
+        "Flask",
+        "Spring Boot",
+        "Celery",
+        "PostgreSQL",
+        "Redis",
+        "MySQL",
+        "Elasticsearch",
+        "AWS",
+        "Kubernetes",
+        "Docker",
+        "Terraform",
+        "Kafka",
+        "RabbitMQ",
+        "Git",
+        "Datadog",
+        "PagerDuty"
+      ],
+      "experience_level": "experienced",
+      "years_of_experience": 6,
+      "is_student": false,
+      "confidence_notes": "All skills extracted directly from explicit skills section and demonstrated through work experience at major tech companies (Stripe, Plaid, LinkedIn). High confidence due to concrete project implementations and measurable outcomes.",
+      "projects": [
+        {
+          "name": "Distributed Rate-Limiting System (Stripe)",
+          "type": "System/Infrastructure",
+          "technologies": [
+            "Go",
+            "Redis"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Designed and implemented a distributed rate-limiting system handling 120,000 requests per second in production, supporting Stripe's $4B+ annual transaction volume."
+        },
+        {
+          "name": "Billing API Microservices (Stripe)",
+          "type": "Full-Stack Web App",
+          "technologies": [
+            "Go",
+            "Kubernetes",
+            "AWS",
+            "PostgreSQL",
+            "Redis"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Lead engineer owning 3 microservices processing $4B+ in annual transactions with optimized latency and high availability."
+        },
+        {
+          "name": "Bank Connection Ingestion Pipeline (Plaid)",
+          "type": "Data Engineering / ETL",
+          "technologies": [
+            "Python",
+            "Celery",
+            "RabbitMQ",
+            "PostgreSQL"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Built and maintained production ETL pipeline processing 2M+ daily bank connections using Celery task queue and RabbitMQ messaging."
+        },
+        {
+          "name": "PostgreSQL Migration (Plaid)",
+          "type": "System/Infrastructure",
+          "technologies": [
+            "PostgreSQL",
+            "Kubernetes"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Executed zero-downtime migration of 8 services from PostgreSQL 11 to 14 using logical replication, maintaining 99.99% uptime SLA."
+        },
+        {
+          "name": "OAuth Token Encryption (Plaid)",
+          "type": "System/Infrastructure",
+          "technologies": [
+            "Python",
+            "PostgreSQL"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Medium",
+          "has_link": false,
+          "summary": "Implemented end-to-end encryption for OAuth token storage using AES-256 encryption standard for enhanced security."
+        },
+        {
+          "name": "LinkedIn Learning Recommendation Engine (LinkedIn)",
+          "type": "Full-Stack Web App",
+          "technologies": [
+            "Java",
+            "Spring Boot"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Built backend features for recommendation engine with A/B testing instrumentation running experiments on 500,000 daily active users."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Designed and implemented distributed rate-limiting system at Stripe handling massive scale with high throughput.",
+          "metric": "120,000 requests per second",
+          "dimension": "scale"
+        },
+        {
+          "description": "Optimized Stripe Billing API latency through profiling and code rewriting, achieving significant performance improvement.",
+          "metric": "Reduced P99 latency from 380ms to 95ms (75% reduction)",
+          "dimension": "performance"
+        },
+        {
+          "description": "Built and maintained production ETL pipeline at Plaid processing high volume of daily bank connections.",
+          "metric": "2M+ daily connections processed",
+          "dimension": "scale"
+        },
+        {
+          "description": "Executed complex zero-downtime database migration across multiple services while maintaining strict uptime requirements.",
+          "metric": "8 services migrated with 99.99% uptime SLA maintained",
+          "dimension": "deployment"
+        },
+        {
+          "description": "A/B testing instrumentation for LinkedIn Learning recommendation engine reaching significant user base.",
+          "metric": "500,000 daily active users",
+          "dimension": "scale"
+        },
+        {
+          "description": "Owns critical microservices handling Stripe's annual transaction volume.",
+          "metric": "$4B+ in annual transactions",
+          "dimension": "business_value"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.98,
+          "confidence_notes": "All skills explicitly listed in dedicated skills section. Work experience at tier-1 tech companies (Stripe, Plaid, LinkedIn) with concrete project implementations and measurable outcomes. No ambiguity in skill claims."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "Projects extracted from job descriptions with clear evidence of deployment, production use, and quantifiable impact. All technologies mentioned are directly tied to implemented systems."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.96,
+          "confidence_notes": "Impact metrics are concrete and specific (RPS, latency reduction, transaction volume, user counts). All claims are tied to actual work experience with measurable outcomes."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 4,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 4,
+        "conservatism": 3,
+        "project_classification": 4,
+        "impact_quality": 5
+      },
+      "winner": "candidate",
+      "justification": "Both extractions pull the same 22 skills, which is slightly over the expected 10-14 range (tools like Git, PagerDuty, Datadog, MySQL, Elasticsearch, Bash are listed but not meaningfully demonstrated in the experience bullets). However, A significantly outperforms B on project_classification and impact_quality. A correctly classifies the bank connection pipeline as Data Engineering/ETL and the infrastructure projects as System/Infrastructure, though it misclassifies the Billing API microservices as Full-Stack Web App (should be System/Infrastructure) and the LinkedIn recommendation engine as Full-Stack Web App (should be System/Infrastructure or Developer Tool). B extracts no projects at all, earning a neutral 3. On impact_quality, A captures all key concrete metrics ($4B+ transactions, 120K RPS, P99 latency 380ms\u219295ms, 2M+ daily connections, 8 services migrated, 500K DAU) with specific dimensions, earning a 5. B extracts no impact highlights, earning a 3. A is the clear winner on the dimensions that matter most for this experienced-engineer resume."
+    }
+  },
+  {
+    "id": "frontend_only",
+    "description": "CS student whose projects are exclusively frontend/CSS/static-site work",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "React",
+        "Figma",
+        "Git",
+        "npm",
+        "Framer Motion",
+        "CSS Grid",
+        "Flexbox",
+        "WCAG Accessibility"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Emma is a current CS student (graduating May 2026) with demonstrated project-based experience in frontend web development. Skills extracted from concrete projects with evidence of hands-on work: portfolio site, component library, landing page clones, and animation showcase. Included design tools (Figma) and development tools (Git, npm) from stated experience. Excluded frameworks/libraries mentioned only in project context without clear mastery (e.g., GitHub Pages is a hosting service, not a skill). Focused on frontend fundamentals and modern web technologies she has actively built with. No backend, database, or server-side experience evident."
+    },
+    "candidate_output": {
+      "skills": [
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "React",
+        "Figma",
+        "Git",
+        "npm"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 1,
+      "is_student": true,
+      "confidence_notes": "Emma is a current CS student at NYU (expected May 2026) with ~1 year of demonstrated project experience. All skills extracted from concrete project work and internship experience. No backend, database, or advanced frameworks mentioned. Strong focus on frontend design and CSS mastery.",
+      "projects": [
+        {
+          "name": "Personal Portfolio Site",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "CSS",
+            "JavaScript"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Low",
+          "has_link": true,
+          "summary": "Static portfolio website with smooth scroll animations, CSS Grid layout, and custom dark mode toggle. Deployed on GitHub Pages at emmawalsh.design. Demonstrates strong visual design and vanilla JavaScript skills."
+        },
+        {
+          "name": "UI Component Library",
+          "type": "Frontend Only",
+          "technologies": [
+            "CSS",
+            "npm"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Medium",
+          "has_link": false,
+          "summary": "CSS-only reusable component library (buttons, cards, modals, tooltips) published to npm with zero JavaScript dependencies. All components meet WCAG 2.1 AA accessibility standards. Demonstrates advanced CSS expertise and accessibility knowledge."
+        },
+        {
+          "name": "Landing Page Clones",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "CSS"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Medium",
+          "has_link": false,
+          "summary": "Pixel-perfect recreations of Stripe, Linear, and Vercel landing pages using only HTML and CSS. Focused on mastering flexbox, grid, custom properties, and CSS animations without frameworks."
+        },
+        {
+          "name": "Framer Motion Showcase",
+          "type": "Frontend Only",
+          "technologies": [
+            "React",
+            "Framer Motion"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Collection of React page transition animations exploring Framer Motion animation APIs. Pure frontend exploration project with no backend or data persistence."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Published UI Component Library to npm with zero JavaScript dependencies, demonstrating ability to create production-ready, reusable code.",
+          "metric": "Published npm package with WCAG 2.1 AA compliance",
+          "dimension": "deployment"
+        },
+        {
+          "description": "Personal portfolio deployed and live at custom domain (emmawalsh.design), showcasing professional presence and deployment capability.",
+          "metric": "Live deployment on GitHub Pages",
+          "dimension": "deployment"
+        },
+        {
+          "description": "Internship experience converting Figma designs to production HTML/CSS code, demonstrating ability to translate design specifications into functional code.",
+          "metric": "2 landing pages coded from design specs",
+          "dimension": "business_value"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "All skills directly listed in resume SKILLS section and demonstrated through concrete project work. No speculative or inferred skills included."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Project classifications based on explicit descriptions (e.g., 'purely static', 'no backend', 'pure frontend'). All projects are Frontend Only category with clear evidence of deployment or completion."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.9,
+          "confidence_notes": "Impact highlights extracted from concrete evidence: published npm package, live GitHub Pages deployment, and internship deliverables. No vague claims included."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 5,
+        "conservatism": 5,
+        "project_classification": 5,
+        "impact_quality": 4
+      },
+      "winner": "candidate",
+      "justification": "A is clearly superior across all dimensions. A correctly extracts 7 well-evidenced skills (matching expected behavior closely), classifies all four projects as 'Frontend Only' with correct complexity ratings, marks the portfolio as deployed, and captures concrete impact highlights (npm publication, WCAG 2.1 AA compliance, 2 landing pages coded from specs, live GitHub Pages deployment). B fails on multiple fronts: it inflates skills to 11 by adding CSS Grid, Flexbox, and 'WCAG Accessibility' as standalone skills (these are techniques/standards, not discrete skills in the expected taxonomy, and bloat the list beyond what's appropriate), includes Framer Motion which is valid but pushes the count high, and critically fails to extract any projects at all \u2014 scoring neutral (3) on project_classification and impact_quality by default rather than earning those scores. The years_of_experience of 0 in B is also less accurate than A's 1 year given the internship and project timeline. A is the clearly better extraction."
+    }
+  },
+  {
+    "id": "embedded_robotics",
+    "description": "ECE student with drone firmware, Arduino IoT, and custom RTOS projects",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "C",
+        "C++",
+        "Python",
+        "ROS 2",
+        "FreeRTOS",
+        "STM32 HAL",
+        "Arduino",
+        "MQTT",
+        "Git",
+        "GDB",
+        "Embedded Systems",
+        "Firmware Development",
+        "Sensor Fusion",
+        "Real-time Operating Systems"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted skills based on concrete project work and internship experience. Focused on embedded systems, microcontroller programming, and robotics where Arjun has demonstrated hands-on experience. Included domain knowledge (Embedded Systems, Firmware Development, Sensor Fusion, RTOS) based on project implementations. Excluded hardware components (Raspberry Pi, STM32, LiDAR, IMU) as these are tools/platforms rather than skills. All skills have clear evidence from projects or internship work."
+    },
+    "candidate_output": {
+      "skills": [
+        "C",
+        "C++",
+        "Python",
+        "ROS 2",
+        "FreeRTOS",
+        "STM32 HAL",
+        "Arduino",
+        "MQTT",
+        "Raspberry Pi",
+        "Git",
+        "GDB"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 1,
+      "is_student": true,
+      "confidence_notes": "Extracted skills from concrete work experience (Bosch internship), university projects with demonstrated implementations, and explicit skills section. All skills have evidence of hands-on use in embedded systems and robotics contexts.",
+      "projects": [
+        {
+          "name": "Autonomous Drone Navigation",
+          "type": "Embedded Systems / IoT / Robotics",
+          "technologies": [
+            "C++",
+            "ROS 2",
+            "LiDAR",
+            "IMU",
+            "Extended Kalman Filter",
+            "Raspberry Pi 4",
+            "Ubuntu"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Developed obstacle avoidance firmware for custom quadcopter with sensor fusion (LiDAR + IMU) using Extended Kalman Filter. Deployed on Raspberry Pi 4 with real-time kernel achieving 50Hz control loop. Won 2nd place at Purdue Robotics Competition 2025."
+        },
+        {
+          "name": "Smart Irrigation System",
+          "type": "Embedded Systems / IoT / Robotics",
+          "technologies": [
+            "C",
+            "Arduino Mega",
+            "Raspberry Pi",
+            "MQTT",
+            "ADC",
+            "GPIO",
+            "WiFi"
+          ],
+          "is_deployed": true,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Built IoT soil-moisture monitoring network with 8 Arduino Mega nodes and central Raspberry Pi hub. Implemented C firmware for ATmega2560 sensor data acquisition and MQTT transmission. System monitors 0.5 acres of greenhouse with automated solenoid valve control."
+        },
+        {
+          "name": "Custom RTOS Scheduler",
+          "type": "System/Infrastructure",
+          "technologies": [
+            "C",
+            "ARM Cortex-M4",
+            "STM32F411",
+            "Oscilloscope"
+          ],
+          "is_deployed": false,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Implemented preemptive RTOS kernel in C for ARM Cortex-M4 with round-robin scheduling, semaphores, mutexes, and priority inheritance. Validated context switch timing with oscilloscope probing."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Autonomous Drone Navigation system achieved 50Hz control loop frequency on Raspberry Pi 4 with real-time kernel, demonstrating efficient sensor fusion and embedded systems optimization.",
+          "metric": "50Hz control loop",
+          "dimension": "performance"
+        },
+        {
+          "description": "Smart Irrigation System reduced water usage in greenhouse monitoring application through automated sensor-based valve control.",
+          "metric": "~30% water usage reduction across 0.5 acres",
+          "dimension": "business_value"
+        },
+        {
+          "description": "Custom RTOS Scheduler achieved sub-microsecond context switch overhead, validating real-time kernel performance.",
+          "metric": "<5\u03bcs context switch overhead",
+          "dimension": "performance"
+        },
+        {
+          "description": "Autonomous Drone Navigation project won 2nd place at Purdue Robotics Competition 2025, demonstrating competitive-level embedded systems and robotics implementation.",
+          "metric": "2nd place award",
+          "dimension": "deployment"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "Skills extracted from explicit skills section and directly demonstrated in project implementations with concrete technical details (ROS 2, C++, sensor fusion, real-time kernel)."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Projects classified with high confidence based on clear embedded systems/robotics focus with specific hardware (Raspberry Pi, Arduino, STM32, LiDAR, IMU) and deployment evidence."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.9,
+          "confidence_notes": "Impact metrics extracted from quantifiable performance data (50Hz loop, <5\u03bcs context switch, 30% water reduction) and competition award. All metrics have concrete technical basis."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 3,
+        "impact_quality": 1
+      },
+      "scores_candidate": {
+        "skill_accuracy": 4,
+        "conservatism": 4,
+        "project_classification": 4,
+        "impact_quality": 5
+      },
+      "winner": "candidate",
+      "justification": "B is clearly superior across nearly all dimensions. On skill_accuracy, A adds inferred domain labels ('Embedded Systems', 'Firmware Development', 'Sensor Fusion', 'Real-time Operating Systems') that are not standardized skill names but rather category descriptors, making them less precise; B sticks to concrete, named technologies. On conservatism, A's 14 skills include 4 vague domain terms that bloat the list, while B's 11 skills are well-calibrated to demonstrated evidence. On project_classification, A extracts no projects at all (neutral score 3), while B correctly classifies two of three projects as 'Embedded Systems / IoT / Robotics' but misclassifies the Custom RTOS Scheduler as 'System/Infrastructure' \u2014 it runs on bare-metal ARM Cortex-M4 hardware and is clearly an embedded systems project, costing B one point. On impact_quality, A extracts no impact highlights whatsoever despite the resume containing a competition award and a quantified water reduction metric, earning a 1; B captures all key metrics including the 2nd place award, ~30% water reduction, 50Hz control loop, and <5\u03bcs context switch overhead with concrete specificity, earning a 5."
+    }
+  },
+  {
+    "id": "kitchen_sink_20_skills",
+    "description": "Sophomore who self-reports 50+ technologies but only has Hello World and a calculator to show for it",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "Python",
+        "Java",
+        "JavaScript",
+        "Git"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated project or coursework evidence. Python and JavaScript have documented projects (Hello World App). Java has documented class assignment (Calculator). Git is a standard tool for developers. All other self-reported skills were excluded because they lack concrete evidence of actual use - the resume shows only exposure through tutorials/online courses without completed projects. The extensive skill list appears to be aspirational rather than demonstrating real proficiency. Being conservative to reflect actual hands-on experience rather than theoretical knowledge."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "C",
+        "Git"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated project experience or clear educational context. Excluded extensive self-reported skill list as it appears to be aspirational/tutorial-based learning without concrete evidence of mastery. Only included languages/tools actually used in listed projects or core CS coursework.",
+      "projects": [
+        {
+          "name": "Hello World App",
+          "type": "Developer Tool / Automation",
+          "technologies": [
+            "Python",
+            "JavaScript"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Basic introductory project implementing Hello World in multiple languages. Demonstrates exposure to Python and JavaScript but minimal complexity."
+        },
+        {
+          "name": "Calculator",
+          "type": "Developer Tool / Automation",
+          "technologies": [
+            "Java"
+          ],
+          "is_deployed": false,
+          "project_complexity": "Low",
+          "has_link": false,
+          "summary": "Command-line calculator built in Java for class assignment using basic arithmetic operators. Demonstrates fundamental programming concepts."
+        }
+      ],
+      "impact_highlights": [],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "Conservative extraction based on demonstrated project work only. Resume shows extensive self-reported skills but lacks evidence of actual experience with most technologies. Only extracted skills used in actual projects (Hello World App, Calculator) or implied through CS coursework."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.7,
+          "confidence_notes": "Self-reported skills section appears aspirational - lists 20+ languages and frameworks with no corresponding project evidence or work experience. This is typical of students early in their CS education who have completed tutorials but lack production experience."
+        },
+        {
+          "confidence_level": "low",
+          "confidence_score": 0.4,
+          "confidence_notes": "Cannot verify claimed expertise in frameworks (React, Django, FastAPI, etc.), cloud platforms (AWS, GCP, Azure), or AI/ML tools (TensorFlow, PyTorch, LangChain) as no projects demonstrate these skills. Recommend requesting portfolio links or GitHub repositories for verification."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 4,
+        "conservatism": 5,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 3,
+        "conservatism": 4,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "winner": "baseline",
+      "justification": "A is more conservative and accurate: it extracts only 4 skills with genuine evidence (Python, Java, JavaScript from projects, Git as reasonable standard tool). B adds 'C' with zero project or coursework evidence \u2014 it appears in the self-reported list only, making it a hallucinated skill inclusion. Both outputs correctly avoid echoing the bloated self-reported list, but A is tighter. Project classification is neutral for both since neither output classifies projects (A) or classifies them identically (B as Developer Tool / Automation, which is debatable but not wrong for trivial beginner projects). Impact quality is neutral for both since no real metrics exist. A wins primarily on conservatism and skill_accuracy by not including the unsupported 'C' entry."
+    }
+  },
+  {
+    "id": "sparse_resume",
+    "description": "First-generation college student with almost no CS experience yet",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "HTML",
+        "CSS",
+        "Python",
+        "Git"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated evidence: HTML and CSS from completed Web Design course (A grade), Python from current Introduction to Programming enrollment, and Git from self-directed learning via YouTube tutorial. Excluded soft skills from barista role as they're not technical. Noted all skills are at beginner level with no professional software engineering experience. Conservative extraction focusing on concrete coursework and learning activities rather than aspirational skills."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "HTML",
+        "CSS",
+        "Git"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0,
+      "is_student": true,
+      "confidence_notes": "Extracted only skills with demonstrated coursework or completed learning. Excluded 'familiarity' claims without concrete evidence. Python is listed as 'very beginner level' but is actively being learned in current coursework, so included. Git from YouTube tutorial is minimal but represents actual exposure.",
+      "projects": [],
+      "impact_highlights": [],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.95,
+          "confidence_notes": "Clear coursework documentation (Introduction to Programming in Python, Web Design Basics with A grade). Skills are directly tied to completed or in-progress courses."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.7,
+          "confidence_notes": "Git skill based on self-directed YouTube learning without formal coursework or project application. Minimal evidence of practical use."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 5,
+        "conservatism": 5,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 5,
+        "conservatism": 5,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "winner": "candidate",
+      "justification": "Both extractions are nearly identical in skill accuracy and conservatism \u2014 both correctly extract exactly the four evidenced skills (HTML, CSS, Python, Git) with no hallucinations, and both correctly set experience_level='student', is_student=true, years_of_experience=0. Project classification and impact quality are neutral (3) for both since neither resume has projects or impact metrics. The tiebreaker goes to B because it explicitly includes empty arrays for 'projects' and 'impact_highlights' as the expected behavior requires, and it provides granular per-skill confidence_metrics with differentiated confidence scores (high for coursework-backed skills, medium for the YouTube Git tutorial), which better reflects the expected low/medium confidence guidance. A's confidence_notes are solid prose but B's structured confidence_metrics add meaningful signal about the varying reliability of each skill claim."
+    }
+  },
+  {
+    "id": "real_resume",
+    "description": "Real uploaded resume \u2014 high school grad / early college with Python/JS internship, ML project work, and HTML/Java GitHub projects",
+    "judged": true,
+    "gate_failed": false,
+    "baseline_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning",
+        "Artificial Intelligence",
+        "HTML",
+        "Git",
+        "Data Analysis",
+        "Project Management",
+        "Communication"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 2,
+      "is_student": true,
+      "confidence_notes": "Extracted skills based on concrete work experience at Atelia Software (Python, JavaScript, Java, Machine Learning, AI) and GitHub projects (HTML, Java, Git). Included soft skills (Project Management, Communication) demonstrated through volunteer coordinator and event planning roles. Conservative approach - excluded skills only mentioned in course context or without clear evidence of hands-on experience. Classified as student with ~2 years of internship/project experience since currently in high school (graduating Spring 2024)."
+    },
+    "candidate_output": {
+      "skills": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "Machine Learning",
+        "HTML",
+        "Git",
+        "WordPress"
+      ],
+      "experience_level": "student",
+      "years_of_experience": 0.5,
+      "is_student": true,
+      "confidence_notes": "Extracted skills from internship work experience and GitHub projects. High school student with demonstrated experience in AI/ML projects at Atelia Software and web development projects on GitHub. Conservative extraction focusing on explicitly mentioned technologies with project evidence.",
+      "projects": [
+        {
+          "name": "AI Scribe for Physician-Patient Consultations",
+          "type": "AI/ML (NLP/GenAI)",
+          "technologies": [
+            "Python",
+            "JavaScript",
+            "Machine Learning",
+            "Java"
+          ],
+          "is_deployed": false,
+          "project_complexity": "High",
+          "has_link": false,
+          "summary": "Built AI scribes using Python and JavaScript libraries to automatically summarize physician-patient consultations, designed to save doctors' time. Developed machine learning models for patient data processing in Java. Client-focused project demonstrating practical AI/ML application in healthcare."
+        },
+        {
+          "name": "Historical Decolonization Website",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "Java"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Low",
+          "has_link": true,
+          "summary": "Created a website explaining the historical process of decolonization using HTML and Java. Demonstrates interest in combining technical skills with historical knowledge."
+        },
+        {
+          "name": "NFL Draft Team Simulation Game",
+          "type": "Frontend Only",
+          "technologies": [
+            "HTML",
+            "Java"
+          ],
+          "is_deployed": true,
+          "project_complexity": "Medium",
+          "has_link": true,
+          "summary": "Interactive game allowing users to take control of their favorite NFL team for the 2021 Draft, showing how different player selections would impact the team today. Combines sports analytics interest with web development."
+        }
+      ],
+      "impact_highlights": [
+        {
+          "description": "Built AI scribes at Atelia Software internship to automatically summarize physician-patient consultations, directly addressing the client goal of saving doctors' time through machine learning automation.",
+          "metric": "Healthcare automation tool in production use",
+          "dimension": "business_value"
+        },
+        {
+          "description": "Organized and coordinated MSJ Sports Analytics Club's annual Datathon where members analyzed NBA, MLB, and NFL data, judged by sports professionals, demonstrating leadership in data analytics community.",
+          "metric": "Multi-sport data analysis event with professional judges",
+          "dimension": "scale"
+        }
+      ],
+      "confidence_metrics": [
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.92,
+          "confidence_notes": "Python, JavaScript, Java, and Machine Learning extracted from explicit internship description at Atelia Software with concrete project details."
+        },
+        {
+          "confidence_level": "high",
+          "confidence_score": 0.9,
+          "confidence_notes": "HTML and Java confirmed through GitHub projects with direct links and specific project descriptions."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.75,
+          "confidence_notes": "WordPress included based on active blogging platform (2015-Present) but limited technical depth evident from resume."
+        },
+        {
+          "confidence_level": "medium",
+          "confidence_score": 0.7,
+          "confidence_notes": "AI/ML project classification based on internship description mentioning 'machine learning principles' and 'AI scribes' but limited technical detail on specific frameworks or methodologies."
+        }
+      ]
+    },
+    "judge": {
+      "scores_baseline": {
+        "skill_accuracy": 2,
+        "conservatism": 2,
+        "project_classification": 3,
+        "impact_quality": 3
+      },
+      "scores_candidate": {
+        "skill_accuracy": 3,
+        "conservatism": 3,
+        "project_classification": 4,
+        "impact_quality": 2
+      },
+      "winner": "candidate",
+      "justification": "A includes soft skills (Project Management, Communication, Data Analysis) and 'Artificial Intelligence' as a separate skill from Machine Learning, violating the expected behavior of not extracting soft skills and keeping the list conservative. A also includes 'Git' with no evidence in the resume. B is more disciplined \u2014 it drops the soft skills and keeps the list tighter, though it adds 'WordPress' (marginal) and 'Git' (also unsubstantiated). B correctly classifies the AI scribe project as AI/ML (NLP/GenAI) and the GitHub projects as Frontend Only, which is appropriate. B's impact_highlights are vague and lack real numeric metrics (the Datathon highlight is particularly weak \u2014 it's a club event, not a measurable outcome), but A extracts no projects or impact at all, making B more informative overall. B's years_of_experience (0.5) is arguably too low given the internship started Summer 2022, but A's value of 2 is more defensible. Despite B's flaws, it outperforms A on project classification and skill accuracy, and its additional structured project data adds value even if imperfect."
+    }
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "skills": [
+    "Python",
+    "Java",
+    "JavaScript",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with demonstrated project or coursework evidence. Python and JavaScript have documented projects (Hello World App). Java has documented class assignment (Calculator). Git is a standard tool for developers. All other self-reported skills were excluded because they lack concrete evidence of actual use - the resume shows only exposure through tutorials/online courses without completed projects. The extensive skill list appears to be aspirational rather than demonstrating real proficiency. Being conservative to reflect actual hands-on experience rather than theoretical knowledge."
+}

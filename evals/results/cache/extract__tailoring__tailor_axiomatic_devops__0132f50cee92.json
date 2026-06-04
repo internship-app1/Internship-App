@@ -1,0 +1,84 @@
+{
+  "name": "Sujan Nandikol Sunilkumar",
+  "email": "sujan.nandikolsunilkumar@sjsu.edu",
+  "phone": "(925)-967-6795",
+  "website": "https://suqjan.com",
+  "github": "https://github.com/sujan",
+  "linkedin": "https://linkedin.com/in/sujan",
+  "experience": [
+    {
+      "company": "Burnt (YC S25)",
+      "location": "San Francisco, CA",
+      "title": "Full Stack Developer Intern",
+      "dates": "July 2025 \u2013 September 2025",
+      "bullets": [
+        "Engineered multi-channel B2B AI order agent platform using Python backend with Claude Sonnet and RAG architecture, implementing webhook integrations and data structure optimizations that processed 1,000+ orders across 7 enterprise clients",
+        "Developed internal tooling in React and Python for operations teams, building AWS S3-backed attachment storage system for 250+ files, Intercom ticketing integration reducing response time by 5+ minutes per request for 50+ customers, and ERP sales order interface",
+        "Implemented automated validation pipeline with algorithmic output verification and human-in-the-loop QA layer, iterating on prompt engineering and vector-store correction algorithms to improve precision across 1,000+ production orders"
+      ]
+    },
+    {
+      "company": "SJSU College of Engineering",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "June 2025 \u2013 August 2025",
+      "bullets": [
+        "Developed Python infrastructure wrapper around Grafanalib on 3-person engineering team, applying software design patterns and data structures to achieve 83% code reduction (30+ lines to 5 lines)",
+        "Executed platform migration of 7+ legacy monitoring dashboards across 3 active Grafana environments, implementing unit testing framework at the dashboard layer to ensure deployment reliability"
+      ]
+    },
+    {
+      "company": "SJSU Software & Computer Engineering Society",
+      "location": "San Jose, CA",
+      "title": "Software Engineering Intern",
+      "dates": "February 2025 \u2013 Present",
+      "bullets": [
+        "Building full-stack professor review platform serving 30,000+ students using TypeScript, React, Node.js backend, and Drizzle ORM with focus on scalable data structures and efficient algorithms",
+        "Shipped review submission feature and engineered Python GraphQL webscraper for automated course data ingestion pipeline, delivering features across agile sprint cycles"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "school": "San Jose State University",
+      "location": "San Jose, CA",
+      "degree": "Bachelor of Science in Computer Science and Linguistics",
+      "dates": "May 2027"
+    }
+  ],
+  "skills": {
+    "Programming Languages": "Python, TypeScript, JavaScript, Java, SQL",
+    "Frameworks & Libraries": "React.js, Node.js, FastAPI, Flask, Spring Boot, Tailwind CSS",
+    "Developer Tools & Platform": "Git, GitHub Actions, Docker, AWS (EC2/S3), GCP, PostgreSQL, Redis, Linux",
+    "AI & Data": "Anthropic/OpenAI/Gemini API, LangChain, RAG, Vector Stores, MCP, Scikit-Learn"
+  },
+  "projects": [
+    {
+      "name": "Internship Matcher (React + TypeScript, FastAPI, Claude, PostgreSQL, Redis, AWS S3)",
+      "dates": "October 2025 \u2013 Present",
+      "bullets": [
+        "Architected and deployed end-to-end platform at internshipmatcher.com: React + TypeScript frontend, Python FastAPI backend, multi-tier data layer (PostgreSQL, Redis, AWS S3), and Clerk JWT authentication via JWKS",
+        "Designed dual-model Claude pipeline with algorithmic ranking (Haiku 4.5 for skill extraction, Sonnet 4.5 for deep re-ranking top 30 to top 10) achieving 95%+ accuracy; implemented SSE streaming for real-time progress events to frontend",
+        "Optimized parallel processing algorithms for 30+ positions with dynamic batching and prompt caching, reducing latency 52% (270s to 130s) through data structure and concurrency improvements"
+      ]
+    },
+    {
+      "name": "Sleep-PSG Scoring (React, FastAPI, MNE, Scikit-Learn, Redis, WebSockets)",
+      "dates": "January 2026 \u2013 April 2026",
+      "bullets": [
+        "Built automated PSG sleep-stage scoring platform with Python backend achieving 98% time reduction (2+ hrs to under 2 min) and 83% balanced accuracy, validated against clinician-labeled hypnograms from Sleep-EDF dataset",
+        "Engineered asynchronous EEG processing pipeline using Redis + ARQ for distributed EDF parsing, spectral feature extraction algorithms, and Scikit-Learn classifiers with per-patient data structures",
+        "Implemented sub-10ms WebSocket streaming architecture to React dashboard for real-time EEG waveform and hypnogram rendering, enabling live QA review workflows"
+      ]
+    },
+    {
+      "name": "Cold Leads Agent (FastAPI, Claude Haiku + Sonnet, Cal.com, Linq, Postgres)",
+      "dates": "May 2026 \u2013 Present",
+      "bullets": [
+        "Engineered and deployed autonomous lead-qualification SMS agent with Python FastAPI backend: FSM-driven pipeline implementing intent classification algorithms, debounce sweeper, and Cal.com auto-booking integration for qualified leads",
+        "Integrated multi-service platform architecture with HMAC-signed Linq SMS webhooks, Cal.com v2 booking API, SendGrid escalation; dual-model Claude (Haiku + Sonnet) on async Postgres with Alembic migrations and APScheduler",
+        "Deployed to production for Bay Area real estate client, automating lead qualification and booking workflows to save ~5 hrs/week of manual outreach through algorithmic filtering and data-driven routing"
+      ]
+    }
+  ]
+}

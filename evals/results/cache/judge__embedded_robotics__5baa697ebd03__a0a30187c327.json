@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 1
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 4,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "A correctly classifies two of three projects as Embedded Systems / IoT / Robotics (only missing on Custom RTOS Scheduler, which should also be that category rather than System/Infrastructure). A captures concrete impact highlights including the 2nd place award, ~30% water reduction, and 50Hz control loop. B extracts no projects at all (neutral score 3) and no impact highlights (score 1 since the resume clearly has real metrics). B also inflates skills with vague domain labels like 'Embedded Systems', 'Firmware Development', 'Sensor Fusion', and 'Real-time Operating Systems' which are not standardized skill names but rather domain descriptors, reducing skill accuracy. A's skill list is tighter and better standardized, though it omits FreeRTOS which has internship-adjacent evidence. Overall A dominates on impact quality and project classification while being comparable or better on skill accuracy and conservatism."
+}

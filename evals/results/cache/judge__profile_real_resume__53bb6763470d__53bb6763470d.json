@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "winner": "tie",
+  "justification": "Both extractions are nearly identical in structure and content. Neither extracts projects or impact highlights, so project_classification and impact_quality are both neutral (3). On skill_accuracy, both include some vague/abstracted skills ('Full Stack Development', 'LLM Integration/integration') that are category labels rather than discrete skills, and both miss standardizing 'Claude AI' to 'Anthropic API'. B adds 'MNE', 'EDF parsing', 'Clerk JWT', and 'Prompt engineering' \u2014 MNE and Prompt Engineering are genuinely demonstrated, but 'EDF parsing' is too narrow/implementation-specific and 'Clerk JWT' is a product name rather than a skill. A includes 'Machine Learning' and 'API Development' which are vague category labels. Both have ~22 skills which is slightly bloated but not egregiously so given the rich resume. The differences are marginal and neither output is clearly superior across the four dimensions."
+}

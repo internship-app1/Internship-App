@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 4,
+    "conservatism": 3,
+    "project_classification": 4,
+    "impact_quality": 5
+  },
+  "winner": "candidate",
+  "justification": "Both extractions pull the same 22 skills, which is slightly over the expected 10-14 range (tools like Git, PagerDuty, Datadog, MySQL, Elasticsearch, Bash are lightly evidenced in the experience bullets). However, A significantly outperforms B on project_classification and impact_quality. A correctly classifies the ingestion pipeline as Data Engineering/ETL, the rate-limiting and DB migration as System/Infrastructure, and captures all six concrete numeric metrics (120K RPS, P99 latency 380ms\u219295ms, 2M+ daily connections, 99.99% uptime, 500K DAU, $4B+ transactions). B extracts no projects and no impact highlights at all, scoring neutral (3) on both those dimensions. A's richer structured output is clearly more useful and accurate for this experienced backend engineer resume."
+}

@@ -1,0 +1,12 @@
+{
+  "skills": [
+    "HTML",
+    "CSS",
+    "Python",
+    "Git"
+  ],
+  "experience_level": "student",
+  "years_of_experience": 0,
+  "is_student": true,
+  "confidence_notes": "Extracted only skills with demonstrated evidence: HTML and CSS from completed Web Design course (A grade), Python from current Introduction to Programming enrollment, and Git from self-directed learning via YouTube tutorial. Excluded soft skills from barista role as they're not technical. Noted all skills are at beginner level with no professional software engineering experience. Conservative extraction focusing on concrete coursework and learning activities rather than aspirational skills."
+}

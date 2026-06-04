@@ -1,0 +1,21 @@
+{
+  "skills": [
+    "Go",
+    "Redis",
+    "Python",
+    "Celery",
+    "RabbitMQ",
+    "PostgreSQL",
+    "Java",
+    "Spring Boot",
+    "AWS",
+    "Kubernetes",
+    "Docker",
+    "Kafka",
+    "Elasticsearch",
+    "Terraform",
+    "SQL"
+  ],
+  "experience_level": "experienced",
+  "years_of_experience": 6
+}

@@ -1,0 +1,16 @@
+{
+  "scores_baseline": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 3,
+    "impact_quality": 3
+  },
+  "scores_candidate": {
+    "skill_accuracy": 3,
+    "conservatism": 3,
+    "project_classification": 5,
+    "impact_quality": 3
+  },
+  "winner": "candidate",
+  "justification": "Both outputs share the same skill list, including the questionable GraphQL inclusion (candidate only ran read-only queries written by senior devs, which is borderline). Both correctly exclude Python, React, Node.js, Rust, and Tailwind. The key differentiator is that A extracts and correctly classifies both projects as 'Frontend Only', which is accurate per the taxonomy, and provides impact highlights (even if modest). B extracts no projects at all, earning a neutral 3 on project_classification and impact_quality by default. Since the resume clearly contains projects, A's extraction of them is a meaningful advantage. A wins on project_classification and impact_quality dimensions, making it the clear overall winner despite both sharing identical skill extraction quality."
+}
