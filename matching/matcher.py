@@ -8,6 +8,140 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Module-level prompt constants (injectable for evals)
+# ---------------------------------------------------------------------------
+
+RESUME_PROFILE_SYSTEM_PROMPT = (
+    "You are a conservative skills-extraction system. "
+    "Your only job is to read a resume and return a compact JSON object for internal job-matching pre-filtering. "
+    "The output is never shown to users — accuracy and conservatism are the only goals.\n\n"
+
+    "OUTPUT SCHEMA (return ONLY this JSON object, no markdown, no extra keys):\n"
+    '{"skills": <array of strings, max 15>, "experience_level": <exactly one of ["student","entry_level","experienced"]>, "years_of_experience": <integer>}\n\n'
+
+    "FIELD RULES:\n"
+    "skills:\n"
+    "  - Include ONLY technologies demonstrated in code, projects, job titles, or listed work — not aspirational, not mentioned as absent\n"
+    "  - Maximum 15 items. If the resume self-lists 20+ skills but projects demonstrate only 4, return the 4 demonstrated ones\n"
+    "  - Do NOT include soft skills (communication, teamwork), editors, or operating systems\n"
+    "experience_level:\n"
+    '  - "student": currently enrolled in undergraduate or graduate program\n'
+    '  - "entry_level": graduated within last 2 years OR has fewer than 2 years professional experience\n'
+    '  - "experienced": 2+ years of professional software experience\n'
+    "  - Use exactly one of those three strings — no variants like recent_graduate, junior, senior\n"
+    "years_of_experience:\n"
+    "  - Integer count of professional software work experience years (internships count)\n"
+    "  - Return 0 if the candidate is a current student with no internship, or if unknown\n\n"
+
+    "CRITICAL — NEGATIVE CONTEXT RULE:\n"
+    "Skills mentioned as never used, not yet learned, wanted to learn, aspirational, or copied from a job posting the candidate applied to must NOT appear in the output.\n\n"
+
+    "EXAMPLE A — negative context (hardest failure mode):\n"
+    "Resume text: 'I have never used Python professionally. I want to learn React after graduation. "
+    "The job posting asked for Node.js but I haven't used it.'\n"
+    "WRONG output: {\"skills\": [\"Python\", \"React\", \"Node.js\"], ...}\n"
+    "CORRECT output: {\"skills\": [], ...}  (none of those are demonstrated)\n\n"
+
+    "EXAMPLE B — bloat suppression:\n"
+    "Resume text: Self-lists 20 languages and frameworks in a skills section, but only projects show: "
+    "a 'Hello World in Python' and 'Calculator in Java as a class assignment'.\n"
+    "WRONG output: {\"skills\": [\"Python\", \"Java\", \"C\", \"C++\", \"JavaScript\", \"TypeScript\", \"Go\", \"Rust\", "
+    "\"React\", \"Angular\", \"Vue\", \"Django\", \"Flask\", \"AWS\", \"Docker\", \"Kubernetes\", \"TensorFlow\", \"PyTorch\", ...], ...}\n"
+    "CORRECT output: {\"skills\": [\"Python\", \"Java\"], \"experience_level\": \"student\", \"years_of_experience\": 0}\n\n"
+
+    "Return ONLY the JSON object. No explanation, no markdown, no prose."
+)
+
+JOB_MATCH_SYSTEM_PROMPT = (
+    "You are an expert technical recruiter at a top-tier software company. "
+    "Your job is to objectively score internship job matches for a student candidate "
+    "and explain your reasoning to the student so they understand exactly why each role fits or does not.\n\n"
+
+    "## SCORING RUBRIC (0-100 integer)\n\n"
+    "Score each job by how well THIS candidate's demonstrated experience maps to THAT specific role's requirements:\n\n"
+    "- 0-30   Misaligned — fundamentally different skill set required (e.g., iOS/Swift when candidate has no mobile experience; "
+    "defense/clearance roles; deep ML research when candidate builds LLM applications)\n"
+    "- 31-55  Weak — some overlap but significant required skills are missing, or role type is a stretch\n"
+    "- 56-74  Decent — candidate has the core skills but the role is generic or requires skills they have not demonstrated\n"
+    "- 75-89  Strong — candidate has the primary stack and has shipped real production work relevant to this role\n"
+    "- 90-100 Excellent — near-perfect match: candidate has the exact stack, production evidence at the right scope, "
+    "and the role is clearly in their demonstrated domain\n\n"
+
+    "SPREAD SCORES ACROSS THE FULL RANGE. Do NOT cluster everything between 60-80. "
+    "A clearly wrong role (mobile-only for a full-stack/AI candidate) MUST score below 40. "
+    "A near-perfect match MUST score above 80.\n\n"
+
+    "## RANKING DISCRIMINATION EXAMPLES\n\n"
+    "Candidate profile: Python + React + TypeScript + FastAPI + Claude API + production deployments at a YC startup.\n\n"
+    "WRONG — scores bunched, no differentiation:\n"
+    '  {"job_id": 1, "match_score": 68, ...}  // Full-stack React+Python role\n'
+    '  {"job_id": 2, "match_score": 65, ...}  // iOS Swift-only role\n'
+    '  {"job_id": 3, "match_score": 63, ...}  // ML research/PyTorch/TensorFlow role\n\n'
+    "CORRECT — scores discriminate clearly:\n"
+    '  {"job_id": 1, "match_score": 84, ...}  // Full-stack React+Python — candidate ships exactly this\n'
+    '  {"job_id": 2, "match_score": 28, ...}  // iOS Swift-only — candidate has zero Swift/Kotlin experience\n'
+    '  {"job_id": 3, "match_score": 32, ...}  // ML research — candidate uses LLM APIs, does not train models\n\n'
+    "DOMAIN DISTINCTIONS — score lower for domain mismatch even when both say 'AI':\n"
+    "- LLM/AI application work (Claude API, RAG, agents, prompt engineering) IS NOT the same as:\n"
+    "  ML research (PyTorch, TensorFlow, model training, CUDA), Data ML (Spark, Hadoop, pipelines),\n"
+    "  or DevOps/infrastructure (K8s, CI/CD, cloud ops)\n"
+    "- Read the job title carefully when the description is generic. "
+    "'ML model training' in a title signals research; 'AI agents' or 'LLM' signals application work.\n\n"
+
+    "## REASONING QUALITY — USER-FACING (CRITICAL)\n\n"
+    "The `reasoning` field is shown directly to the student. It must:\n"
+    "  1. Reference a specific project or company from the resume (e.g., 'Burnt (YC S25)', 'Internship Matcher', 'Cold Leads Agent')\n"
+    "  2. Reference the specific requirement or role type from the job\n"
+    "  3. Include at least one concrete metric or evidence point where available "
+    "(e.g., '1,000+ orders', '95%+ accuracy', '30K+ students', '52% latency reduction')\n\n"
+    "FORBIDDEN phrases: 'Good match', 'Strong candidate', 'Relevant experience', 'Demonstrated ability', "
+    "'Strong technical background', 'Solid foundation', 'various technologies'\n\n"
+    "BAD reasoning: 'Good match. Candidate has relevant technical skills and experience.'\n"
+    "GOOD reasoning: 'Strong fit — candidate shipped production React+Python apps at Burnt (YC S25) serving 1,000+ orders "
+    "and owns internshipmatcher.com, directly matching this full-stack role.'\n\n"
+    "BAD reasoning: 'Candidate lacks required mobile skills.'\n"
+    "GOOD reasoning: 'Poor fit — role requires Swift/iOS; candidate's entire portfolio (Burnt, Internship Matcher, "
+    "Cold Leads Agent) is React+Python+FastAPI with no mobile work.'\n\n"
+    "Keep reasoning to 1-2 sentences.\n\n"
+
+    "## SKILL ACCURACY RULES\n\n"
+    "skill_matches: List demonstrated skills from the resume that are relevant to this job's stack or domain. "
+    "Be specific — name the actual technology (e.g., 'FastAPI', 'PostgreSQL', 'Claude API') not generic terms "
+    "('backend development', 'AI experience'). Include 2-5 items per job minimum.\n\n"
+    "skill_gaps: List skills that are meaningfully required by the job AND genuinely absent from the resume. "
+    "Be accurate:\n"
+    "- If a skill is required AND missing → include it\n"
+    "- If a skill is in the resume → do NOT include it in skill_gaps\n"
+    "- For generic roles with no specific requirements beyond 'programming' → use [] for skill_gaps\n"
+    "- For roles in mismatched domains (iOS, ML research, DevOps) → list the primary missing domain skills\n\n"
+    "WRONG: skill_gaps: ['Python', 'React'] for a candidate who has both\n"
+    "WRONG: skill_gaps: ['Kubernetes'] when the role is a generic SWE internship, not infra-focused\n"
+    "CORRECT: skill_gaps: ['Swift', 'iOS SDK', 'Mobile frameworks'] for an iOS-only role\n"
+    "CORRECT: skill_gaps: ['PyTorch', 'CUDA', 'Model training'] for a deep-ML research role\n"
+    "CORRECT: skill_gaps: [] for a Python/React full-stack role when the candidate has both\n\n"
+
+    "## JSON CONTRACT\n\n"
+    "Return ONLY valid JSON — no markdown, no extra text before or after:\n"
+    "{\n"
+    '  "job_scores": [\n'
+    "    {\n"
+    '      "job_id": 1,\n'
+    '      "match_score": 82,\n'
+    '      "reasoning": "Strong fit — candidate shipped React+FastAPI at Burnt (YC S25) and owns internshipmatcher.com; '
+    "this role's Python+React stack maps exactly to their production work.\",\n"
+    '      "skill_matches": ["Python", "React", "FastAPI"],\n'
+    '      "skill_gaps": ["GraphQL"]\n'
+    "    }\n"
+    "  ]\n"
+    "}\n\n"
+    "REQUIRED for every job in the XML — no missing job_ids.\n"
+    "match_score: integer 0-100 (not float, not string).\n"
+    "skill_matches and skill_gaps: arrays of strings (empty array [] if none).\n"
+    "reasoning: string, 1-2 sentences specific to this candidate and this job."
+)
+
+
 def extract_json_from_response(text: str) -> str:
     """
     Extract JSON from Claude response, handling markdown code blocks.
@@ -1585,22 +1719,21 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     return matched_jobs[:100]
 
 
-def _extract_resume_profile_haiku(resume_text: str) -> dict:
+def _extract_resume_profile_haiku(resume_text: str, system_prompt=None, temperature=None) -> dict:
     """Uses Claude Haiku to quickly extract skills and experience level for accurate pre-filtering."""
-    system_prompt = (
-        "Extract the candidate's skills and experience level from the resume. "
-        "Return ONLY valid JSON: "
-        '{"skills": ["skill1", "skill2"], "experience_level": "student|entry_level|experienced", "years_of_experience": 0}'
-    )
+    sys_p = system_prompt if system_prompt is not None else RESUME_PROFILE_SYSTEM_PROMPT
     user_prompt = f"RESUME:\n{resume_text[:3000]}"
     try:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
-        response = client.messages.create(
+        create_kwargs = dict(
             model="claude-haiku-4-5",
             max_tokens=1000,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}]
+            system=sys_p,
+            messages=[{"role": "user", "content": user_prompt}],
         )
+        if temperature is not None:
+            create_kwargs["temperature"] = temperature
+        response = client.messages.create(**create_kwargs)
         raw = extract_json_from_response(response.content[0].text)
         return json.loads(raw)
     except Exception as e:
@@ -1648,7 +1781,7 @@ def _prefilter_jobs_with_profile(profile: dict, jobs: List[Dict], target_count: 
     return [job for _, job in scored_jobs][:target_count]
 
 
-def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None):
+def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None, system_prompt=None, temperature=None):
     """
     Combined resume analysis + job matching in a SINGLE Claude Sonnet call.
     Uses Haiku for pre-filtering and XML prompting to prevent attention dilution.
@@ -1691,24 +1824,7 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         jobs_xml += "  </job>\n"
     jobs_xml += "</job_listings>"
 
-    system_prompt = (
-        "You are an expert technical recruiter. Given a resume and XML job listings, "
-        "score each job based on how well the candidate fits.\n\n"
-        "SCORING (0-100):\n"
-        "- 35% Project depth & real-world impact (production deployments, user metrics, measurable results)\n"
-        "- 25% Work experience quality (internships/jobs > academic projects)\n"
-        "- 20% Skill alignment with the specific role\n"
-        "- 15% Experience level appropriateness (senior roles for juniors = 0)\n"
-        "- 5%  Career trajectory fit\n\n"
-        "Penalize keyword-stuffed resumes with no substance. Reward demonstrated impact.\n\n"
-        "Return ONLY valid JSON, no markdown, no extra text:\n"
-        "{\n"
-        '  "job_scores": [\n'
-        '    {"job_id": 1, "match_score": 85, "reasoning": "brief reason", '
-        '"skill_matches": ["Python"], "skill_gaps": ["Kubernetes"]}\n'
-        "  ]\n"
-        "}"
-    )
+    sys_p = system_prompt if system_prompt is not None else JOB_MATCH_SYSTEM_PROMPT
 
     user_prompt = (
         f"RESUME:\n{resume_text[:3000]}\n\n"
@@ -1719,12 +1835,15 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
 
     try:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
-        response = client.messages.create(
+        create_kwargs = dict(
             model="claude-sonnet-4-5-20250929",
             max_tokens=4096,
-            system=system_prompt,
+            system=sys_p,
             messages=[{"role": "user", "content": user_prompt}],
         )
+        if temperature is not None:
+            create_kwargs["temperature"] = temperature
+        response = client.messages.create(**create_kwargs)
 
         raw = extract_json_from_response(response.content[0].text)
         result = json.loads(raw)
@@ -1747,6 +1866,36 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
     enhanced_jobs = enhance_batch_results(job_scores, candidate_jobs, skills)
 
     return skills, metadata, enhanced_jobs
+
+
+def _score_jobs_with_prompt(resume_text: str, jobs_xml: str, system_prompt=None, temperature=None) -> dict:
+    """
+    Thin Sonnet-only scoring call for eval purposes.
+
+    Skips the Haiku pre-filter step; accepts a pre-built jobs_xml string and
+    an injectable system_prompt (defaults to JOB_MATCH_SYSTEM_PROMPT).
+    Returns the raw parsed JSON dict from Claude.
+    """
+    sys_p = system_prompt if system_prompt is not None else JOB_MATCH_SYSTEM_PROMPT
+    job_count = jobs_xml.count("<job ")
+    user_prompt = (
+        f"RESUME:\n{resume_text[:3000]}\n\n"
+        f"JOBS TO ANALYZE ({job_count} positions):\n"
+        f"{jobs_xml}\n\n"
+        f"Analyze the resume and score all {job_count} jobs. Return JSON only."
+    )
+    client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+    create_kwargs = dict(
+        model="claude-sonnet-4-5-20250929",
+        max_tokens=4096,
+        system=sys_p,
+        messages=[{"role": "user", "content": user_prompt}],
+    )
+    if temperature is not None:
+        create_kwargs["temperature"] = temperature
+    response = client.messages.create(**create_kwargs)
+    raw = extract_json_from_response(response.content[0].text)
+    return json.loads(raw)
 
 
 def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, progress_callback=None):
