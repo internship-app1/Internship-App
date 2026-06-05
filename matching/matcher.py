@@ -1570,17 +1570,20 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
         if len(job_skills) > 0:
             skill_coverage = skill_match_count / len(job_skills)
 
-            # Progressive scoring with diminishing returns
-            if skill_coverage >= 0.8:  # 80%+ coverage
-                score += 85
-            elif skill_coverage >= 0.6:  # 60-79% coverage
-                score += int(skill_coverage * 85)
-            elif skill_coverage >= 0.4:  # 40-59% coverage
-                score += int(skill_coverage * 70)
-            elif skill_coverage >= 0.2:  # 20-39% coverage
-                score += int(skill_coverage * 50)
-            else:  # < 20% coverage
-                score += int(skill_coverage * 30)
+            # Normalized to match the Sonnet rubric ranges (0-30 misaligned,
+            # 31-55 weak, 56-74 decent, 75-89 strong). Keyword mode caps at ~75
+            # because it cannot evaluate production evidence; title/role bonuses
+            # (up to 15 pts) can push strong matches into the 80-90 range.
+            if skill_coverage >= 0.8:   # Strong keyword overlap
+                score += 75
+            elif skill_coverage >= 0.6:  # Decent-strong
+                score += 63
+            elif skill_coverage >= 0.4:  # Decent
+                score += 50
+            elif skill_coverage >= 0.2:  # Weak
+                score += 38
+            else:                        # Minimal (≥1 skill match but thin overlap)
+                score += 30
 
     # CRITICAL: If zero required skills matched, return 0 immediately
     # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers)
