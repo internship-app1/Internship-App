@@ -357,7 +357,7 @@ def extract_user_experience_level(resume_skills, resume_text=""):
     
     for indicator in recent_graduate_indicators:
         if indicator in resume_text_lower:
-            return "recent_graduate"
+            return "entry_level"
     
     for indicator in student_indicators:
         if indicator in resume_text_lower:

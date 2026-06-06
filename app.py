@@ -748,7 +748,7 @@ async def stream_match_resume(
         if user_id and resume_hash:
             try:
                 use_llm_early = think_deeper.lower() == "true"
-                cache_key_early = f"{resume_hash}_{'deep' if use_llm_early else 'quick'}"
+                cache_key_early = f"{resume_hash}_{'deep' if use_llm_early else 'quick'}_{PROMPT_VERSION}"
                 cached_early = get_resume_cache(user_id, cache_key_early)
                 if cached_early:
                     logger.info(f"Cache hit before S3 upload for user {user_id}, returning early")
