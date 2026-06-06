@@ -1,11 +1,15 @@
+import copy
 import io
 import json
+import logging
 import os
 import re
 import subprocess
 import tempfile
 import anthropic
 import pdfplumber
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Module-level prompt constant (injectable for evals)
@@ -74,6 +78,14 @@ DECISION RULE for dead-zone bullets:
   the trailing redundant phrase.
 - NEVER invent facts to reach Zone B. Fabricated filler is worse than a short bullet.
 
+NO DUPLICATE BULLETS (hard rule):
+- Every bullet within an entry must cover a DISTINCT achievement, deliverable, or metric.
+- NEVER repeat the same metric, technology combination, or outcome across multiple bullets in the same entry.
+- If two potential bullets cover the same work, MERGE them into one richer bullet rather than listing both.
+- BAD: Bullet 1 ends "...migrated 7+ dashboards with unit test coverage on configuration layer" AND Bullet 2 is "Migrated 7+ dashboards with unit test coverage on configuration layer" — this is a literal duplicate, forbidden.
+- BAD: Two bullets both starting "Engineered dual-model Claude pipeline (Haiku 4.5 for skill extraction, Sonnet 4.5..." — same subject, forbidden.
+- GOOD: One comprehensive bullet merging all facts about that work.
+
 CONCISION (quality over brevity):
 - Each experience role: 3–5 bullets. Each project: 2–3 bullets.
 - Goal is density and no filler, NOT a character limit — never drop a metric to make a bullet shorter.
@@ -104,6 +116,8 @@ def tailor_resume_to_json(
     system_prompt=None, temperature=None,
 ) -> dict:
     """Single Sonnet call: extract structured JSON + tailor bullets to the job."""
+    # Cap the JD to bound input cost/latency; scraped descriptions are well under this.
+    job_description = (job_description or "")[:6000]
     sys_p = system_prompt if system_prompt is not None else TAILOR_SYSTEM_PROMPT
     client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
     create_kwargs = dict(
@@ -175,25 +189,65 @@ def tailor_resume_to_json(
         ) from e
 
 
-def _latex_bullet(text: str) -> str:
-    """
-    Return a LaTeX \\item line for one bullet, injecting \\looseness hints so
-    microtype can eliminate widow trailing lines:
+_STOP_WORDS = {
+    "the", "a", "an", "and", "or", "for", "in", "of", "to", "with", "at", "by",
+    "on", "is", "was", "are", "were", "that", "this", "from", "as", "via", "into",
+    "using", "across", "through", "its", "our", "we", "i", "my", "their",
+}
 
-    Zone A  (≤115 chars)  — already fits on one line, no hint needed.
-    Squeeze (116–175 chars) — closer to one line: \\looseness=-1 asks TeX to
-        try fitting in one fewer line; microtype's ±2% font expansion absorbs slack.
-    Expand  (176–214 chars) — closer to two lines: \\looseness=1 asks TeX to
-        use one more line, turning a partial second line into two near-full lines.
-    Zone B  (≥215 chars)  — already two lines, no hint needed.
+
+def _key_words(text: str) -> set:
+    return {
+        w.lower().strip(".,;:()'\"")
+        for w in text.split()
+        if w.lower().strip(".,;:()'\"") not in _STOP_WORDS and len(w) > 2
+    }
+
+
+def _are_near_duplicates(a: str, b: str, threshold: float = 0.60) -> bool:
+    """True if the shorter bullet's key content is substantially contained in the longer."""
+    words_a = _key_words(a)
+    words_b = _key_words(b)
+    if not words_a or not words_b:
+        return False
+    shorter = words_a if len(words_a) <= len(words_b) else words_b
+    longer = words_a if len(words_a) > len(words_b) else words_b
+    overlap = len(shorter & longer) / len(shorter)
+    return overlap >= threshold
+
+
+def _deduplicate_bullets(data: dict) -> dict:
+    """Remove near-duplicate bullets within each entry (experience and projects).
+
+    A bullet is dropped if >= 60% of its key words appear in an already-kept bullet
+    in the same entry. This catches both exact repeats and cases where one bullet is
+    a paraphrased subset of another.
     """
-    escaped = _escape_latex(text)
-    char_len = len(text)
-    if 116 <= char_len <= 175:
-        return f"  \\item {{\\looseness=-1 {escaped}}}\n"
-    if 176 <= char_len <= 214:
-        return f"  \\item {{\\looseness=1 {escaped}}}\n"
-    return f"  \\item {escaped}\n"
+    data = copy.deepcopy(data)
+    for section in ("experience", "projects"):
+        for entry in data.get(section, []):
+            bullets = entry.get("bullets", [])
+            if len(bullets) <= 1:
+                continue
+            keep: list[str] = []
+            for bullet in bullets:
+                if any(_are_near_duplicates(bullet, kept) for kept in keep):
+                    logger.info("Dropped near-duplicate bullet: %s…", bullet[:60])
+                    continue
+                keep.append(bullet)
+            entry["bullets"] = keep
+    return data
+
+
+def _latex_bullet(text: str) -> str:
+    """Return a plain LaTeX \\item line for one bullet.
+
+    Widow elimination is handled by the closed-loop measure→rewrite→recompile
+    pipeline (see refine_to_no_widows), NOT by per-bullet TeX spacing hints —
+    the old approach was a no-op (the hint was reset by the closing brace before
+    the paragraph broke) and could not express a font-dependent constraint anyway.
+    """
+    return f"  \\item {_escape_latex(text)}\n"
 
 
 def _escape_latex(text: str) -> str:
@@ -368,6 +422,349 @@ def compile_latex_to_pdf(latex_source: str) -> bytes:
     return pdf_bytes
 
 
+# ---------------------------------------------------------------------------
+# Closed-loop widow elimination
+#
+# Instead of predicting wrapped width from character counts (which depend on the
+# font and so cannot be fixed constants), we MEASURE the compiled PDF: derive the
+# chars-per-line C from the widest rendered line, measure each bullet's last
+# wrapped line, and rewrite only the bullets whose last line is a short orphan.
+# ---------------------------------------------------------------------------
+
+# A wrapped bullet's last physical line is a "widow" if it fills less than this
+# fraction of the rendered line width C. This is the ONLY widow threshold — there
+# are no font-dependent character constants anywhere in the widow logic.
+# Set high (0.85) to push the LLM toward last lines that are nearly wall-to-wall.
+WIDOW_THRESHOLD = 0.85
+
+# Hard floor for the deterministic backstop. After the LLM rounds, ANY bullet whose
+# last line is still below this fraction is trimmed to a single (full) line for free —
+# guaranteeing no genuinely-short orphan can ship. The 0.70–0.85 band is left as
+# content-preserving two-liners (the LLM tried; the line is "mostly full").
+BACKSTOP_FLOOR = 0.70
+
+# The itemize bullet glyph emitted by pdftotext -layout for this template
+# (enumitem default first level). Confirmed empirically against a compiled PDF.
+_BULLET_GLYPH = "•"  # •
+
+
+def _pdftotext_layout(pdf_bytes: bytes) -> str:
+    """Return the `pdftotext -layout` rendering of a PDF as text."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = os.path.join(tmpdir, "doc.pdf")
+        txt_path = os.path.join(tmpdir, "doc.txt")
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_bytes)
+        subprocess.run(
+            ["pdftotext", "-layout", pdf_path, txt_path],
+            capture_output=True, check=True, timeout=30,
+        )
+        with open(txt_path, "r", encoding="utf-8") as f:
+            return f.read()
+
+
+def max_full_line_len(pdf_bytes: bytes) -> int:
+    """Chars-per-line C at the active font, measured from the compiled PDF.
+
+    The \\hfill header/location and project/date lines span the full text block,
+    so the widest rstripped layout line equals C. This self-calibrates at any
+    font size — no hardcoded constant.
+    """
+    text = _pdftotext_layout(pdf_bytes)
+    widths = [len(line.rstrip()) for line in text.splitlines() if line.strip()]
+    return max(widths) if widths else 0
+
+
+def measure_bullets(pdf_bytes: bytes):
+    """Measure each itemize bullet's first and LAST physical line widths.
+
+    Returns a list of (first_line_width, last_wrapped_line_width) in document
+    order — experience bullets first, then projects — matching
+    inject_into_template's render order. A single-line bullet yields
+    (width, 0). Widths are rstripped rendered widths (leading indent included),
+    so they share the same scale as max_full_line_len's C.
+
+    Note: we report the LAST wrapped line (not strictly the "second"), because a
+    bullet may wrap to 3+ lines and the orphan is always the final line.
+    """
+    text = _pdftotext_layout(pdf_bytes)
+    lines = text.splitlines()
+    pairs = []
+    i, n = 0, len(lines)
+    while i < n:
+        line = lines[i]
+        stripped = line.lstrip(" ")
+        if stripped.startswith(_BULLET_GLYPH):
+            first_width = len(line.rstrip())
+            last_width = 0
+            j = i + 1
+            while j < n:
+                nxt = lines[j]
+                if not nxt.strip():
+                    j += 1
+                    continue  # defensively skip blank lines
+                nxt_stripped = nxt.lstrip(" ")
+                lead = len(nxt) - len(nxt_stripped)
+                if nxt_stripped.startswith(_BULLET_GLYPH):
+                    break       # next bullet
+                if lead == 0:
+                    break       # section header or new entry header (col 0)
+                last_width = len(nxt.rstrip())  # indented continuation line
+                j += 1
+            pairs.append((first_width, last_width))
+            i = j
+        else:
+            i += 1
+    return pairs
+
+
+def _flatten_bullet_locations(data: dict):
+    """Bullet locations in render order: experience bullets, then projects.
+
+    Each location is a (section, entry_index, bullet_index) tuple, aligned 1:1
+    with measure_bullets' output order.
+    """
+    locations = []
+    for section in ("experience", "projects"):
+        for j, entry in enumerate(data.get(section, [])):
+            for k in range(len(entry.get("bullets", []))):
+                locations.append((section, j, k))
+    return locations
+
+
+# Compact system prompt for the widow-fix call. This is a trivial constrained edit,
+# so it uses Haiku (3x cheaper than Sonnet) and a ~150-token instruction instead of
+# re-sending the full 2k-token TAILOR_SYSTEM_PROMPT on every call.
+_WIDOW_FIX_SYSTEM = (
+    "You rewrite resume bullet points to fix line-wrapping 'widows' (a short orphan "
+    "on the last line). Hard rules: every fact must come verbatim in meaning from the "
+    "provided resume — never invent companies, metrics, technologies, dates, or "
+    "outcomes, and keep all original numbers. Output only the rewritten bullets."
+)
+
+# Haiku is the right tier for this constrained one-line edit; full ID matches the
+# model used elsewhere in the pipeline for fast ops.
+_WIDOW_FIX_MODEL = "claude-haiku-4-5-20251001"
+
+
+def _batch_widow_rewrite(items, cap: int, resume_text: str):
+    """Rewrite ALL widowed bullets in ONE Haiku call. Returns {index: new_text}.
+
+    `items` is a list of (index, bullet_text, fill_pct). The resume is sent once
+    (not per bullet), and a compact system prompt replaces the 2k-token tailoring
+    prompt — so cost is one cheap call per round instead of N expensive ones.
+    """
+    if not items:
+        return {}
+    client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+
+    lines = []
+    for idx, bullet, fill_pct in items:
+        lines.append(
+            f'[{idx}] (last line only {fill_pct:.0f}% full) "{bullet}"'
+        )
+    bullets_block = "\n".join(lines)
+
+    user_msg = (
+        f"Resume (the ONLY source of truth for facts):\n{resume_text}\n\n"
+        f"The page fits about {cap} characters per line. Each bullet below wrapped to a "
+        f"widow — a nearly-empty last line. Rewrite EACH one to EITHER:\n"
+        f"  A) fit on ONE line: <= {cap} characters, OR\n"
+        f"  B) fill TWO lines: extend with real resume facts so the second line is at "
+        f"least 75% full (roughly {int(cap * 1.75)}-{int(cap * 2)} characters total).\n"
+        f"Prefer B (extend with true detail) when the resume has more facts for that work; "
+        f"otherwise tighten to A. Never invent facts.\n\n"
+        f"Bullets to fix (keyed by number):\n{bullets_block}\n\n"
+        f'Return ONLY a JSON object mapping each bullet number to its rewritten text, '
+        f'e.g. {{"0": "rewritten bullet", "3": "rewritten bullet"}}. No commentary.'
+    )
+
+    resp = client.messages.create(
+        model=_WIDOW_FIX_MODEL,
+        max_tokens=min(4000, 250 + 160 * len(items)),
+        system=_WIDOW_FIX_SYSTEM,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+    raw = resp.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as e:
+        logger.warning("widow rewrite returned non-JSON, skipping round: %s", e)
+        return {}
+    out = {}
+    for k, v in parsed.items():
+        try:
+            out[int(k)] = _clean_bullet_text(v)
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
+def _trim_to_single_line(text: str, cap: int) -> str:
+    """Trim a bullet at a word boundary so it renders on ONE line (<= ~92% of C).
+
+    Deterministic, no API. A single line is never a widow, so this is the free
+    backstop that guarantees full-width output even if the model can't extend.
+    """
+    target = max(20, int(cap * 0.92))
+    if len(text) <= target:
+        return text
+    out = ""
+    for w in text.split():
+        candidate = (out + " " + w).strip()
+        if len(candidate) > target:
+            break
+        out = candidate
+    return out or text[:target]
+
+
+def _clean_bullet_text(text: str) -> str:
+    """Normalize a model-returned bullet to a single clean line."""
+    text = text.strip()
+    # Drop a leading bullet glyph / dash the model may have added
+    text = re.sub(r"^[•\-\*]\s*", "", text)
+    # Collapse internal newlines/whitespace to single spaces
+    text = " ".join(text.split())
+    # Strip wrapping quotes if present
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'":
+        text = text[1:-1].strip()
+    return text
+
+
+def rewrite_widowed_bullets(data: dict, widows, cap: int, resume_text: str, rewrite_fn) -> dict:
+    """Rewrite the widowed bullets in `data`, matched BY POSITION.
+
+    `widows` is a list of (bullet_index, fill_pct) in measure_bullets /
+    _flatten_bullet_locations order. `rewrite_fn(items, cap, resume_text) ->
+    {index: new_text}` is the injectable BATCH seam — one call fixes every widow
+    (Haiku in prod, a hand-authored map in the no-API eval). Returns a NEW data dict.
+    """
+    data = copy.deepcopy(data)
+    locations = _flatten_bullet_locations(data)
+
+    items = []
+    for idx, fill_pct in widows:
+        if idx >= len(locations):
+            logger.warning("widow index %d out of range (%d bullets)", idx, len(locations))
+            continue
+        section, j, k = locations[idx]
+        items.append((idx, data[section][j]["bullets"][k], fill_pct))
+
+    if not items:
+        return data
+
+    try:
+        rewrites = rewrite_fn(items, cap, resume_text)
+    except Exception as e:
+        logger.warning("batch rewrite_fn failed: %s", e)
+        return data
+
+    for idx, new_bullet in (rewrites or {}).items():
+        if idx >= len(locations) or not new_bullet:
+            continue
+        section, j, k = locations[idx]
+        data[section][j]["bullets"][k] = new_bullet
+    return data
+
+
+def _compile_at_font(latex_source: str, size: int) -> bytes:
+    """Compile the template at one specific font size."""
+    return compile_latex_to_pdf(latex_source.replace("{{FONT_SIZE}}", str(size)))
+
+
+def _lock_font(data: dict):
+    """Compile at the largest font that fits one page; return (pdf, font)."""
+    latex = inject_into_template(data)
+    candidate = None
+    for size in FONT_SIZES:
+        candidate = _compile_at_font(latex, size)
+        if _count_pdf_pages(candidate) <= 1:
+            return candidate, size
+    return candidate, FONT_SIZES[-1]  # even 8pt spilled — smallest attempt
+
+
+def _recompile_locked(data: dict, font: int):
+    """Recompile at the locked font, stepping down one size only if it spilled to 2 pages."""
+    pdf = _compile_at_font(inject_into_template(data), font)
+    if _count_pdf_pages(pdf) > 1:
+        idx = FONT_SIZES.index(font)
+        if idx + 1 < len(FONT_SIZES):
+            font = FONT_SIZES[idx + 1]
+            pdf = _compile_at_font(inject_into_template(data), font)
+    return pdf, font
+
+
+def refine_to_no_widows(data: dict, resume_text: str, rewrite_fn, max_rounds: int = 3) -> bytes:
+    """Lock the font, then close the loop: measure → rewrite → recompile, with a
+    free deterministic backstop that guarantees full-width bullets.
+
+    Stage 1 (LLM, content-preserving): up to `max_rounds` cheap batched rewrites
+    that try to EXTEND each widow toward WIDOW_THRESHOLD using real resume facts.
+    Each round re-measures at the LOCKED font (C is font-dependent) and only the
+    still-widowed bullets are sent back, so the model self-corrects on fresh
+    measurements. The font is only ever stepped DOWN, never recomputed, to avoid
+    oscillation.
+
+    Stage 2 (deterministic, free): any bullet whose last line is STILL below
+    BACKSTOP_FLOOR is trimmed to a single full line — no API, no fabrication. This
+    is the hard guarantee that no genuinely-short orphan can ship even if the model
+    failed to extend.
+    """
+    pdf, font = _lock_font(data)
+
+    # ---- Stage 1: LLM extend rounds (preferred — keeps content) ----
+    for _ in range(max_rounds):
+        cap = max_full_line_len(pdf)
+        if cap <= 0:
+            break
+        pairs = measure_bullets(pdf)
+        locations = _flatten_bullet_locations(data)
+        if len(locations) != len(pairs):
+            logger.warning(
+                "bullet count mismatch (data=%d, measured=%d) — skipping LLM widow rewrite",
+                len(locations), len(pairs),
+            )
+            break
+        widows = [
+            (i, (l2 / cap) * 100)
+            for i, (l1, l2) in enumerate(pairs)
+            if l2 and (l2 / cap) < WIDOW_THRESHOLD
+        ]
+        if not widows:
+            break
+        new_data = rewrite_widowed_bullets(data, widows, cap, resume_text, rewrite_fn)
+        if new_data is data:
+            break
+        data = new_data
+        pdf, font = _recompile_locked(data, font)
+
+    # ---- Stage 2: deterministic backstop — guarantee no orphan below the floor ----
+    for _ in range(2):  # at most 2 passes (a trim can change wrapping once)
+        cap = max_full_line_len(pdf)
+        if cap <= 0:
+            break
+        pairs = measure_bullets(pdf)
+        locations = _flatten_bullet_locations(data)
+        if len(locations) != len(pairs):
+            break
+        bad = [i for i, (l1, l2) in enumerate(pairs) if l2 and (l2 / cap) < BACKSTOP_FLOOR]
+        if not bad:
+            break
+        logger.info("deterministic backstop trimming %d residual widow(s) to one line", len(bad))
+        data = copy.deepcopy(data)
+        for i in bad:
+            section, j, k = locations[i]
+            data[section][j]["bullets"][k] = _trim_to_single_line(
+                data[section][j]["bullets"][k], cap
+            )
+        pdf, font = _recompile_locked(data, font)
+
+    return pdf
+
+
 def tailor_resume(
     file_content: bytes, job_title: str, company: str, job_description: str
 ) -> bytes:
@@ -375,5 +772,5 @@ def tailor_resume(
     if not text.strip():
         raise ValueError("Could not extract text from PDF")
     data = tailor_resume_to_json(text, job_title, company, job_description)
-    latex = inject_into_template(data)
-    return compile_to_single_page(latex)
+    data = _deduplicate_bullets(data)
+    return refine_to_no_widows(data, text, rewrite_fn=_batch_widow_rewrite)
