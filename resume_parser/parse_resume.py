@@ -165,11 +165,8 @@ def extract_skills_with_llm(resume_text: str) -> List[str]:
         confidence_metrics = result.get("confidence_metrics", [])
         
         logger.info(f"LLM extracted {len(skills)} skills — {experience_level} ({years}yr), student={is_student}")
-        logger.info(f"Projects: {projects}")
-        logger.info(f"Impact Highlights: {impact_highlights}")
-        logger.info(f"Confidence Metrics: {confidence_metrics}")
 
-        return skills, projects, impact_highlights, confidence_metrics
+        return skills
 
     except Exception as e:
         logger.error(f"Error with LLM skill extraction: {e}")
