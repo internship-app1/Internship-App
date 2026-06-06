@@ -45,6 +45,10 @@ from auth import require_user
 # Base directory of this file (used for templates/static/uploads paths)
 BASE_DIR = Path(__file__).resolve().parent
 
+# Bump whenever a scoring/prompt change makes cached results stale.
+# Old entries become misses automatically — no manual purge needed.
+PROMPT_VERSION = "v2"
+
 # Load environment variables
 load_dotenv()
 
@@ -688,7 +692,7 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
 @limiter.limit("20/minute")
 async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true")):
     use_llm = think_deeper.lower() == "true"
-    cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
+    cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}_{PROMPT_VERSION}"
     cached = get_resume_cache(user_id, cache_key)
     if cached:
         return JSONResponse({"hit": True, "results": cached["results"], "skills": cached["skills"]})
@@ -1061,7 +1065,7 @@ async def stream_match_resume(
                 # Save to resume cache if user is authenticated
                 if user_id and resume_hash:
                     try:
-                        save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
+                        save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}_{PROMPT_VERSION}"
                         set_resume_cache(user_id, save_cache_key, final_results, resume_skills)
                         logger.info(f"Saved results to resume cache for user {user_id}")
                     except Exception as cache_err:

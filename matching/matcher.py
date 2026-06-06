@@ -815,7 +815,7 @@ def intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_coun
         # Filter out senior/inappropriate roles
         senior_indicators = ['senior', 'lead', 'principal', 'staff', 'architect', 'manager', 'director']
         if any(indicator in job_title for indicator in senior_indicators):
-            if experience_level in ['student', 'recent_graduate'] or years_experience < 3:
+            if experience_level in ['student', 'recent_graduate', 'entry_level'] or years_experience < 3:
                 continue  # Skip senior roles for junior candidates
 
         # Filter out high experience requirements

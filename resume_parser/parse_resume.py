@@ -104,7 +104,7 @@ IMPACT EXTRACTION RULES:
     "skills": [
         "Python", "C++", "Docker", "React"
     ],
-    "experience_level": "student/recent_graduate/entry_level/experienced",
+    "experience_level": "student/entry_level/experienced",
     "years_of_experience": 1,
     "is_student": true,
     "confidence_notes": "Extracted computer vision project from university research section.",
@@ -146,12 +146,16 @@ def extract_skills_with_llm(resume_text: str) -> List[str]:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=800,
+            max_tokens=2048,
             system=RESUME_ANALYSIS_SYSTEM_PROMPT + " Always return valid JSON only.",
             messages=[
                 {"role": "user", "content": resume_text}
             ]
         )
+
+        if response.stop_reason == "max_tokens":
+            logger.warning("extract_skills_with_llm hit max_tokens — response likely truncated")
+            raise Exception("LLM response cut off at max_tokens; JSON may be incomplete")
 
         # Parse the JSON response
         response_text = extract_json_from_response(response.content[0].text)
@@ -160,10 +164,7 @@ def extract_skills_with_llm(resume_text: str) -> List[str]:
         experience_level = result.get("experience_level", "student")
         years = result.get("years_of_experience", 0)
         is_student = result.get("is_student", True)
-        projects = result.get("projects", [])
-        impact_highlights = result.get("impact_highlights", [])
-        confidence_metrics = result.get("confidence_metrics", [])
-        
+
         logger.info(f"LLM extracted {len(skills)} skills — {experience_level} ({years}yr), student={is_student}")
 
         return skills

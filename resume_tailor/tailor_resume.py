@@ -448,30 +448,60 @@ BACKSTOP_FLOOR = 0.70
 _BULLET_GLYPH = "•"  # •
 
 
+class _PdftotextUnavailable(RuntimeError):
+    """Raised when the pdftotext binary is missing or fails to run."""
+
+
 def _pdftotext_layout(pdf_bytes: bytes) -> str:
-    """Return the `pdftotext -layout` rendering of a PDF as text."""
+    """Return the `pdftotext -layout` rendering of a PDF as text.
+
+    Raises _PdftotextUnavailable if the binary is absent so callers can
+    degrade gracefully instead of crashing the entire tailor request.
+    """
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_path = os.path.join(tmpdir, "doc.pdf")
         txt_path = os.path.join(tmpdir, "doc.txt")
         with open(pdf_path, "wb") as f:
             f.write(pdf_bytes)
-        subprocess.run(
-            ["pdftotext", "-layout", pdf_path, txt_path],
-            capture_output=True, check=True, timeout=30,
-        )
+        try:
+            subprocess.run(
+                ["pdftotext", "-layout", pdf_path, txt_path],
+                capture_output=True, check=True, timeout=30,
+            )
+        except FileNotFoundError:
+            raise _PdftotextUnavailable("pdftotext binary not found — install poppler-utils")
+        except subprocess.CalledProcessError as e:
+            raise _PdftotextUnavailable(f"pdftotext failed (exit {e.returncode})")
         with open(txt_path, "r", encoding="utf-8") as f:
             return f.read()
 
 
 def max_full_line_len(pdf_bytes: bytes) -> int:
-    """Chars-per-line C at the active font, measured from the compiled PDF.
+    """Chars-per-line C at the active font, measured from bullet content lines.
 
-    The \\hfill header/location and project/date lines span the full text block,
-    so the widest rstripped layout line equals C. This self-calibrates at any
-    font size — no hardcoded constant.
+    We derive C only from bullet body lines (lines that start with the bullet
+    glyph or are indented continuation lines), NOT from header/contact/date
+    lines that can span a wider block than the bullet text area.  Using header
+    widths inflates C, making full bullets falsely measure as widows and
+    triggering unnecessary Haiku rounds and backstop trims.
     """
     text = _pdftotext_layout(pdf_bytes)
-    widths = [len(line.rstrip()) for line in text.splitlines() if line.strip()]
+    lines = text.splitlines()
+    widths = []
+    in_bullet = False
+    for line in lines:
+        stripped = line.lstrip(" ")
+        if stripped.startswith(_BULLET_GLYPH):
+            in_bullet = True
+            widths.append(len(line.rstrip()))
+        elif in_bullet and line and line[0] == " ":
+            # Indented continuation line belonging to the current bullet
+            widths.append(len(line.rstrip()))
+        else:
+            in_bullet = False
+    # Fall back to all non-empty lines if no bullets were found
+    if not widths:
+        widths = [len(line.rstrip()) for line in lines if line.strip()]
     return max(widths) if widths else 0
 
 
@@ -515,6 +545,12 @@ def measure_bullets(pdf_bytes: bytes):
             i = j
         else:
             i += 1
+    if not pairs:
+        logger.warning(
+            "measure_bullets found no '%s' glyphs — pdftotext output or template "
+            "may have changed; widow refinement will be skipped",
+            _BULLET_GLYPH,
+        )
     return pairs
 
 
@@ -608,17 +644,37 @@ def _trim_to_single_line(text: str, cap: int) -> str:
 
     Deterministic, no API. A single line is never a widow, so this is the free
     backstop that guarantees full-width output even if the model can't extend.
+
+    Trims at clause boundaries (comma, semicolon, parenthesis) when possible so
+    we don't cut mid-metric (e.g. "latency 38% (210ms →" would lose its unit).
     """
     target = max(20, int(cap * 0.92))
     if len(text) <= target:
         return text
+
+    # Find the best trim point: prefer ending just before a clause break
+    # (comma/semicolon/open-paren) that falls within the target length.
+    best_clause = ""
+    words = text.split()
     out = ""
-    for w in text.split():
+    for w in words:
         candidate = (out + " " + w).strip()
         if len(candidate) > target:
             break
         out = candidate
-    return out or text[:target]
+        # Record the furthest position that ends cleanly before a clause marker
+        if out and out[-1] in (",", ";", "("):
+            best_clause = out.rstrip(",;( ").rstrip()
+
+    if not out:
+        # No word fits — hard truncate as last resort
+        return text[:target]
+
+    # Prefer clause-boundary trim only when it retains at least 60% of target
+    # (avoid very short cuts like "Built" when a full sentence fits better).
+    if best_clause and len(best_clause) >= int(target * 0.60):
+        return best_clause
+    return out
 
 
 def _clean_bullet_text(text: str) -> str:
@@ -640,10 +696,14 @@ def rewrite_widowed_bullets(data: dict, widows, cap: int, resume_text: str, rewr
     `widows` is a list of (bullet_index, fill_pct) in measure_bullets /
     _flatten_bullet_locations order. `rewrite_fn(items, cap, resume_text) ->
     {index: new_text}` is the injectable BATCH seam — one call fixes every widow
-    (Haiku in prod, a hand-authored map in the no-API eval). Returns a NEW data dict.
+    (Haiku in prod, a hand-authored map in the no-API eval).
+
+    Returns a NEW data dict if at least one bullet changed, or the ORIGINAL `data`
+    object (same identity) if nothing changed so callers can detect a no-op with
+    `new_data is data`.
     """
-    data = copy.deepcopy(data)
-    locations = _flatten_bullet_locations(data)
+    new_data = copy.deepcopy(data)
+    locations = _flatten_bullet_locations(new_data)
 
     items = []
     for idx, fill_pct in widows:
@@ -651,10 +711,10 @@ def rewrite_widowed_bullets(data: dict, widows, cap: int, resume_text: str, rewr
             logger.warning("widow index %d out of range (%d bullets)", idx, len(locations))
             continue
         section, j, k = locations[idx]
-        items.append((idx, data[section][j]["bullets"][k], fill_pct))
+        items.append((idx, new_data[section][j]["bullets"][k], fill_pct))
 
     if not items:
-        return data
+        return data  # nothing to rewrite — return original so caller sees no-op
 
     try:
         rewrites = rewrite_fn(items, cap, resume_text)
@@ -662,12 +722,16 @@ def rewrite_widowed_bullets(data: dict, widows, cap: int, resume_text: str, rewr
         logger.warning("batch rewrite_fn failed: %s", e)
         return data
 
+    changed = False
     for idx, new_bullet in (rewrites or {}).items():
         if idx >= len(locations) or not new_bullet:
             continue
         section, j, k = locations[idx]
-        data[section][j]["bullets"][k] = new_bullet
-    return data
+        if new_data[section][j]["bullets"][k] != new_bullet:
+            new_data[section][j]["bullets"][k] = new_bullet
+            changed = True
+
+    return new_data if changed else data
 
 
 def _compile_at_font(latex_source: str, size: int) -> bytes:
@@ -716,51 +780,57 @@ def refine_to_no_widows(data: dict, resume_text: str, rewrite_fn, max_rounds: in
     pdf, font = _lock_font(data)
 
     # ---- Stage 1: LLM extend rounds (preferred — keeps content) ----
-    for _ in range(max_rounds):
-        cap = max_full_line_len(pdf)
-        if cap <= 0:
-            break
-        pairs = measure_bullets(pdf)
-        locations = _flatten_bullet_locations(data)
-        if len(locations) != len(pairs):
-            logger.warning(
-                "bullet count mismatch (data=%d, measured=%d) — skipping LLM widow rewrite",
-                len(locations), len(pairs),
-            )
-            break
-        widows = [
-            (i, (l2 / cap) * 100)
-            for i, (l1, l2) in enumerate(pairs)
-            if l2 and (l2 / cap) < WIDOW_THRESHOLD
-        ]
-        if not widows:
-            break
-        new_data = rewrite_widowed_bullets(data, widows, cap, resume_text, rewrite_fn)
-        if new_data is data:
-            break
-        data = new_data
-        pdf, font = _recompile_locked(data, font)
+    try:
+        for _ in range(max_rounds):
+            cap = max_full_line_len(pdf)
+            if cap <= 0:
+                break
+            pairs = measure_bullets(pdf)
+            locations = _flatten_bullet_locations(data)
+            if len(locations) != len(pairs):
+                logger.warning(
+                    "bullet count mismatch (data=%d, measured=%d) — skipping LLM widow rewrite",
+                    len(locations), len(pairs),
+                )
+                break
+            widows = [
+                (i, (l2 / cap) * 100)
+                for i, (l1, l2) in enumerate(pairs)
+                if l2 and (l2 / cap) < WIDOW_THRESHOLD
+            ]
+            if not widows:
+                break
+            new_data = rewrite_widowed_bullets(data, widows, cap, resume_text, rewrite_fn)
+            if new_data is data:
+                break  # rewrite_fn returned no changes — stop early
+            data = new_data
+            pdf, font = _recompile_locked(data, font)
 
-    # ---- Stage 2: deterministic backstop — guarantee no orphan below the floor ----
-    for _ in range(2):  # at most 2 passes (a trim can change wrapping once)
-        cap = max_full_line_len(pdf)
-        if cap <= 0:
-            break
-        pairs = measure_bullets(pdf)
-        locations = _flatten_bullet_locations(data)
-        if len(locations) != len(pairs):
-            break
-        bad = [i for i, (l1, l2) in enumerate(pairs) if l2 and (l2 / cap) < BACKSTOP_FLOOR]
-        if not bad:
-            break
-        logger.info("deterministic backstop trimming %d residual widow(s) to one line", len(bad))
-        data = copy.deepcopy(data)
-        for i in bad:
-            section, j, k = locations[i]
-            data[section][j]["bullets"][k] = _trim_to_single_line(
-                data[section][j]["bullets"][k], cap
-            )
-        pdf, font = _recompile_locked(data, font)
+        # ---- Stage 2: deterministic backstop — guarantee no orphan below the floor ----
+        for _ in range(2):  # at most 2 passes (a trim can change wrapping once)
+            cap = max_full_line_len(pdf)
+            if cap <= 0:
+                break
+            pairs = measure_bullets(pdf)
+            locations = _flatten_bullet_locations(data)
+            if len(locations) != len(pairs):
+                break
+            bad = [i for i, (l1, l2) in enumerate(pairs) if l2 and (l2 / cap) < BACKSTOP_FLOOR]
+            if not bad:
+                break
+            logger.info("deterministic backstop trimming %d residual widow(s) to one line", len(bad))
+            data = copy.deepcopy(data)
+            for i in bad:
+                section, j, k = locations[i]
+                data[section][j]["bullets"][k] = _trim_to_single_line(
+                    data[section][j]["bullets"][k], cap
+                )
+            pdf, font = _recompile_locked(data, font)
+
+    except _PdftotextUnavailable as exc:
+        logger.warning(
+            "widow refinement disabled — %s; returning PDF without widow fixes", exc
+        )
 
     return pdf
 
