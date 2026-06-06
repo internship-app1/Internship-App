@@ -1819,6 +1819,9 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         jobs_xml += f"    <title>{job.get('title', 'Unknown')}</title>\n"
         jobs_xml += f"    <location>{job.get('location', 'Unknown')}</location>\n"
         
+        # [:400] is intentional — passing full JDs across 30 jobs would blow the
+        # 4096 max_tokens budget. Full descriptions only flow into the single-job
+        # tailor endpoint where only one job is scored at a time.
         desc = job.get('description', '')[:400]
         # Escape XML to prevent breaking parsing
         desc = desc.replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
@@ -1840,7 +1843,7 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         create_kwargs = dict(
             model="claude-sonnet-4-5-20250929",
             max_tokens=4096,
-            system=sys_p,
+            system=[{"type": "text", "text": sys_p, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_prompt}],
         )
         if temperature is not None:
@@ -1859,6 +1862,9 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
         "experience_level": profile.get("experience_level", "student"),
         "years_of_experience": profile.get("years_of_experience", 0),
         "is_student": profile.get("is_student", profile.get("experience_level") == "student"),
+        "projects": profile.get("projects", []),
+        "impact_highlights": profile.get("impact_highlights", []),
+        "confidence_metrics": profile.get("confidence_metrics", []),
     }
 
     if progress_callback:
@@ -1890,7 +1896,7 @@ def _score_jobs_with_prompt(resume_text: str, jobs_xml: str, system_prompt=None,
     create_kwargs = dict(
         model="claude-sonnet-4-5-20250929",
         max_tokens=4096,
-        system=sys_p,
+        system=[{"type": "text", "text": sys_p, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_prompt}],
     )
     if temperature is not None:
