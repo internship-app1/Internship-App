@@ -129,6 +129,9 @@ const FindPage: React.FC = () => {
   const handleDragLeave = () => setIsDragging(false);
 
   const startCooldown = (seconds: number) => {
+    // Skip the per-upload waiting time when usage tracking is disabled (dev testing).
+    // Mirrors the backend TRACK_USAGE switch; default on unless explicitly "false".
+    if (process.env.REACT_APP_TRACK_USAGE === 'false') return;
     setCooldown(seconds);
     const timer = setInterval(() => {
       setCooldown(prev => {

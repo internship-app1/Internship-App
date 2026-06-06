@@ -19,6 +19,7 @@ from job_database import (
     engine,
     generate_job_hash,
     get_active_jobs,
+    get_job_by_hash,
     get_database_stats,
     get_resume_cache,
     mark_old_jobs_inactive,
@@ -209,6 +210,47 @@ class TestBulkInsertJobs:
                     "failed_rows", "inactive_jobs", "date_based_inactive_jobs",
                     "total_processed"):
             assert key in stats, f"Missing key: {key}"
+
+
+# ---------------------------------------------------------------------------
+# get_job_by_hash — full-description lookup for resume tailoring
+# ---------------------------------------------------------------------------
+
+class TestGetJobByHash:
+    """The tailoring endpoint relies on this to fetch the full, untruncated JD."""
+
+    def test_returns_full_description(self):
+        job = _job(company="Stripe", n=7)
+        job["description"] = "X" * 4000  # full description, far over the old 500 cap
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+
+        result = get_job_by_hash(h)
+        assert result is not None
+        assert result["job_hash"] == h
+        assert result["description"] == "X" * 4000
+
+    def test_unknown_hash_returns_none(self):
+        assert get_job_by_hash("0" * 64) is None
+
+    def test_empty_hash_returns_none(self):
+        assert get_job_by_hash("") is None
+
+    def test_finds_inactive_job(self):
+        """A soft-deactivated job must still be retrievable (it may be tailored later)."""
+        job = _job(company="Datadog", n=3)
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+        db = SessionLocal()
+        try:
+            db.query(Job).filter_by(job_hash=h).update({"is_active": False})
+            db.commit()
+        finally:
+            db.close()
+
+        result = get_job_by_hash(h)
+        assert result is not None
+        assert result["company"] == "Datadog"
 
 
 # ---------------------------------------------------------------------------
