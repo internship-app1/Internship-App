@@ -1616,7 +1616,7 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
     job_hash = job.get('job_hash', '')
     if job_hash:
         offset = (int(job_hash[-2:], 16) % 11) - 5  # maps 0–10 → -5 to +5
-        score = max(0, score + offset)
+        score = min(97, max(0, score + offset))
 
     # Cap at 100
     return min(int(score), 100)

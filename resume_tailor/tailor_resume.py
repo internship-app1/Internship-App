@@ -26,6 +26,15 @@ TRUTHFULNESS (non-negotiable):
 - RIGHT: resume has Claude API work → rephrase as "LLM integration pipeline" if job mentions LLMs — same work, job-aligned language
 - If the role is a poor fit, surface what genuinely overlaps and keep the rest accurate; do not pad.
 
+COMPLETENESS (non-negotiable):
+- Every bullet must be a syntactically COMPLETE thought. A bullet that ends mid-parenthesis, after an opening colon with nothing following, or mid-clause is FORBIDDEN.
+- If the source bullet has a parenthetical "(5+ min saved per request, 50+ customers)", the rewritten bullet MUST include the ENTIRE parenthetical. Never cut it at the opening paren or mid-content.
+- Every opening parenthesis must have a matching closing parenthesis within the same bullet.
+- BAD (truncated, unclosed paren): "Built internal tools for ops stakeholders: Intercom ticketing (5+ min saved per request"
+- BAD (incomplete clause): "FSM-driven pipeline with intent"
+- BAD (dangling): "Built end-to-end order-processing system using Python and"
+- GOOD: "Built React and Python internal tools for non-technical ops stakeholders: Intercom ticketing (5+ min saved per request, 50+ customers), ERP sales order interface, and AWS S3 attachment store for 250+ files"
+
 KEYWORD ALIGNMENT (rephrase existing, never invent):
 - Reword existing bullet content to front-load exact terms from the job description.
 - Job says "distributed systems" → describe the real multi-tier data layer as "distributed" where accurate.
@@ -40,7 +49,7 @@ SPECIFICITY (never drop metrics):
 - Preserve all original numbers, percentages, counts, and deployment evidence in every bullet.
 - If a metric fits in the source it must appear in the tailored version — do not sacrifice metrics for concision.
 - BAD: "Built internal tools including AWS S3 store" (dropped "250+ files" metric)
-- GOOD: "Built React + Python internal tools: Intercom ticketing (5+ min saved, 50+ customers), AWS S3 store for 250+ files"
+- GOOD: "Built React + Python internal tools: Intercom ticketing (5+ min saved, 50+ customers), ERP sales order interface, AWS S3 store for 250+ files"
 - BAD: "Improved system performance significantly"
 - GOOD: "Reduced inference latency 52% (270s→130s) via dynamic batching and prompt caching"
 
@@ -71,6 +80,12 @@ FIX B (expand to Zone B): weave in the shipped deliverable:
 RIGHT (Zone B, 245 chars — the template to follow):
   "Shipped production multi-channel B2B AI order agent (webhooks, WhatsApp, email, phone) using Claude Sonnet with RAG vector stores, owning full-stack features from conception through deployment across 7 enterprise clients processing 1,000+ orders"
 
+RIGHT (Zone B, detail-rich — note all parenthetical content preserved):
+  "Built React and Python internal tools for non-technical ops stakeholders: Intercom ticketing (5+ min saved per request, 50+ customers), ERP sales order interface, and AWS S3 attachment store for 250+ files"
+
+RIGHT (Zone B, multi-deliverable bullet):
+  "Built and deployed autonomous lead-qualification SMS agent for Bay Area real estate client: FSM-driven pipeline with intent classification, debounce sweeper, and Cal.com auto-booking of qualified leads"
+
 DECISION RULE for all bullets:
 - DEFAULT: EXPAND to Zone B (≥215 chars) by weaving in additional TRUE facts already
   in the resume — other deliverables, real metrics, tech versions, deployment scope, team size.
@@ -90,7 +105,7 @@ NO DUPLICATE BULLETS (hard rule):
 - GOOD: One comprehensive bullet merging all facts about that work.
 
 DENSITY (fill every line with real substance):
-- Each experience role: 4–6 bullets. Each project: 2–3 bullets. Use the upper end whenever the source supports it with real content.
+- Each experience role: 3–4 bullets. Each project: 3 bullets. Aim for the upper end whenever the source supports it with real content.
 - Goal is density and no filler, NOT a character limit — never drop a metric to make a bullet shorter.
 - Do NOT pack bullets shorter than ~80 chars; extend them by weaving in metrics and technology names.
 - No filler: never write "collaborated with cross-functional teams," "leveraged best practices," or "demonstrated strong ability to."
@@ -125,7 +140,7 @@ def tailor_resume_to_json(
     client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
     create_kwargs = dict(
         model="claude-sonnet-4-5-20250929",
-        max_tokens=4000,
+        max_tokens=6000,
         system=sys_p,
         messages=[
             {
@@ -140,6 +155,14 @@ def tailor_resume_to_json(
                     "metrics and staying strictly truthful. Bullets that are already well-aligned can be "
                     "lightly rephrased; bullets that are off-topic should be reframed to highlight the most "
                     "relevant aspect of that work.\n\n"
+                    "COMPLETENESS RULE (critical): Every bullet must be a syntactically COMPLETE sentence. "
+                    "Never produce a bullet that ends mid-parenthesis, after an opening colon, or mid-clause. "
+                    "If a source bullet has parenthetical content like '(5+ min saved per request, 50+ customers)' "
+                    "you MUST include the ENTIRE parenthetical — never stop inside it. Every opening '(' must have "
+                    "a matching ')' within the same bullet.\n\n"
+                    "NO DUPLICATES RULE (critical): Each bullet in an entry must cover a COMPLETELY DIFFERENT "
+                    "deliverable or achievement. Never write two bullets about the same system or metric. "
+                    "If two points cover the same work, merge into one richer bullet.\n\n"
                     "DENSITY RULE: STRONGLY PREFER Zone B bullets (≥215 chars / two full lines) — "
                     "this fills the page and looks professional. DEFAULT: expand each bullet with real "
                     "resume facts (other deliverables, metrics, tech, scope, team size). Zone A "
@@ -192,6 +215,92 @@ def tailor_resume_to_json(
             f"Resume JSON truncated (stop_reason={stop!r}): {e}. "
             "Increase max_tokens or shorten the resume."
         ) from e
+
+
+def _is_incomplete_bullet(text: str) -> bool:
+    """Return True if a bullet looks syntactically incomplete.
+
+    Checks for:
+    - Unmatched opening parentheses
+    - Ends with a dangling preposition/conjunction ("with", "and", "using", etc.)
+    - Ends with a colon (value was cut off)
+    - Ends with an opening comma clause ("for", "via", "to")
+    """
+    t = text.strip().rstrip(".")
+    # Unmatched parens: more opens than closes
+    if t.count("(") != t.count(")"):
+        return True
+    # Trailing colon means the listed values were cut
+    if t.endswith(":"):
+        return True
+    # Dangling words that indicate a clause was cut
+    _DANGLING = {
+        "with", "and", "or", "using", "for", "via", "to", "by", "as",
+        "including", "such", "then", "when", "where", "after", "before",
+        "of", "on", "in", "at", "from", "through", "across", "into",
+    }
+    last_word = t.split()[-1].lower().rstrip(".,;:") if t.split() else ""
+    if last_word in _DANGLING:
+        return True
+    return False
+
+
+def _repair_bullets(data: dict, resume_text: str) -> dict:
+    """One Sonnet call to fix any syntactically incomplete bullets.
+
+    Collects all bullets flagged by _is_incomplete_bullet, sends them to
+    Sonnet with the original resume as context, and replaces them in place.
+    """
+    flagged: list[tuple[str, int, int, str]] = []  # (section, entry_idx, bullet_idx, text)
+    for section in ("experience", "projects"):
+        for j, entry in enumerate(data.get(section, [])):
+            for k, bullet in enumerate(entry.get("bullets", [])):
+                if _is_incomplete_bullet(bullet):
+                    flagged.append((section, j, k, bullet))
+
+    if not flagged:
+        return data
+
+    logger.info("_repair_bullets: found %d incomplete bullet(s), repairing via Sonnet", len(flagged))
+
+    lines = [f'[{i}] "{t}"' for i, (_, _, _, t) in enumerate(flagged)]
+    bullets_block = "\n".join(lines)
+    client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
+    try:
+        resp = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=min(4000, 300 + 200 * len(flagged)),
+            system=(
+                "You complete truncated resume bullet points. "
+                "Each bullet was cut off mid-sentence. Using ONLY facts from the provided resume, "
+                "complete each bullet so it is a syntactically complete sentence. "
+                "Prefer Zone B length (≥215 chars / two full lines). "
+                "Output ONLY a JSON object mapping index to completed bullet text, e.g. {\"0\": \"...\"}."
+            ),
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"Resume (source of truth):\n{resume_text}\n\n"
+                    f"Complete these truncated bullets:\n{bullets_block}\n\n"
+                    "Return JSON only."
+                ),
+            }],
+        )
+        raw = resp.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```[a-z]*\n?", "", raw)
+            raw = re.sub(r"\n?```$", "", raw)
+        repairs = json.loads(raw)
+    except Exception as e:
+        logger.warning("_repair_bullets: API or parse error, skipping repairs: %s", e)
+        return data
+
+    data = copy.deepcopy(data)
+    for i, (section, j, k, _) in enumerate(flagged):
+        new_text = repairs.get(str(i), "").strip()
+        if new_text:
+            data[section][j]["bullets"][k] = _clean_bullet_text(new_text)
+    return data
 
 
 _STOP_WORDS = {
@@ -292,7 +401,7 @@ def inject_into_template(data: dict) -> str:
         location = _escape_latex(job.get("location", ""))
         title = _escape_latex(job.get("title", ""))
         dates = _escape_latex(job.get("dates", ""))
-        header = f"\\textbf{{{company}}} \\hfill {location} \\\\\n\\textit{{{title}}} \\hfill \\textit{{{dates}}}"
+        header = f"\\textbf{{{company}}} \\hfill {dates} \\\\\n\\textit{{{title}}} \\hfill {location}"
         bullets = "".join(_latex_bullet(b) for b in job.get("bullets", []))
         exp_blocks.append(
             f"{header}\n"
@@ -949,4 +1058,5 @@ def tailor_resume(
         raise ValueError("Could not extract text from PDF")
     data = tailor_resume_to_json(text, job_title, company, job_description)
     data = _deduplicate_bullets(data)
+    data = _repair_bullets(data, text)
     return refine_to_no_widows(data, text, rewrite_fn=_batch_widow_rewrite)

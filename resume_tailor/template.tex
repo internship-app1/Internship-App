@@ -4,7 +4,6 @@
 \usepackage{hyperref}
 \usepackage{titlesec}
 \usepackage{parskip}
-\usepackage{mdframed}
 \usepackage[expansion=true,protrusion=true]{microtype}
 
 \hypersetup{colorlinks=true,urlcolor=blue,linkcolor=black}
@@ -20,22 +19,20 @@
 
 % Header
 \begin{center}
-  {\LARGE \textsc{{{NAME}}}} \\[{{HEADER_SKIP}}]
+  {\huge \textbf{{{NAME}}}} \\[{{HEADER_SKIP}}]
   {{PHONE}} $|$ {{EMAIL}} $|$ {{WEBSITE}} $|$ {{GITHUB}} $|$ {{LINKEDIN}}
 \end{center}
 
 \section{Education}
 {{EDUCATION}}
 
-\section{Technical Skills}
-\begin{mdframed}[innerleftmargin=4pt,innerrightmargin=4pt,innertopmargin=2pt,innerbottommargin=2pt]
-{{SKILLS}}
-\end{mdframed}
-
 \section{Experience}
 {{EXPERIENCE_BULLETS}}
 
 \section{Projects}
 {{PROJECTS}}
+
+\section{Technical Skills}
+{{SKILLS}}
 
 \end{document}
