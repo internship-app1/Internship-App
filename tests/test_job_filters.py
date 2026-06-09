@@ -182,11 +182,11 @@ class TestNormalizeAndApply:
 
     def test_normalize_legacy_sizes_collapse(self):
         n = normalize_filters({"company_sizes": ["startup", "midsize"]})
-        assert n["company_sizes"] == {"not_large"}
+        assert n["company_sizes"] == ["not_large"]
 
     def test_normalize_drops_invalid_position_and_citizenship(self):
         n = normalize_filters({"positions": ["frontend", "bogus"], "citizenship": "weird"})
-        assert n["positions"] == {"frontend"}
+        assert n["positions"] == ["frontend"]
         assert n["citizenship"] == "any"
 
     def test_apply_end_to_end(self):
