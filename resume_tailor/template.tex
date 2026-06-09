@@ -11,16 +11,16 @@
 
 % Section formatting — small caps with rule, matching PDF style
 \titleformat{\section}{\large\scshape}{}{0em}{}[\titlerule]
-\titlespacing{\section}{0pt}{5pt}{2pt}
+\titlespacing{\section}{0pt}{{{SEC_BEFORE}}}{{{SEC_AFTER}}}
 
-\setlength{\parskip}{0pt}
+\setlength{\parskip}{{{PARSKIP}}}
 \pagestyle{empty}
 
 \begin{document}
 
 % Header
 \begin{center}
-  {\LARGE \textsc{{{NAME}}}} \\[2pt]
+  {\LARGE \textsc{{{NAME}}}} \\[{{HEADER_SKIP}}]
   {{PHONE}} $|$ {{EMAIL}} $|$ {{WEBSITE}} $|$ {{GITHUB}} $|$ {{LINKEDIN}}
 \end{center}
 

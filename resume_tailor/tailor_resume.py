@@ -44,10 +44,10 @@ SPECIFICITY (never drop metrics):
 - BAD: "Improved system performance significantly"
 - GOOD: "Reduced inference latency 52% (270s→130s) via dynamic batching and prompt caching"
 
-LINE DENSITY — NO WIDOW LINES (secondary goal, never override truthfulness/specificity):
-Each bullet must land in one of two zones:
-  ZONE A (one tight line):  ≤115 chars  — fits fully on a single line, no wrap.
-  ZONE B (two full lines):  ≥215 chars  — fills both lines wall-to-wall.
+LINE DENSITY — FILL THE WIDTH (secondary goal, never override truthfulness/specificity):
+STRONGLY PREFER Zone B for every bullet — two full lines keeps the resume dense and professional.
+  ZONE A (one tight line):  ≤115 chars  — acceptable ONLY when a bullet truly has one line of truthful content.
+  ZONE B (two full lines):  ≥215 chars  — fills both lines wall-to-wall. THIS IS THE DEFAULT TARGET.
 NEVER write a bullet in the dead zone (116–214 chars) — that length wraps to one line
 PLUS a 1–5 word orphan on a second line, wasting ~90% of that line's width.
 
@@ -71,12 +71,15 @@ FIX B (expand to Zone B): weave in the shipped deliverable:
 RIGHT (Zone B, 245 chars — the template to follow):
   "Shipped production multi-channel B2B AI order agent (webhooks, WhatsApp, email, phone) using Claude Sonnet with RAG vector stores, owning full-stack features from conception through deployment across 7 enterprise clients processing 1,000+ orders"
 
-DECISION RULE for dead-zone bullets:
-- If the bullet has more real facts to add (other deliverables, metrics, tech versions,
-  deployment scope) → EXPAND to Zone B (≥215 chars).
-- If there are no additional truthful facts → TIGHTEN to Zone A (≤115 chars) by cutting
-  the trailing redundant phrase.
+DECISION RULE for all bullets:
+- DEFAULT: EXPAND to Zone B (≥215 chars) by weaving in additional TRUE facts already
+  in the resume — other deliverables, real metrics, tech versions, deployment scope, team size.
+- TIGHTEN to Zone A (≤115 chars) ONLY as a last resort: when, after honestly checking
+  the source, there are truly no more truthful facts to add.
+- A short truthful bullet always beats a padded false one.
 - NEVER invent facts to reach Zone B. Fabricated filler is worse than a short bullet.
+- If the source genuinely lacks enough content to fill the page, leave whitespace rather
+  than invent — the layout will space the page out automatically.
 
 NO DUPLICATE BULLETS (hard rule):
 - Every bullet within an entry must cover a DISTINCT achievement, deliverable, or metric.
@@ -86,8 +89,8 @@ NO DUPLICATE BULLETS (hard rule):
 - BAD: Two bullets both starting "Engineered dual-model Claude pipeline (Haiku 4.5 for skill extraction, Sonnet 4.5..." — same subject, forbidden.
 - GOOD: One comprehensive bullet merging all facts about that work.
 
-CONCISION (quality over brevity):
-- Each experience role: 3–5 bullets. Each project: 2–3 bullets.
+DENSITY (fill every line with real substance):
+- Each experience role: 4–6 bullets. Each project: 2–3 bullets. Use the upper end whenever the source supports it with real content.
 - Goal is density and no filler, NOT a character limit — never drop a metric to make a bullet shorter.
 - Do NOT pack bullets shorter than ~80 chars; extend them by weaving in metrics and technology names.
 - No filler: never write "collaborated with cross-functional teams," "leveraged best practices," or "demonstrated strong ability to."
@@ -137,13 +140,15 @@ def tailor_resume_to_json(
                     "metrics and staying strictly truthful. Bullets that are already well-aligned can be "
                     "lightly rephrased; bullets that are off-topic should be reframed to highlight the most "
                     "relevant aspect of that work.\n\n"
-                    "NO-WIDOW RULE: Every bullet must be EITHER ≤115 chars (one tight line) OR ≥215 "
-                    "chars (two near-full lines). NEVER write a bullet in the 116–214 char dead zone — "
-                    "that length creates a widow (1–5 word orphan on an otherwise empty line). "
-                    "To fix a dead-zone bullet: if more real facts exist (other deliverables, tech "
-                    "versions, team size, deployment scope) → expand to ≥215 chars; if no more "
-                    "truthful content exists → tighten to ≤115 chars by cutting the trailing phrase. "
-                    "Never invent facts to reach ≥215.\n\n"
+                    "DENSITY RULE: STRONGLY PREFER Zone B bullets (≥215 chars / two full lines) — "
+                    "this fills the page and looks professional. DEFAULT: expand each bullet with real "
+                    "resume facts (other deliverables, metrics, tech, scope, team size). Zone A "
+                    "(≤115 chars / one tight line) is acceptable ONLY as a last resort when no more "
+                    "truthful facts exist for that bullet. NEVER write a bullet in the 116–214 char "
+                    "dead zone — it creates a short orphan on an otherwise empty line. "
+                    "Aim to fill a full page: prefer two full lines per bullet with real detail and "
+                    "metrics. Never invent facts. If the source genuinely lacks content to fill the "
+                    "page, leave tasteful whitespace — the layout will space it out.\n\n"
                     "Return the tailored resume as JSON with this exact structure:\n"
                     "{\n"
                     '  "name": "Full Name",\n'
@@ -291,7 +296,7 @@ def inject_into_template(data: dict) -> str:
         bullets = "".join(_latex_bullet(b) for b in job.get("bullets", []))
         exp_blocks.append(
             f"{header}\n"
-            "\\begin{itemize}[nosep, leftmargin=*]\n"
+            "\\begin{itemize}[leftmargin=*, topsep={{ITEMIZE_TOPSEP}}, itemsep={{ITEMIZE_ITEMSEP}}, parsep=0pt]\n"
             + bullets
             + "\\end{itemize}"
         )
@@ -332,7 +337,7 @@ def inject_into_template(data: dict) -> str:
         bullets = "".join(_latex_bullet(b) for b in proj.get("bullets", []))
         proj_blocks.append(
             f"\\textbf{{{name}}} \\hfill {dates}\n"
-            "\\begin{itemize}[nosep, leftmargin=*]\n"
+            "\\begin{itemize}[leftmargin=*, topsep={{ITEMIZE_TOPSEP}}, itemsep={{ITEMIZE_ITEMSEP}}, parsep=0pt]\n"
             + bullets
             + "\\end{itemize}"
         )
@@ -371,13 +376,69 @@ def _count_pdf_pages(pdf_bytes: bytes) -> int:
         return len(pdf.pages)
 
 
-FONT_SIZES = [11, 10, 9, 8]
+def _page1_fill_ratio(pdf_bytes: bytes) -> float:
+    """Fraction of the usable text height on page 1 occupied by content.
+
+    1.0 means content reaches the bottom margin; ~0.4 means 40% filled.
+    Uses pdfplumber char coordinates (exact, font-independent) against the
+    0.5in geometry margins from template.tex.
+    """
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        page = pdf.pages[0]
+        chars = page.chars
+        if not chars:
+            return 0.0
+        margin = 36.0               # 0.5 in × 72 pt/in
+        usable = page.height - 2 * margin   # 720 pt on letter paper
+        if usable <= 0:
+            return 1.0
+        content_bottom = max(c["bottom"] for c in chars)
+        return max(0.0, (content_bottom - margin) / usable)
+
+
+FONT_SIZES = [14, 12, 11, 10, 9, 8]
+_ANCHOR_FONT = 11        # baseline: grow above 11pt only when 11pt fits with slack
+UNDERFILL_RATIO = 0.85   # page is "full" when content covers ≥85% of usable height
+
+# Vertical-spacing presets (substituted by _compile_at alongside {{FONT_SIZE}}).
+# "tight" preserves today's exact values so content-rich output is byte-identical.
+_SPACING_PRESETS: dict[str, dict[str, str]] = {
+    "tight": {
+        "PARSKIP": "0pt", "SEC_BEFORE": "5pt", "SEC_AFTER": "2pt",
+        "HEADER_SKIP": "2pt", "ITEMIZE_TOPSEP": "0pt", "ITEMIZE_ITEMSEP": "0pt",
+    },
+    "normal": {
+        "PARSKIP": "2pt", "SEC_BEFORE": "8pt", "SEC_AFTER": "3pt",
+        "HEADER_SKIP": "4pt", "ITEMIZE_TOPSEP": "2pt", "ITEMIZE_ITEMSEP": "2pt",
+    },
+    "relaxed": {
+        "PARSKIP": "5pt", "SEC_BEFORE": "12pt", "SEC_AFTER": "5pt",
+        "HEADER_SKIP": "6pt", "ITEMIZE_TOPSEP": "4pt", "ITEMIZE_ITEMSEP": "4pt",
+    },
+}
+
+
+def _compile_at(latex_source: str, size: int, preset: str = "tight") -> bytes:
+    """Compile the template at one specific font size and spacing preset.
+
+    Substitutes {{FONT_SIZE}} and all {{...}} spacing placeholders from
+    _SPACING_PRESETS before passing the source to pdflatex.
+    """
+    spacing = _SPACING_PRESETS.get(preset, _SPACING_PRESETS["tight"])
+    s = latex_source.replace("{{FONT_SIZE}}", str(size))
+    for key, val in spacing.items():
+        s = s.replace(f"{{{{{key}}}}}", val)
+    return compile_latex_to_pdf(s)
+
+
+def _compile_at_font(latex_source: str, size: int) -> bytes:
+    """Backward-compatible wrapper — compile at the given font with tight (default) spacing."""
+    return _compile_at(latex_source, size, "tight")
 
 
 def compile_to_single_page(latex_source: str) -> bytes:
     for size in FONT_SIZES:
-        versioned = latex_source.replace("{{FONT_SIZE}}", str(size))
-        pdf_bytes = compile_latex_to_pdf(versioned)
+        pdf_bytes = _compile_at(latex_source, size, "tight")
         if _count_pdf_pages(pdf_bytes) <= 1:
             return pdf_bytes
     return pdf_bytes  # return smallest attempt if still > 1 page
@@ -734,36 +795,62 @@ def rewrite_widowed_bullets(data: dict, widows, cap: int, resume_text: str, rewr
     return new_data if changed else data
 
 
-def _compile_at_font(latex_source: str, size: int) -> bytes:
-    """Compile the template at one specific font size."""
-    return compile_latex_to_pdf(latex_source.replace("{{FONT_SIZE}}", str(size)))
-
-
 def _lock_font(data: dict):
-    """Compile at the largest font that fits one page; return (pdf, font)."""
+    """Lock the font (and initial preset), growing above 11pt for sparse pages.
+
+    Returns (pdf, font, preset). preset is always 'tight' from this function;
+    spacing stretch happens after widow resolution in refine_to_no_widows.
+
+    Algorithm (fill-aware, avoids overshoot):
+      1. Anchor at 11pt. If it overflows → step DOWN [11,10,9,8], skip grow/stretch.
+      2. If 11pt fits and fill ≥ UNDERFILL_RATIO → lock 11pt (already full).
+      3. If 11pt fits but fill < UNDERFILL_RATIO → try larger sizes (12, 14),
+         locking the largest that still fits ≤1 page.
+    """
     latex = inject_into_template(data)
-    candidate = None
-    for size in FONT_SIZES:
-        candidate = _compile_at_font(latex, size)
-        if _count_pdf_pages(candidate) <= 1:
-            return candidate, size
-    return candidate, FONT_SIZES[-1]  # even 8pt spilled — smallest attempt
+    anchor_pdf = _compile_at(latex, _ANCHOR_FONT, "tight")
+
+    if _count_pdf_pages(anchor_pdf) > 1:
+        # Content-rich / overflow: step down only (existing behaviour).
+        below = [s for s in FONT_SIZES if s < _ANCHOR_FONT]
+        for size in below:
+            pdf = _compile_at(latex, size, "tight")
+            if _count_pdf_pages(pdf) <= 1:
+                return pdf, size, "tight"
+        fallback_pdf = _compile_at(latex, FONT_SIZES[-1], "tight")
+        return fallback_pdf, FONT_SIZES[-1], "tight"
+
+    # 11pt fits — check whether the page is already full.
+    if _page1_fill_ratio(anchor_pdf) >= UNDERFILL_RATIO:
+        return anchor_pdf, _ANCHOR_FONT, "tight"
+
+    # Underfilled: try larger fonts above the anchor (largest first).
+    above = sorted([s for s in FONT_SIZES if s > _ANCHOR_FONT], reverse=True)
+    for size in above:
+        pdf = _compile_at(latex, size, "tight")
+        if _count_pdf_pages(pdf) <= 1:
+            return pdf, size, "tight"
+
+    # No larger size fits — return anchor.
+    return anchor_pdf, _ANCHOR_FONT, "tight"
 
 
-def _recompile_locked(data: dict, font: int):
-    """Recompile at the locked font, stepping down one size only if it spilled to 2 pages."""
-    pdf = _compile_at_font(inject_into_template(data), font)
+def _recompile_locked(data: dict, font: int, preset: str = "tight"):
+    """Recompile at the locked font and spacing preset, stepping down one size if spilled."""
+    latex = inject_into_template(data)
+    pdf = _compile_at(latex, font, preset)
     if _count_pdf_pages(pdf) > 1:
         idx = FONT_SIZES.index(font)
         if idx + 1 < len(FONT_SIZES):
             font = FONT_SIZES[idx + 1]
-            pdf = _compile_at_font(inject_into_template(data), font)
+            pdf = _compile_at(latex, font, preset)
     return pdf, font
 
 
 def refine_to_no_widows(data: dict, resume_text: str, rewrite_fn, max_rounds: int = 3) -> bytes:
     """Lock the font, then close the loop: measure → rewrite → recompile, with a
-    free deterministic backstop that guarantees full-width bullets.
+    free deterministic backstop that guarantees full-width bullets. Finally, stretch
+    spacing if the page is still underfilled.
 
     Stage 1 (LLM, content-preserving): up to `max_rounds` cheap batched rewrites
     that try to EXTEND each widow toward WIDOW_THRESHOLD using real resume facts.
@@ -776,8 +863,13 @@ def refine_to_no_widows(data: dict, resume_text: str, rewrite_fn, max_rounds: in
     BACKSTOP_FLOOR is trimmed to a single full line — no API, no fabrication. This
     is the hard guarantee that no genuinely-short orphan can ship even if the model
     failed to extend.
+
+    Stage 3 (spacing stretch, deterministic): if the page is still underfilled after
+    widow resolution, walk tight → normal → relaxed spacing presets, picking the
+    loosest that keeps the PDF on one page. Uses pdfplumber only — independent of
+    the pdftotext-based widow path.
     """
-    pdf, font = _lock_font(data)
+    pdf, font, preset = _lock_font(data)
 
     # ---- Stage 1: LLM extend rounds (preferred — keeps content) ----
     try:
@@ -804,7 +896,7 @@ def refine_to_no_widows(data: dict, resume_text: str, rewrite_fn, max_rounds: in
             if new_data is data:
                 break  # rewrite_fn returned no changes — stop early
             data = new_data
-            pdf, font = _recompile_locked(data, font)
+            pdf, font = _recompile_locked(data, font, preset)
 
         # ---- Stage 2: deterministic backstop — guarantee no orphan below the floor ----
         for _ in range(2):  # at most 2 passes (a trim can change wrapping once)
@@ -825,12 +917,26 @@ def refine_to_no_widows(data: dict, resume_text: str, rewrite_fn, max_rounds: in
                 data[section][j]["bullets"][k] = _trim_to_single_line(
                     data[section][j]["bullets"][k], cap
                 )
-            pdf, font = _recompile_locked(data, font)
+            pdf, font = _recompile_locked(data, font, preset)
 
     except _PdftotextUnavailable as exc:
         logger.warning(
             "widow refinement disabled — %s; returning PDF without widow fixes", exc
         )
+
+    # ---- Stage 3: spacing stretch (pdfplumber only — independent of pdftotext path) ----
+    # Walk tight → normal → relaxed, taking the loosest preset that keeps 1 page.
+    if _count_pdf_pages(pdf) == 1 and _page1_fill_ratio(pdf) < UNDERFILL_RATIO:
+        latex_for_stretch = inject_into_template(data)
+        for try_preset in ("normal", "relaxed"):
+            candidate = _compile_at(latex_for_stretch, font, try_preset)
+            if _count_pdf_pages(candidate) <= 1:
+                pdf = candidate
+                preset = try_preset
+                if _page1_fill_ratio(pdf) >= UNDERFILL_RATIO:
+                    break  # page is full enough — stop loosening
+            else:
+                break  # loosening overflowed — revert to previous preset
 
     return pdf
 
