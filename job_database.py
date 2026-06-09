@@ -429,6 +429,7 @@ def get_active_jobs(limit: Optional[int] = None, offset: int = 0, max_days_old: 
 
             job_dict = {
                 'id': job.id,
+                'job_hash': job.job_hash,
                 'company': job.company,
                 'title': job.title,
                 'location': job.location,
@@ -453,6 +454,55 @@ def get_active_jobs(limit: Optional[int] = None, offset: int = 0, max_days_old: 
         return []
     finally:
         close_db(db)
+
+
+def get_job_by_hash(job_hash: str, db: Optional[Session] = None) -> Optional[Dict]:
+    """
+    Fetch a single job (with its FULL, untruncated description) by job_hash.
+
+    Used by the resume-tailoring endpoint to feed the complete job description into
+    the prompt. Intentionally does NOT filter on is_active — a job shown in match
+    results may have been soft-deactivated (last_seen / days_since_posted) by the
+    time the user tailors against it, but the row still exists.
+
+    Args:
+        job_hash: SHA-256 dedup key from generate_job_hash().
+        db: Optional existing session; if omitted, one is opened and closed here.
+
+    Returns:
+        Job dict including the full 'description', or None if not found.
+    """
+    if not job_hash:
+        return None
+
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        if not job:
+            return None
+        return {
+            'id': job.id,
+            'job_hash': job.job_hash,
+            'company': job.company,
+            'title': job.title,
+            'location': job.location,
+            'apply_link': job.apply_link,
+            'description': job.description,
+            'required_skills': json.loads(job.required_skills) if job.required_skills else [],
+            'job_requirements': job.job_requirements,
+            'source': job.source,
+            'first_seen': job.first_seen,
+            'last_seen': job.last_seen,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching job by hash {job_hash[:12]}...: {e}")
+        return None
+    finally:
+        if should_close:
+            close_db(db)
+
 
 def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
     """
@@ -493,6 +543,7 @@ def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
 
             job_dict = {
                 'id': job.id,
+                'job_hash': job.job_hash,
                 'company': job.company,
                 'title': job.title,
                 'location': job.location,

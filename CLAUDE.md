@@ -34,6 +34,7 @@ A full-stack web app that matches students to software internships using AI. Use
 ├── job_cache.py              # Hybrid Redis + DB caching layer
 ├── s3_service.py             # AWS S3 resume upload/download
 ├── main.py                   # CLI entry point for local testing
+├── AGENTS.md                 # Agent onboarding guide (for Codex, Gemini, Cursor, etc.)
 ├── requirements.txt
 ├── Dockerfile                # Single-container build (backend + React build)
 ├── docker-compose.yml        # Full stack: Redis + Backend + Nginx
@@ -57,7 +58,15 @@ A full-stack web app that matches students to software internships using AI. Use
 │
 ├── resume_tailor/
 │   ├── tailor_resume.py      # Claude-powered resume rewrite + LaTeX PDF generation
-│   └── template.tex          # LaTeX template
+│   └── template.tex          # LaTeX template with parameterized font/spacing placeholders
+│
+├── evals/                    # Prompt eval harness (zero-API-cost, frozen baseline + LLM judge)
+│   ├── run.py                # Entry point: python -m evals.run
+│   ├── extract.py            # A/B extraction runner
+│   ├── judge.py              # Pairwise Sonnet judge
+│   ├── datasets/             # Frozen test cases
+│   ├── prompts/              # Candidate prompt variants
+│   └── results/              # Timestamped markdown reports
 │
 ├── email_sender/
 │   └── generate_email.py
@@ -96,10 +105,15 @@ uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 cd frontend && npm start
 
 # Both together
-./start.sh
+./start.sh --all
 
 # Tests
 pytest tests/
+
+# Prompt evals (no API cost — uses cached extractions + agent-as-judge)
+python -m evals.run
+python -m evals.run --cases negative_context   # single case
+python -m evals.run --no-cache                 # force re-extraction
 
 # Production build (Railway runs this)
 pip install -r requirements.txt
@@ -141,7 +155,75 @@ The main flow for `/api/match-stream`:
 
 **"Think Deeper" mode** — extended analysis with Claude extended thinking, triggered by `think_deeper=true`.
 
-**Resume tailoring** — Claude Sonnet 4.5 rewrites resume JSON for a target job, then pdflatex compiles LaTeX → PDF (tries font sizes 11→8 to fit one page).
+**Resume tailoring** — Claude Sonnet 4.5 rewrites resume JSON for a target job, then pdflatex compiles LaTeX → PDF. Font/spacing pipeline described below.
+
+---
+
+## Resume Tailoring Pipeline (`resume_tailor/tailor_resume.py`)
+
+A multi-stage pipeline that generates a single-page, page-filling PDF:
+
+1. **`tailor_resume_to_json`** — single Sonnet call; outputs structured resume JSON with tailored bullets. `max_tokens=6000`. JD capped at 6000 chars to bound cost.
+2. **`_repair_bullets`** — detects syntactically incomplete bullets (`_is_incomplete_bullet`: unmatched parens, trailing colons, dangling conjunctions) and batch-repairs them via a second Sonnet call.
+3. **Deduplication** — removes near-duplicate bullets within each entry.
+4. **`_lock_font` (page-fill stage)** — anchors at 11pt; if content overflows, steps DOWN `[11, 10, 9, 8]`; if content fits with slack, grows UP `[12, 14]`. Result: largest font that still fits.
+5. **`refine_to_no_widows`** — iterates up to 3 rounds; detects widow lines via pdfplumber, rewrites short orphan bullets via batched Haiku call (`_batch_widow_rewrite`).
+6. **Spacing stretch (stage 3)** — if page is still underfilled after widow resolution, walks `tight → normal → relaxed` spacing presets. Deterministic, no LLM call.
+
+**Font ladder:** `FONT_SIZES = [14, 12, 11, 10, 9, 8]`, anchor `_ANCHOR_FONT = 11`.
+
+**Spacing presets:** `tight` / `normal` / `relaxed` — defined in `_SPACING_PRESETS`, substituted into LaTeX template via `{{...}}` placeholders.
+
+**Prompt strategy (TAILOR_SYSTEM_PROMPT):**
+- Zone B bullets (≥215 chars, two full lines) are the default target — fills the page densely.
+- Zone A (≤115 chars) is acceptable only when no more truthful facts exist.
+- Dead zone (116–214 chars) is explicitly forbidden — creates a short orphan line.
+- Bullet count: 3–4 per experience role, 3 per project.
+- Truthfulness is non-negotiable: never invent facts to reach Zone B.
+
+---
+
+## Prompt Versioning & Usage Tracking (`app.py`)
+
+- **`PROMPT_VERSION = "v2"`** — appended to all resume cache keys so prompt changes invalidate stale cached results. Bump this constant whenever a prompt edit changes expected output shape.
+  - Cache key format: `{resume_hash}_{quick|deep}_{PROMPT_VERSION}`
+- **`TRACK_USAGE`** — env var toggle (`TRACK_USAGE=true` by default). When `false`, disables weekly per-user quotas, slowapi rate limiting, and usage counters. Useful in local dev to avoid hitting limits.
+  - Set `TRACK_USAGE=false` in `.env` for unrestricted local testing.
+
+---
+
+## Experience Level Enum
+
+Valid values for `experience_level` in all LLM outputs and DB fields: **`student`**, **`entry_level`**, **`experienced`**. The value `recent_graduate` was removed — do not use it. The skill extractor enforces this at the prompt level.
+
+---
+
+## Prompt Caching (`llm_skill_extractor.py`)
+
+`cache_control: {"type": "ephemeral"}` is set on system prompt blocks in:
+- `_score_jobs_with_prompt` — scoring criteria block
+- `analyze_and_match_single_call` — system instructions block
+- `extract_candidate_profile` — system instructions block
+
+This reduces Anthropic billing on repeated calls with stable system prompts.
+
+---
+
+## Eval Harness (`evals/`)
+
+Measures whether prompt edits to `RESUME_ANALYSIS_SYSTEM_PROMPT` improve or regress extraction quality.
+
+- **Zero API cost by default** — uses frozen cached extractions; only calls the API if `--no-cache` is passed.
+- **A/B extraction** — runs baseline + candidate prompts via real Haiku calls (temperature=0, results cached by prompt hash).
+- **Pairwise judge** — Sonnet grades both extractions with randomized A/B order to reduce position bias.
+- **Structural gate** — schema validation before expensive judge calls; fails fast on malformed JSON.
+- Reports written to `evals/results/report-<timestamp>.md`.
+
+```bash
+python -m evals.run                            # all 10 cases
+python -m evals.run --cases negative_context   # single case
+python -m evals.run --no-cache --no-judge-cache  # force full re-run
+```
 
 ---
 
@@ -201,6 +283,8 @@ SECRET_KEY              # Session middleware secret
 ENVIRONMENT             # "development" or "production"
 PORT                    # Injected by Railway/Render
 CLERK_PUBLISHABLE_KEY   # Same as REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY — used to derive JWKS URL
+TRACK_USAGE             # "true" (default) | "false" — disables quotas/rate limits for local dev
+INTERNSHIP_MATCHER_API_KEY  # Required for /api/refresh-cache and GitHub Actions polling workflow
 ```
 
 **Frontend (React, baked in at build time):**
@@ -241,6 +325,7 @@ REACT_APP_API_URL       # Backend URL (dev only; prod uses relative URLs)
 - **API URL detection:** `FindPage.tsx` checks `NODE_ENV === 'development'` to pick base URL
 - **shadcn patterns:** Components use CVA + `cn()` util, HSL CSS variables for theming
 - **LaTeX PDF:** `pdflatex` must be installed in the container for resume tailoring to work
+- **Job description truncation:** JD fed to resume tailor is intentionally capped at 6000 chars — scraped JDs are well under this; the cap bounds input cost/latency.
 
 ---
 
@@ -251,3 +336,63 @@ REACT_APP_API_URL       # Backend URL (dev only; prod uses relative URLs)
 ## Job Data Source
 - GitHub: `SimplifyJobs/Summer2026-Internships` README.md (parsed via BeautifulSoup)
 - Other scrapers (Google, Meta, Microsoft, Salesforce) exist but are **disabled**
+
+---
+
+## Self Learning
+
+This section tracks architectural decisions and non-obvious changes made during active development. When you land on this branch and something in the code doesn't match an older mental model, check here first.
+
+**How this works:** After each meaningful PR or set of changes, append an entry below with: the branch/PR, what changed, and *why* (the constraint or problem that drove it). Entries are chronological newest-last so `git blame` and reading top-to-bottom both make sense.
+
+---
+
+### tweaking-prompts branch (PR #22)
+
+**Resume tailor: font-grow-to-fill (Jun 8–9 2026)**
+- Problem: sparse resumes were compiled at the minimum font that fits, leaving large bottom whitespace.
+- Fix: `_lock_font` now anchors at 11pt and grows UP (to 12pt, 14pt) when the page fits with slack. Shrinks only if 11pt overflows.
+- Font ladder expanded: `[14, 12, 11, 10, 9, 8]` (was `[11, 10, 9, 8]`).
+- `template.tex` spacing parameterized with `{{...}}` placeholders. Three presets: `tight`, `normal`, `relaxed`.
+- Stage 3 spacing stretch walks presets after widow resolution if page is still underfilled.
+
+**Resume tailor: density prompt overhaul (Jun 8–9 2026)**
+- `TAILOR_SYSTEM_PROMPT` now defaults to *expand* (Zone B ≥215 chars) instead of tighten. Previous default was concision-first.
+- DENSITY section renamed from CONCISION; bullet count guidance raised to 3–4 per role, 3 per project.
+- User message rewritten to match density-first framing. Explicit "dead zone" (116–214 chars) guidance added.
+
+**Resume tailor: incomplete bullet repair (Jun 9 2026)**
+- Added `_is_incomplete_bullet` validator (unmatched parens, trailing colon, dangling preposition/conjunction).
+- Added `_repair_bullets` — batches all flagged bullets in one Sonnet call, spliced back into the data dict.
+- Repair runs between initial JSON generation and deduplication in the pipeline.
+- `max_tokens` raised from 4000 → 6000 on `tailor_resume_to_json` to prevent truncation on dense resumes.
+
+**Resume tailor: section order matches industry standard (Jun 9 2026)**
+- Template section order changed: Education → Experience → Projects → Technical Skills (was Education → Technical Skills → Experience → Projects).
+
+**Prompt versioning: `PROMPT_VERSION = "v2"` (Jun 6 2026)**
+- All resume cache keys now include `PROMPT_VERSION` so prompt changes bust stale cache entries.
+- Bump this constant in `app.py` whenever a prompt edit would change expected output shape.
+- Bug fixed: early-exit cache key path in `app.py` was missing the version suffix (now included).
+
+**Experience level enum cleanup (Jun 6 2026)**
+- Removed `recent_graduate` from the valid set everywhere (prompt, ORM enum, metadata logic).
+- Valid values are now exactly: `student`, `entry_level`, `experienced`.
+- If you see `recent_graduate` anywhere it is a bug — remove it.
+
+**Prompt caching wired (`cache_control: ephemeral`) (Jun 6 2026)**
+- `analyze_and_match_single_call` and `_score_jobs_with_prompt` system prompts now carry `cache_control`.
+- Cuts Anthropic billing on repeated calls with stable system prompts.
+
+**`TRACK_USAGE` toggle added (Jun 2026)**
+- `TRACK_USAGE=false` in `.env` disables quotas, rate limits, and usage counters for local dev.
+- `tests/conftest.py` forces `TRACK_USAGE=true` so the test suite always exercises quota logic.
+
+**`INTERNSHIP_MATCHER_API_KEY` secret (Jun 6 2026)**
+- GitHub Actions "polling internships" workflow requires this secret set in the repo.
+- Was previously named `CACHE_REFRESH_API_KEY` — all references updated.
+
+**Eval harness (`evals/`) added (Jun 8–9 2026)**
+- Zero-API-cost by default: frozen cached extractions, no Anthropic spend unless `--no-cache`.
+- Agent-as-judge pattern: Claude Code acts as model+judge instead of calling real Sonnet.
+- Use this before merging any prompt edit to `RESUME_ANALYSIS_SYSTEM_PROMPT`.

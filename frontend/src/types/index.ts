@@ -20,6 +20,7 @@ export interface Job {
   title: string;
   company: string;
   location: string;
+  job_hash?: string;
   description?: string;
   score?: number;
   match_score?: number;

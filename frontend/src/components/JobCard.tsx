@@ -32,6 +32,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
       formData.append('resume', resumeFile);
       formData.append('job_title', job.title || '');
       formData.append('company', job.company || '');
+      // job_hash lets the backend look up the FULL job description; job_description
+      // is sent as a fallback for results that predate job_hash.
+      formData.append('job_hash', job.job_hash || '');
       formData.append('job_description', job.description || '');
 
       const response = await fetch(`${apiBaseUrl}/api/tailor-resume`, {
