@@ -815,7 +815,7 @@ def intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_coun
         # Filter out senior/inappropriate roles
         senior_indicators = ['senior', 'lead', 'principal', 'staff', 'architect', 'manager', 'director']
         if any(indicator in job_title for indicator in senior_indicators):
-            if experience_level in ['student', 'recent_graduate', 'entry_level'] or years_experience < 3:
+            if experience_level in ['student', 'entry_level'] or years_experience < 3:
                 continue  # Skip senior roles for junior candidates
 
         # Filter out high experience requirements
@@ -1570,20 +1570,11 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
         if len(job_skills) > 0:
             skill_coverage = skill_match_count / len(job_skills)
 
-            # Normalized to match the Sonnet rubric ranges (0-30 misaligned,
-            # 31-55 weak, 56-74 decent, 75-89 strong). Keyword mode caps at ~75
-            # because it cannot evaluate production evidence; title/role bonuses
-            # (up to 15 pts) can push strong matches into the 80-90 range.
-            if skill_coverage >= 0.8:   # Strong keyword overlap
-                score += 75
-            elif skill_coverage >= 0.6:  # Decent-strong
-                score += 63
-            elif skill_coverage >= 0.4:  # Decent
-                score += 50
-            elif skill_coverage >= 0.2:  # Weak
-                score += 38
-            else:                        # Minimal (≥1 skill match but thin overlap)
-                score += 30
+            # Linear mapping: 100% coverage → 90 pts, 0% → 0 pts.
+            # Capped at 90 so keyword-only matches never claim certainty that
+            # only LLM reasoning (Think Deeper) can provide. Title/role bonuses
+            # (up to 15 pts) can push the best matches toward 100.
+            score += int(skill_coverage * 90)
 
     # CRITICAL: If zero required skills matched, return 0 immediately
     # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers)
@@ -1618,6 +1609,14 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
             if role_skill_matches >= 2:
                 score += 5
                 break
+
+    # Deterministic ±5 jitter based on job_hash to visually spread scores
+    # that land at the same integer. Same job always gets the same offset,
+    # so cached results stay consistent across requests.
+    job_hash = job.get('job_hash', '')
+    if job_hash:
+        offset = (int(job_hash[-2:], 16) % 11) - 5  # maps 0–10 → -5 to +5
+        score = max(0, score + offset)
 
     # Cap at 100
     return min(int(score), 100)
@@ -1725,7 +1724,7 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
 def _extract_resume_profile_haiku(resume_text: str, system_prompt=None, temperature=None) -> dict:
     """Uses Claude Haiku to quickly extract skills and experience level for accurate pre-filtering."""
     sys_p = system_prompt if system_prompt is not None else RESUME_PROFILE_SYSTEM_PROMPT
-    user_prompt = f"RESUME:\n{resume_text[:3000]}"
+    user_prompt = f"RESUME:\n{resume_text[:6500]}"
     try:
         client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY"))
         create_kwargs = dict(
@@ -1830,7 +1829,7 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
     sys_p = system_prompt if system_prompt is not None else JOB_MATCH_SYSTEM_PROMPT
 
     user_prompt = (
-        f"RESUME:\n{resume_text[:3000]}\n\n"
+        f"RESUME:\n{resume_text[:6500]}\n\n"
         f"JOBS TO ANALYZE ({len(candidate_jobs)} positions):\n"
         f"{jobs_xml}\n\n"
         f"Analyze the resume and score all {len(candidate_jobs)} jobs. Return JSON only."
@@ -1882,7 +1881,7 @@ def _score_jobs_with_prompt(resume_text: str, jobs_xml: str, system_prompt=None,
     sys_p = system_prompt if system_prompt is not None else JOB_MATCH_SYSTEM_PROMPT
     job_count = jobs_xml.count("<job ")
     user_prompt = (
-        f"RESUME:\n{resume_text[:3000]}\n\n"
+        f"RESUME:\n{resume_text[:6500]}\n\n"
         f"JOBS TO ANALYZE ({job_count} positions):\n"
         f"{jobs_xml}\n\n"
         f"Analyze the resume and score all {job_count} jobs. Return JSON only."
