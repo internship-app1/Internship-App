@@ -99,7 +99,7 @@ const TagAutocomplete: React.FC<TagAutocompleteProps> = ({
       >
         {value.map((tag, idx) => (
           <span
-            key={`${tag}-${idx}`}
+            key={tag}
             className="inline-flex items-center gap-1 font-mono text-[11px] px-1.5 py-0.5 border border-ia bg-ia-subtle text-text-primary"
           >
             {tag}

@@ -145,7 +145,7 @@ def _job_requires_citizenship(job: Dict[str, Any]) -> bool:
     """True if the posting requires U.S. citizenship (🇺🇸 marker or explicit text)."""
     title = job.get("title", "") or ""
     text = f"{title} {job.get('description', '')}".lower()
-    if "🇺🇸" in title or "🇺🇸" in text:
+    if "🇺🇸" in text:
         return True
     citizenship_phrases = [
         "u.s. citizen", "us citizen", "u.s. citizenship", "us citizenship",
@@ -208,8 +208,8 @@ def normalize_filters(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 
     return {
         "locations": _as_str_list(raw.get("locations")),
-        "positions": positions,
-        "company_sizes": company_sizes,
+        "positions": sorted(positions),
+        "company_sizes": sorted(company_sizes),
         "citizenship": citizenship,
         "avoid_companies": _as_str_list(raw.get("avoid_companies")),
     }
@@ -228,6 +228,23 @@ def has_active_filters(normalized: Dict[str, Any]) -> bool:
     )
 
 
+_STATE_ABBREVS: Dict[str, str] = {
+    "alabama": "al", "alaska": "ak", "arizona": "az", "arkansas": "ar",
+    "california": "ca", "colorado": "co", "connecticut": "ct", "delaware": "de",
+    "florida": "fl", "georgia": "ga", "hawaii": "hi", "idaho": "id",
+    "illinois": "il", "indiana": "in", "iowa": "ia", "kansas": "ks",
+    "kentucky": "ky", "louisiana": "la", "maine": "me", "maryland": "md",
+    "massachusetts": "ma", "michigan": "mi", "minnesota": "mn", "mississippi": "ms",
+    "missouri": "mo", "montana": "mt", "nebraska": "ne", "nevada": "nv",
+    "new hampshire": "nh", "new jersey": "nj", "new mexico": "nm", "new york": "ny",
+    "north carolina": "nc", "north dakota": "nd", "ohio": "oh", "oklahoma": "ok",
+    "oregon": "or", "pennsylvania": "pa", "rhode island": "ri", "south carolina": "sc",
+    "south dakota": "sd", "tennessee": "tn", "texas": "tx", "utah": "ut",
+    "vermont": "vt", "virginia": "va", "washington": "wa", "west virginia": "wv",
+    "wisconsin": "wi", "wyoming": "wy", "district of columbia": "dc",
+}
+
+
 def _passes_location(job: Dict[str, Any], locations: List[str]) -> bool:
     if not locations:
         return True
@@ -241,6 +258,9 @@ def _passes_location(job: Dict[str, Any], locations: List[str]) -> bool:
                 return True
             continue
         if loc_l in job_location:
+            return True
+        abbrev = _STATE_ABBREVS.get(loc_l)
+        if abbrev and f", {abbrev}" in job_location:
             return True
     return False
 
@@ -280,11 +300,11 @@ def _passes_citizenship(job: Dict[str, Any], citizenship: str) -> bool:
 def _passes_avoid_companies(job: Dict[str, Any], avoid_companies: List[str]) -> bool:
     if not avoid_companies:
         return True
-    company = _normalize(job.get("company", ""))
+    company = _canonical_company(job.get("company", ""))
     if not company:
         return True
     for avoided in avoid_companies:
-        a = _normalize(avoided)
+        a = _canonical_company(avoided)
         if a and (a in company or company in a):
             return False
     return True
