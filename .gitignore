@@ -31,7 +31,8 @@ changes/
 /favicons/
 
 .agents/
-.claude/
+.claude/settings.local.json
+.claude/memory/
 .mcp.json
 skills-lock.json
 GEMINI.md
