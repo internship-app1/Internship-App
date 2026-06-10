@@ -630,9 +630,9 @@ const DocsPage: React.FC = () => {
                 <>Paste the matching config into your client, restart/reload the agent, then run the smoke prompt below.</>,
               ]}
             />
-            <H3>Path A: cloud chat / hosted connector</H3>
+            <H3>Path A: Claude chat / hosted connector</H3>
             <Para>
-              Use this for claude.ai custom connectors, ChatGPT-style cloud chats, or
+              Use this for Claude chat custom connectors, ChatGPT-style chats, or
               any service that can connect to a remote Streamable HTTP MCP server. It is
               zero-install and exposes only <InlineCode>jobs_list</InlineCode>,{' '}
               <InlineCode>job_get</InlineCode>, and <InlineCode>jobs_prefilter</InlineCode>.
@@ -640,18 +640,14 @@ const DocsPage: React.FC = () => {
               local resume files, store your encrypted profile, drive your browser, or
               compile resumes locally.
             </Para>
-            <CodeBlock title="Remote MCP URL for cloud/chat connectors">{hostedMcpUrl}</CodeBlock>
+            <CodeBlock title="Remote MCP URL for Claude chat connectors">{hostedMcpUrl}</CodeBlock>
             <Para>
-              In a cloud chat UI, look for "custom connector", "remote MCP", or
+              In a Claude / ChatGPT UI, look for "custom connector", "remote MCP", or
               "Streamable HTTP MCP" and paste the URL above. If the service supports
               custom headers, use <InlineCode>X-API-Key</InlineCode> instead of putting
               the key in the URL. If it does not, the URL key is the temporary v1 path:
               create a dedicated key and revoke it after testing.
             </Para>
-            <CodeBlock title="Codex hosted smoke test">{`codex mcp add internship --url "${hostedMcpUrl}"
-
-# Then open Codex and ask:
-Use the internship MCP server to list software internships posted in the last 3 days.`}</CodeBlock>
             <Para>
               <InlineCode>/mcp</InlineCode> is not a browser page. Opening it directly
               may return a protocol error such as <InlineCode>406</InlineCode>; that is
@@ -666,6 +662,10 @@ Use the internship MCP server to list software internships posted in the last 3 
               application tracker, resume compiling, and Playwright browser prefill. It is
               the Supabase-style setup: paste one config block, no clone, no Docker.
             </Para>
+            <CodeBlock title="Codex hosted smoke test">{`codex mcp add internship --url "${hostedMcpUrl}"
+
+# Then open Codex and ask:
+Use the internship MCP server to list software internships posted in the last 3 days.`}</CodeBlock>
             <CodeBlock title=".mcp.json for Claude Code / Cursor / Windsurf / Cline">{`{
   "mcpServers": {
     "internship": {
