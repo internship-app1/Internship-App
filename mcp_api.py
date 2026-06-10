@@ -313,8 +313,10 @@ def _compile_cache_key(resume_json: dict, options: CompileOptions) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+# No slowapi limit here: the 15/week quota (checked below) is strictly
+# tighter than the old 60/day rate limit, and the bounded-admission counter
+# already sheds bursts.
 @v1_app.post("/resume/compile", response_model=CompileResponse)
-@v1_limiter.limit("60/day")
 async def v1_compile(
     request: Request,
     body: CompileRequest,
