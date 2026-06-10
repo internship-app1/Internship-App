@@ -45,7 +45,11 @@ logger = logging.getLogger(__name__)
 
 def _api_key_rate_limit_key(request: Request) -> str:
     raw = request.headers.get("X-API-Key", "")
-    return f"apikey:{raw[:12]}" if raw else f"ip:{request.client.host if request.client else 'unknown'}"
+    if not raw:
+        return f"ip:{request.client.host if request.client else 'unknown'}"
+    # Hash the FULL key: a raw prefix would only carry 4 random chars beyond
+    # the shared "im_live_", letting distinct keys collide into one bucket.
+    return "apikey:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
 
 
 _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
@@ -291,7 +295,12 @@ async def v1_prefilter(
 # ---- Remote compile fallback (opt-in, rate-limited, concurrency-capped) ----
 
 COMPILE_CONCURRENCY = int(os.getenv("COMPILE_CONCURRENCY", "3"))
-_compile_semaphore = asyncio.Semaphore(COMPILE_CONCURRENCY)
+# Bounded admission counter instead of a Semaphore: checking
+# Semaphore.locked() then awaiting acquire() is racey (requests slipping
+# between the check and the acquire would queue instead of 429ing). The
+# counter is checked and incremented with no await in between, which is
+# atomic on a single event loop — excess requests are rejected, never queued.
+_compile_active = 0
 _compile_cache: Dict[str, tuple] = {}   # sha256(resume_json+options) -> (pdf, diag)
 _COMPILE_CACHE_MAX = 64
 
@@ -322,25 +331,27 @@ async def v1_compile(
         pdf_bytes, diagnostics = cached
         return {"pdf_base64": base64.b64encode(pdf_bytes).decode(), "diagnostics": diagnostics}
 
-    if _compile_semaphore.locked():
+    global _compile_active
+    if _compile_active >= COMPILE_CONCURRENCY:
         # All compile slots busy — shed load instead of queueing unboundedly.
         raise HTTPException(
             status_code=429,
             detail="Compile capacity busy — retry shortly or compile locally (Docker)",
             headers={"Retry-After": "10"},
         )
-
-    async with _compile_semaphore:
-        try:
-            pdf_bytes, diagnostics = await asyncio.to_thread(
-                compile_resume_json_to_pdf,
-                body.resume_json,
-                body.options.font_anchor,
-                body.options.spacing,
-            )
-        except Exception as e:
-            logger.error("remote compile failed: %s", e)
-            raise HTTPException(status_code=422, detail=f"Compile failed: {e}")
+    _compile_active += 1
+    try:
+        pdf_bytes, diagnostics = await asyncio.to_thread(
+            compile_resume_json_to_pdf,
+            body.resume_json,
+            body.options.font_anchor,
+            body.options.spacing,
+        )
+    except Exception as e:
+        logger.error("remote compile failed: %s", e)
+        raise HTTPException(status_code=422, detail=f"Compile failed: {e}")
+    finally:
+        _compile_active -= 1
 
     if len(_compile_cache) >= _COMPILE_CACHE_MAX:
         _compile_cache.pop(next(iter(_compile_cache)))

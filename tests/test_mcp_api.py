@@ -149,6 +149,82 @@ class TestV1Endpoints:
         assert r.status_code == 200
         assert set(r.json()) == {"candidates", "evaluated", "returned"}
 
+    def test_rate_limit_buckets_unique_per_key(self):
+        """Regression: raw[:12] only carried 4 random chars past 'im_live_',
+        so distinct keys could collide into one throttle bucket."""
+        from types import SimpleNamespace
+
+        from mcp_api import _api_key_rate_limit_key
+
+        def req(key=None):
+            return SimpleNamespace(
+                headers={"X-API-Key": key} if key else {}, client=None
+            )
+
+        # Two distinct keys sharing the same first 12 chars → distinct buckets
+        a = "im_live_abcd" + "1" * 28
+        b = "im_live_abcd" + "2" * 28
+        assert _api_key_rate_limit_key(req(a)) != _api_key_rate_limit_key(req(b))
+        # Same key → stable bucket
+        assert _api_key_rate_limit_key(req(a)) == _api_key_rate_limit_key(req(a))
+        # No key → IP bucket, not an apikey bucket
+        assert _api_key_rate_limit_key(req()).startswith("ip:")
+
+    def test_concurrent_compiles_shed_excess_with_429(self, api_key, monkeypatch):
+        """Regression: Semaphore.locked() was a point-in-time check, so
+        concurrent requests could queue instead of receiving 429. With bounded
+        admission, exactly COMPILE_CONCURRENCY requests run and the rest are
+        rejected with Retry-After."""
+        import asyncio
+        import time
+
+        import httpx
+
+        import app as appmod
+        import mcp_api
+
+        def slow_compile(resume_json, font_anchor, spacing):
+            time.sleep(0.4)
+            return b"%PDF-fake", {"pages": 1}
+
+        monkeypatch.setattr(mcp_api, "compile_resume_json_to_pdf", slow_compile)
+        n_extra = 2
+        n_total = mcp_api.COMPILE_CONCURRENCY + n_extra
+
+        async def run():
+            transport = httpx.ASGITransport(app=appmod.app)
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://test"
+            ) as ac:
+                return await asyncio.gather(*[
+                    ac.post(
+                        "/api/v1/resume/compile",
+                        headers={"X-API-Key": api_key},
+                        # distinct payloads so the content cache can't satisfy any
+                        json={"resume_json": {"name": f"r{i}"}},
+                    )
+                    for i in range(n_total)
+                ])
+
+        responses = asyncio.run(run())
+        codes = [r.status_code for r in responses]
+        assert codes.count(200) == mcp_api.COMPILE_CONCURRENCY, codes
+        assert codes.count(429) == n_extra, codes
+        rejected = next(r for r in responses if r.status_code == 429)
+        assert "Retry-After" in rejected.headers
+        # Slots were released — a follow-up request is admitted again
+        async def one_more():
+            transport = httpx.ASGITransport(app=appmod.app)
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://test"
+            ) as ac:
+                return await ac.post(
+                    "/api/v1/resume/compile",
+                    headers={"X-API-Key": api_key},
+                    json={"resume_json": {"name": "after"}},
+                )
+        assert asyncio.run(one_more()).status_code == 200
+
     def test_openapi_contract_published(self, client):
         r = client.get("/api/v1/openapi.json")
         assert r.status_code == 200
