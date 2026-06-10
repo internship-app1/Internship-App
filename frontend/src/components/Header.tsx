@@ -42,6 +42,9 @@ const Header: React.FC = () => {
           Developer
         </Link>
       )}
+      <Link to="/docs" onClick={closeMenu} className="font-mono text-xs text-text-secondary hover:text-text-primary transition-colors">
+        Docs
+      </Link>
     </>
   );
 
