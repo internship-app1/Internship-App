@@ -612,9 +612,11 @@ const DocsPage: React.FC = () => {
           <section className="mb-14">
             <H2 id="mcp-for-agents">MCP for Agents</H2>
             <Para>
-              The fastest way to use this API is to not call it directly: install the
-              MCP server in your agent (Claude Code, Cursor, Codex, Windsurf, Cline) and
-              let the agent drive.
+              MCP lets an AI client call Internship Matcher tools directly. There are
+              two ways to use it. Pick hosted if you are in a normal cloud chat and only
+              want job discovery. Pick the local coding-agent setup if you want the full
+              apply flow with your resume files, encrypted profile, browser prefill, and
+              local application tracker.
             </Para>
             <StepList
               steps={[
@@ -624,45 +626,73 @@ const DocsPage: React.FC = () => {
                     Developer page
                   </Link>.
                 </>,
-                <>
-                  Pick the right path on the Developer page. Hosted is zero-install
-                  discovery only; uvx is the recommended full apply agent with local
-                  profile storage; Docker is the advanced reproducible option.
-                </>,
-                <>Ask your agent to get to work.</>,
+                <>Choose hosted remote MCP for zero-install search/scoring, or local uvx MCP for the full apply agent.</>,
+                <>Paste the matching config into your client, restart/reload the agent, then run the smoke prompt below.</>,
               ]}
             />
-            <H3>Hosted MCP: zero-install discovery</H3>
+            <H3>Path A: cloud chat / hosted connector</H3>
             <Para>
-              Use this when you want an agent to search jobs and score fit without
-              installing anything locally. It exposes only <InlineCode>jobs_list</InlineCode>,{' '}
+              Use this for claude.ai custom connectors, ChatGPT-style cloud chats, or
+              any service that can connect to a remote Streamable HTTP MCP server. It is
+              zero-install and exposes only <InlineCode>jobs_list</InlineCode>,{' '}
               <InlineCode>job_get</InlineCode>, and <InlineCode>jobs_prefilter</InlineCode>.
-              Applying still needs the full local agent because your encrypted profile,
-              resume files, browser session, and application tracker stay on your machine.
+              That is enough for "find internships that fit me" testing. It cannot read
+              local resume files, store your encrypted profile, drive your browser, or
+              compile resumes locally.
             </Para>
-            <CodeBlock title="claude.ai custom connector / HTTP MCP URL">{hostedMcpUrl}</CodeBlock>
+            <CodeBlock title="Remote MCP URL for cloud/chat connectors">{hostedMcpUrl}</CodeBlock>
             <Para>
-              <InlineCode>/mcp</InlineCode> is not a browser page: a normal browser request may
-              return a protocol error such as <InlineCode>406</InlineCode>. Test it from an MCP
-              client or connector using the URL above.
+              In a cloud chat UI, look for "custom connector", "remote MCP", or
+              "Streamable HTTP MCP" and paste the URL above. If the service supports
+              custom headers, use <InlineCode>X-API-Key</InlineCode> instead of putting
+              the key in the URL. If it does not, the URL key is the temporary v1 path:
+              create a dedicated key and revoke it after testing.
+            </Para>
+            <CodeBlock title="Codex hosted smoke test">{`codex mcp add internship --url "${hostedMcpUrl}"
+
+# Then open Codex and ask:
+Use the internship MCP server to list software internships posted in the last 3 days.`}</CodeBlock>
+            <Para>
+              <InlineCode>/mcp</InlineCode> is not a browser page. Opening it directly
+              may return a protocol error such as <InlineCode>406</InlineCode>; that is
+              expected. Test it from an MCP client or connector.
             </Para>
 
-            <H3>Full agent: uvx (recommended)</H3>
+            <H3>Path B: coding agent on your machine</H3>
             <Para>
-              This is the Supabase-style setup: paste one config block, no clone, no Docker.
-              On first run the agent asks whether to install TeX locally for unlimited
-              resume compiles or use the remote fallback capped at 15 compiles/week.
+              Use this for Codex, Claude Code, Cursor, Windsurf, Cline, or any local AI
+              coding agent that can launch stdio MCP servers. This is the full product:
+              encrypted profile on your machine, resume parsing from local files, local
+              application tracker, resume compiling, and Playwright browser prefill. It is
+              the Supabase-style setup: paste one config block, no clone, no Docker.
             </Para>
-            <CodeBlock title=".mcp.json (Claude Code) · ~/.cursor/mcp.json (Cursor) — uvx, recommended">{`{
+            <CodeBlock title=".mcp.json for Claude Code / Cursor / Windsurf / Cline">{`{
   "mcpServers": {
     "internship": {
       "command": "uvx",
       "args": ["internship-mcp"],
-      "env": { "INTERNSHIP_API_KEY": "im_live_..." }
+      "env": { "INTERNSHIP_API_KEY": "<YOUR_API_KEY_HERE>" }
     },
     "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] }
   }
 }`}</CodeBlock>
+            <CodeBlock title="~/.codex/config.toml for Codex">{`[mcp_servers.internship]
+command = "uvx"
+args = ["internship-mcp"]
+env = { INTERNSHIP_API_KEY = "<YOUR_API_KEY_HERE>" }
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]`}</CodeBlock>
+            <Para>
+              Codex users: if you already made a test directory with a{' '}
+              <InlineCode>.mcp.json</InlineCode>, keep it for Claude Code or Cursor-style
+              clients. Codex reads MCP servers from <InlineCode>~/.codex/config.toml</InlineCode>
+              or from <InlineCode>codex mcp add</InlineCode>. After editing the config,
+              restart Codex and ask it to use the internship tools.
+            </Para>
+            <CodeBlock title="Codex CLI alternative for the full local agent">{`codex mcp add internship --env INTERNSHIP_API_KEY=<YOUR_API_KEY_HERE> -- uvx internship-mcp
+codex mcp add playwright -- npx @playwright/mcp@latest`}</CodeBlock>
             <CodeBlock title="Optional local TeX install for unlimited compiles">{`# macOS
 brew install --cask basictex && sudo tlmgr update --self && sudo tlmgr install enumitem titlesec parskip microtype
 
@@ -671,6 +701,11 @@ sudo apt install texlive-latex-extra
 
 # Windows
 Install MiKTeX from https://miktex.org`}</CodeBlock>
+            <Para>
+              On first run the agent asks whether to install TeX locally for unlimited
+              compiles or use the remote fallback capped at 15 compiles/week. If you skip
+              TeX, the rest of the local agent still works.
+            </Para>
 
             <H3>Docker: advanced reproducible path</H3>
             <Para>
@@ -685,7 +720,7 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
                "-v", "internship-home:/root/.internship-agent",
                "-e", "INTERNSHIP_API_KEY",
                "ghcr.io/internship-app1/internship-mcp-server:latest"],
-      "env": { "INTERNSHIP_API_KEY": "im_live_..." }
+      "env": { "INTERNSHIP_API_KEY": "<YOUR_API_KEY_HERE>" }
     },
     "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] }
   }
@@ -695,18 +730,34 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
               prefill application forms in your browser — you always review and hit
               submit yourself.
             </Para>
-            <H3>What your agent can do</H3>
+            <H3>First prompts</H3>
             <Para>
-              Once connected, the agent gets 15 tools: profile setup with encrypted
+              Hosted cloud connectors should start with discovery because they only
+              expose the three job tools:
+            </Para>
+            <CodeBlock title="Hosted discovery prompt">{`Use Internship Matcher to list software internships posted in the last 3 days.
+Then score which ones fit a student with Python, React, and backend API experience.`}</CodeBlock>
+            <Para>
+              The full local agent gets the complete tool set: profile setup with encrypted
               local storage, resume parsing, <InlineCode>jobs_list</InlineCode> /{' '}
               <InlineCode>job_get</InlineCode> / <InlineCode>jobs_prefilter</InlineCode>,
               local PDF compilation with widow diagnostics, application-packet assembly
               with an authentic-answer guardrail, and a local application tracker. A
-              good first prompt:
+              good first prompt for Codex or any coding agent:
             </Para>
-            <CodeBlock title="First prompt">{`Set up my internship profile, then find postings from the last 3 days
-that fit my resume at ~/resume.pdf, tailor my resume for the top 5,
-and prefill the applications for my review.`}</CodeBlock>
+            <CodeBlock title="Full apply-agent prompt">{`Set up my internship applicant profile. Then parse my resume at /absolute/path/to/resume.pdf,
+extract my skills, find postings from the last 3 days that fit me, tailor my resume
+for the best match, build the application packet, and prefill the form for my review.
+Stop before submitting anything.`}</CodeBlock>
+            <H3>Platform guide</H3>
+            <Para>
+              Cloud chat services that support remote MCP should use Path A. Local coding
+              agents that can launch commands should use Path B. If a platform does not
+              support MCP yet, it cannot connect to these tools directly; use the REST API
+              or switch to a supported MCP client. Browser-only chats also cannot access
+              files on your laptop or your browser session unless they connect to a local
+              MCP process.
+            </Para>
           </section>
 
           {/* -------------------------------------------------------- */}

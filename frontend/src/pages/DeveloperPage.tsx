@@ -54,13 +54,16 @@ function codexToml(transport: Transport, displayKey: string): string {
 }
 
 function configSnippet(client: ClientId, transport: Transport, key: string, origin: string): string {
-  const displayKey = key || 'im_live_...';
+  const displayKey = key || '<YOUR_API_KEY_HERE>';
   if (transport === 'hosted') {
-    const mcpUrl = `${origin}/mcp?key=${key || '<YOUR_API_KEY_HERE>'}`;
+    const mcpUrl = `${origin}/mcp?key=${displayKey}`;
     return [
       '# Zero install — job search & fit scoring only (applying needs the full agent).',
-      '# claude.ai: Settings → Connectors → Add custom connector → paste this URL:',
+      '# Cloud/chat clients: Settings → Connectors → Add custom connector → paste this URL:',
       mcpUrl,
+      '',
+      '# Codex CLI / any client with Streamable HTTP MCP support:',
+      `codex mcp add internship --url "${mcpUrl}"`,
       '',
       '# Claude Code CLI:',
       `claude mcp add -t http internship "${mcpUrl}"`,
@@ -429,8 +432,9 @@ const DeveloperPage: React.FC = () => {
           <p className="font-mono text-[10px] text-text-tertiary mb-2">
             {transport === 'hosted' ? (
               <>
-                Zero-install discovery endpoint. It exposes job search and scoring only; use uvx for
-                resume parsing, local profile storage, resume compile, packets, and browser prefill.
+                Zero-install discovery endpoint for cloud/chat connectors and HTTP MCP clients.
+                It exposes job search and scoring only; use uvx for resume parsing, local profile
+                storage, resume compile, packets, and browser prefill.
                 The hosted URL is <span className="text-text-secondary">{origin}/mcp?key=&lt;YOUR_API_KEY_HERE&gt;</span>.
               </>
             ) : (
@@ -457,6 +461,21 @@ const DeveloperPage: React.FC = () => {
           {!freshKey && (
             <p className="font-mono text-[10px] text-text-tertiary mt-2">
               Generate a key above and it will be filled into the snippet automatically.
+            </p>
+          )}
+          {client === 'codex' && transport !== 'hosted' && (
+            <p className="font-mono text-[10px] text-text-tertiary mt-2">
+              Codex uses <span className="text-text-secondary">~/.codex/config.toml</span>,
+              not a project <span className="text-text-secondary">.mcp.json</span>. Restart
+              Codex after saving, or use <span className="text-text-secondary">codex mcp add</span>
+              from the full docs.
+            </p>
+          )}
+          {transport === 'hosted' && (
+            <p className="font-mono text-[10px] text-text-tertiary mt-2">
+              Keep hosted keys disposable. If your connector supports headers, prefer
+              <span className="text-text-secondary"> X-API-Key</span>; otherwise use the URL
+              key for testing and revoke it when done.
             </p>
           )}
         </section>
