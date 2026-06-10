@@ -23,8 +23,36 @@ const CLIENTS: { id: ClientId; label: string; configPath: string }[] = [
   { id: 'cline', label: 'Cline', configPath: 'cline_mcp_settings.json' },
 ];
 
-function configSnippet(transport: Transport, key: string): string {
+function codexToml(transport: Transport, displayKey: string): string {
+  if (transport === 'docker') {
+    return [
+      '[mcp_servers.internship]',
+      'command = "docker"',
+      'args = ["run", "-i", "--rm", "-v", "internship-home:/root/.internship-agent", "-e", "INTERNSHIP_API_KEY", "ghcr.io/internship-app1/internship-mcp-server:latest"]',
+      `env = { INTERNSHIP_API_KEY = "${displayKey}" }`,
+      '',
+      '[mcp_servers.playwright]',
+      'command = "npx"',
+      'args = ["@playwright/mcp@latest"]',
+    ].join('\n');
+  }
+  return [
+    '[mcp_servers.internship]',
+    'command = "uvx"',
+    'args = ["internship-mcp"]',
+    `env = { INTERNSHIP_API_KEY = "${displayKey}", COMPILE = "remote" }`,
+    '',
+    '[mcp_servers.playwright]',
+    'command = "npx"',
+    'args = ["@playwright/mcp@latest"]',
+  ].join('\n');
+}
+
+function configSnippet(client: ClientId, transport: Transport, key: string): string {
   const displayKey = key || 'im_live_...';
+  if (client === 'codex') {
+    return codexToml(transport, displayKey);
+  }
   if (transport === 'docker') {
     return JSON.stringify(
       {
@@ -184,7 +212,7 @@ const DeveloperPage: React.FC = () => {
     );
   }
 
-  const snippet = configSnippet(transport, freshKey);
+  const snippet = configSnippet(client, transport, freshKey);
   const selectedClient = CLIENTS.find((c) => c.id === client)!;
 
   return (
@@ -337,7 +365,6 @@ const DeveloperPage: React.FC = () => {
 
           <p className="font-mono text-[10px] text-text-tertiary mb-2">
             Save to <span className="text-text-secondary">{selectedClient.configPath}</span>
-            {client === 'codex' && ' — convert the JSON below to TOML mcp_servers entries'}
           </p>
 
           <div className="relative border border-lp-border bg-surface">
