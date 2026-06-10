@@ -16,8 +16,10 @@ _jwks_cache: dict = {"keys": None, "fetched_at": 0.0}
 _JWKS_CACHE_TTL = 3600  # seconds
 
 
-def _get_jwks_url() -> str:
-    """Derive the Clerk JWKS URL from CLERK_PUBLISHABLE_KEY (or the React equivalent)."""
+def get_clerk_domain() -> str:
+    """Derive the Clerk frontend-API domain from CLERK_PUBLISHABLE_KEY (or the
+    React equivalent). Single source of truth — used for both the JWKS URL and
+    the Content-Security-Policy in app.py."""
     key = (
         os.getenv("CLERK_PUBLISHABLE_KEY")
         or os.getenv("REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY")
@@ -40,8 +42,12 @@ def _get_jwks_url() -> str:
     padding = (4 - len(encoded) % 4) % 4
     encoded += "=" * padding
 
-    domain = base64.b64decode(encoded).decode("utf-8").rstrip("$")
-    return f"https://{domain}/.well-known/jwks.json"
+    return base64.b64decode(encoded).decode("utf-8").rstrip("$")
+
+
+def _get_jwks_url() -> str:
+    """Derive the Clerk JWKS URL from the publishable key."""
+    return f"https://{get_clerk_domain()}/.well-known/jwks.json"
 
 
 def _fetch_jwks() -> list:

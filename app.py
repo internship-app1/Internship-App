@@ -40,7 +40,7 @@ import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
 from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db
-from auth import require_user
+from auth import require_user, get_clerk_domain
 
 # Base directory of this file (used for templates/static/uploads paths)
 BASE_DIR = Path(__file__).resolve().parent
@@ -234,8 +234,15 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Security response headers
 # ---------------------------------------------------------------------------
-# Clerk production instance domain (derived from the pk_live_ publishable key).
-_CLERK_DOMAIN = "clerk.internshipmatcher.com"
+# Clerk instance domain — derived from the publishable key via the same
+# source of truth as the JWKS/JWT logic (auth.get_clerk_domain), so the CSP
+# can never drift from the domain auth actually uses. Falls back to the
+# known production domain when no key is configured (local dev).
+try:
+    _CLERK_DOMAIN = get_clerk_domain()
+except Exception as _clerk_domain_err:
+    _CLERK_DOMAIN = "clerk.internshipmatcher.com"
+    logger.warning(f"Could not derive Clerk domain ({_clerk_domain_err}); CSP using fallback {_CLERK_DOMAIN}")
 # Content-Security-Policy is shipped in Report-Only mode first so violations are
 # logged by the browser without breaking the app. Once the console is clean,
 # rename the header to "Content-Security-Policy" to enforce it.
