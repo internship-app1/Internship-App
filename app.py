@@ -276,7 +276,7 @@ async def add_security_headers(request: Request, call_next):
 # Session middleware: SECRET_KEY must be set in production. No insecure default.
 _SECRET_KEY = os.getenv("SECRET_KEY")
 if not _SECRET_KEY:
-    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+    if _ENVIRONMENT == "production":
         raise RuntimeError("SECRET_KEY environment variable must be set in production.")
     _SECRET_KEY = secrets.token_urlsafe(32)  # ephemeral key for local dev only
     logger.warning("SECRET_KEY not set — using an ephemeral dev key (sessions reset on restart).")
