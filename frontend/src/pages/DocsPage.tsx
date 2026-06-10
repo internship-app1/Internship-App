@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import {
+  getMcpClient,
+  getMcpMode,
+  getMcpSetup,
+  MCP_CLIENTS,
+  MCP_MODES,
+  McpClientId,
+  McpSetupMode,
+} from '../data/mcpSetup';
 
 /* ------------------------------------------------------------------ */
 /* Docs design system — Convex-style readability + Intercom-style      */
@@ -464,8 +473,19 @@ const NAV = [
 const DocsPage: React.FC = () => {
   const [active, setActive] = useState<string>('overview');
   const [lang, setLang] = useState<Lang>('curl');
+  const [mcpClient, setMcpClient] = useState<McpClientId>('codex');
+  const [mcpMode, setMcpMode] = useState<McpSetupMode>('uvx');
+  const [copiedSetup, setCopiedSetup] = useState(false);
   const origin = currentOrigin();
-  const hostedMcpUrl = `${origin}/mcp?key=<YOUR_API_KEY_HERE>`;
+  const mcpSetup = getMcpSetup(mcpClient, mcpMode, '<YOUR_API_KEY_HERE>', origin);
+  const selectedMcpClient = getMcpClient(mcpClient);
+  const selectedMcpMode = getMcpMode(mcpMode);
+
+  const copyMcpSetup = async () => {
+    await navigator.clipboard.writeText(mcpSetup.snippet);
+    setCopiedSetup(true);
+    setTimeout(() => setCopiedSetup(false), 1500);
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -626,73 +646,103 @@ const DocsPage: React.FC = () => {
                     Developer page
                   </Link>.
                 </>,
-                <>Choose hosted remote MCP for zero-install search/scoring, or local uvx MCP for the full apply agent.</>,
-                <>Paste the matching config into your client, restart/reload the agent, then run the smoke prompt below.</>,
+                <>Choose your client.</>,
+                <>Choose hosted discovery or full local agent.</>,
+                <>Copy this config.</>,
+                <>Restart your agent.</>,
+                <>Run the smoke prompt.</>,
               ]}
             />
-            <H3>Path A: Claude chat / hosted connector</H3>
-            <Para>
-              Use this for Claude chat custom connectors, ChatGPT-style chats, or
-              any service that can connect to a remote Streamable HTTP MCP server. It is
-              zero-install and exposes only <InlineCode>jobs_list</InlineCode>,{' '}
-              <InlineCode>job_get</InlineCode>, and <InlineCode>jobs_prefilter</InlineCode>.
-              That is enough for "find internships that fit me" testing. It cannot read
-              local resume files, store your encrypted profile, drive your browser, or
-              compile resumes locally.
-            </Para>
-            <CodeBlock title="Remote MCP URL for Claude chat connectors">{hostedMcpUrl}</CodeBlock>
-            <Para>
-              In a Claude / ChatGPT UI, look for "custom connector", "remote MCP", or
-              "Streamable HTTP MCP" and paste the URL above. If the service supports
-              custom headers, use <InlineCode>X-API-Key</InlineCode> instead of putting
-              the key in the URL. If it does not, the URL key is the temporary v1 path:
-              create a dedicated key and revoke it after testing.
-            </Para>
-            <Para>
-              <InlineCode>/mcp</InlineCode> is not a browser page. Opening it directly
-              may return a protocol error such as <InlineCode>406</InlineCode>; that is
-              expected. Test it from an MCP client or connector.
-            </Para>
 
-            <H3>Path B: coding agent on your machine</H3>
-            <Para>
-              Use this for Codex, Claude Code, Cursor, Windsurf, Cline, or any local AI
-              coding agent that can launch stdio MCP servers. This is the full product:
-              encrypted profile on your machine, resume parsing from local files, local
-              application tracker, resume compiling, and Playwright browser prefill. It is
-              the Supabase-style setup: paste one config block, no clone, no Docker.
-            </Para>
-            <CodeBlock title="Codex hosted smoke test">{`codex mcp add internship --url "${hostedMcpUrl}"
+            <div className="rounded-lg border border-lp-border overflow-hidden mb-6 max-w-[680px]">
+              <div className="grid sm:grid-cols-2 gap-3 p-4 bg-surface border-b border-lp-border">
+                <label className="block">
+                  <span className="block font-sans text-[12px] font-semibold uppercase tracking-wide text-text-tertiary mb-2">
+                    Choose your client
+                  </span>
+                  <select
+                    value={mcpClient}
+                    onChange={(e) => setMcpClient(e.target.value as McpClientId)}
+                    className="w-full bg-bg border border-lp-border rounded px-3 py-2 font-sans text-[13px] text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
+                  >
+                    {MCP_CLIENTS.map((client) => (
+                      <option key={client.id} value={client.id}>{client.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="block font-sans text-[12px] font-semibold uppercase tracking-wide text-text-tertiary mb-2">
+                    Choose hosted vs full local agent
+                  </span>
+                  <select
+                    value={mcpMode}
+                    onChange={(e) => setMcpMode(e.target.value as McpSetupMode)}
+                    className="w-full bg-bg border border-lp-border rounded px-3 py-2 font-sans text-[13px] text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
+                  >
+                    {MCP_MODES.map((mode) => (
+                      <option key={mode.id} value={mode.id}>{mode.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
-# Then open Codex and ask:
-Use the internship MCP server to list software internships posted in the last 3 days.`}</CodeBlock>
-            <CodeBlock title=".mcp.json for Claude Code / Cursor / Windsurf / Cline">{`{
-  "mcpServers": {
-    "internship": {
-      "command": "uvx",
-      "args": ["internship-mcp"],
-      "env": { "INTERNSHIP_API_KEY": "<YOUR_API_KEY_HERE>" }
-    },
-    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] }
-  }
-}`}</CodeBlock>
-            <CodeBlock title="~/.codex/config.toml for Codex">{`[mcp_servers.internship]
-command = "uvx"
-args = ["internship-mcp"]
-env = { INTERNSHIP_API_KEY = "<YOUR_API_KEY_HERE>" }
+              <div className="p-4 border-b border-lp-border">
+                <div className="font-sans text-[13px] font-semibold text-text-primary mb-1">
+                  {selectedMcpClient.label} / {selectedMcpMode.label}
+                </div>
+                <p className="font-sans text-[14px] leading-6 text-text-secondary mb-3">
+                  {mcpSetup.capability}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {mcpSetup.setupSteps.map((step) => (
+                    <span key={step} className="rounded-full border border-lp-border px-2.5 py-1 font-sans text-[12px] text-text-tertiary">
+                      {step}
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-[mcp_servers.playwright]
-command = "npx"
-args = ["@playwright/mcp@latest"]`}</CodeBlock>
+              <div className="relative">
+                <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-lp-border">
+                  <span className="font-mono text-[11px] text-text-tertiary">
+                    {mcpSetup.configPath}
+                  </span>
+                  <button
+                    onClick={copyMcpSetup}
+                    className="border border-lp-border rounded px-3 py-1 font-sans text-[12px] text-text-secondary hover:text-text-primary transition-colors bg-bg"
+                  >
+                    {copiedSetup ? 'Copied' : 'Copy this config'}
+                  </button>
+                </div>
+                <pre className="bg-surface overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed text-text-secondary">
+                  {mcpSetup.snippet}
+                </pre>
+              </div>
+
+              <div className="p-4 border-t border-lp-border bg-bg">
+                <div className="font-sans text-[13px] font-semibold text-text-primary mb-2">
+                  Run this smoke prompt
+                </div>
+                <pre className="whitespace-pre-wrap font-mono text-[12.5px] leading-relaxed text-text-secondary">
+                  {mcpSetup.smokePrompt}
+                </pre>
+              </div>
+            </div>
+
+            {mcpSetup.notes.map((note) => (
+              <Para key={note}>{note}</Para>
+            ))}
             <Para>
-              Codex users: if you already made a test directory with a{' '}
-              <InlineCode>.mcp.json</InlineCode>, keep it for Claude Code or Cursor-style
-              clients. Codex reads MCP servers from <InlineCode>~/.codex/config.toml</InlineCode>
-              or from <InlineCode>codex mcp add</InlineCode>. After editing the config,
-              restart Codex and ask it to use the internship tools.
+              Hosted Claude chat custom connector guidance is still the hosted path:
+              in Claude chat, look for "custom connector", "remote MCP", or "Streamable
+              HTTP MCP" and paste the hosted URL. Hosted mode only supports discovery
+              and scoring; use the full local agent to apply.
             </Para>
-            <CodeBlock title="Codex CLI alternative for the full local agent">{`codex mcp add internship --env INTERNSHIP_API_KEY=<YOUR_API_KEY_HERE> -- uvx internship-mcp
-codex mcp add playwright -- npx @playwright/mcp@latest`}</CodeBlock>
+            <Para>
+              Codex users should prefer <InlineCode>~/.codex/config.toml</InlineCode> or{' '}
+              <InlineCode>codex mcp add</InlineCode>. <InlineCode>.mcp.json</InlineCode>{' '}
+              is not the primary Codex setup path.
+            </Para>
             <CodeBlock title="Optional local TeX install for unlimited compiles">{`# macOS
 brew install --cask basictex && sudo tlmgr update --self && sudo tlmgr install enumitem titlesec parskip microtype
 
@@ -706,49 +756,11 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
               compiles or use the remote fallback capped at 15 compiles/week. If you skip
               TeX, the rest of the local agent still works.
             </Para>
-
-            <H3>Docker: advanced reproducible path</H3>
-            <Para>
-              Docker is still useful when you want pinned TeX Live, poppler, and OCR baked
-              into a single image. It is no longer the primary onboarding path.
-            </Para>
-            <CodeBlock title=".mcp.json — Docker advanced">{`{
-  "mcpServers": {
-    "internship": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm",
-               "-v", "internship-home:/root/.internship-agent",
-               "-e", "INTERNSHIP_API_KEY",
-               "ghcr.io/internship-app1/internship-mcp-server:latest"],
-      "env": { "INTERNSHIP_API_KEY": "<YOUR_API_KEY_HERE>" }
-    },
-    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] }
-  }
-}`}</CodeBlock>
             <Para>
               The Playwright MCP is a separate, official server your agent uses to
               prefill application forms in your browser — you always review and hit
               submit yourself.
             </Para>
-            <H3>First prompts</H3>
-            <Para>
-              Hosted cloud connectors should start with discovery because they only
-              expose the three job tools:
-            </Para>
-            <CodeBlock title="Hosted discovery prompt">{`Use Internship Matcher to list software internships posted in the last 3 days.
-Then score which ones fit a student with Python, React, and backend API experience.`}</CodeBlock>
-            <Para>
-              The full local agent gets the complete tool set: profile setup with encrypted
-              local storage, resume parsing, <InlineCode>jobs_list</InlineCode> /{' '}
-              <InlineCode>job_get</InlineCode> / <InlineCode>jobs_prefilter</InlineCode>,
-              local PDF compilation with widow diagnostics, application-packet assembly
-              with an authentic-answer guardrail, and a local application tracker. A
-              good first prompt for Codex or any coding agent:
-            </Para>
-            <CodeBlock title="Full apply-agent prompt">{`Set up my internship applicant profile. Then parse my resume at /absolute/path/to/resume.pdf,
-extract my skills, find postings from the last 3 days that fit me, tailor my resume
-for the best match, build the application packet, and prefill the form for my review.
-Stop before submitting anything.`}</CodeBlock>
             <H3>Platform guide</H3>
             <Para>
               Cloud chat services that support remote MCP should use Path A. Local coding

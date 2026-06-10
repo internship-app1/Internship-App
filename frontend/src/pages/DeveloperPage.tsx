@@ -3,6 +3,15 @@ import { useAuth, SignInButton } from '@clerk/react';
 import Header from '../components/Header';
 import { API_BASE_URL } from '../lib/api';
 import { useUsage } from '../hooks/useUsage';
+import {
+  getMcpClient,
+  getMcpMode,
+  getMcpSetup,
+  MCP_CLIENTS,
+  MCP_MODES,
+  McpClientId,
+  McpSetupMode,
+} from '../data/mcpSetup';
 
 interface ApiKeyMeta {
   id: number;
@@ -13,100 +22,8 @@ interface ApiKeyMeta {
   revoked: boolean;
 }
 
-type ClientId = 'claude-code' | 'cursor' | 'codex' | 'windsurf' | 'cline';
-type Transport = 'hosted' | 'uvx' | 'docker';
-
-const CLIENTS: { id: ClientId; label: string; configPath: string }[] = [
-  { id: 'claude-code', label: 'Claude Code', configPath: '.mcp.json (project root)' },
-  { id: 'cursor', label: 'Cursor', configPath: '~/.cursor/mcp.json' },
-  { id: 'codex', label: 'Codex', configPath: '~/.codex/config.toml (mcp_servers)' },
-  { id: 'windsurf', label: 'Windsurf', configPath: '~/.codeium/windsurf/mcp_config.json' },
-  { id: 'cline', label: 'Cline', configPath: 'cline_mcp_settings.json' },
-];
-
 function currentOrigin(): string {
   return typeof window === 'undefined' ? 'https://internshipmatcher.com' : window.location.origin;
-}
-
-function codexToml(transport: Transport, displayKey: string): string {
-  if (transport === 'docker') {
-    return [
-      '[mcp_servers.internship]',
-      'command = "docker"',
-      'args = ["run", "-i", "--rm", "-v", "internship-home:/root/.internship-agent", "-e", "INTERNSHIP_API_KEY", "ghcr.io/internship-app1/internship-mcp-server:latest"]',
-      `env = { INTERNSHIP_API_KEY = "${displayKey}" }`,
-      '',
-      '[mcp_servers.playwright]',
-      'command = "npx"',
-      'args = ["@playwright/mcp@latest"]',
-    ].join('\n');
-  }
-  return [
-    '[mcp_servers.internship]',
-    'command = "uvx"',
-    'args = ["internship-mcp"]',
-    `env = { INTERNSHIP_API_KEY = "${displayKey}" }`,
-    '',
-    '[mcp_servers.playwright]',
-    'command = "npx"',
-    'args = ["@playwright/mcp@latest"]',
-  ].join('\n');
-}
-
-function configSnippet(client: ClientId, transport: Transport, key: string, origin: string): string {
-  const displayKey = key || '<YOUR_API_KEY_HERE>';
-  if (transport === 'hosted') {
-    const mcpUrl = `${origin}/mcp?key=${displayKey}`;
-    return [
-      '# Zero install — job search & fit scoring only (applying needs the full agent).',
-      '# Cloud/chat clients: Settings → Connectors → Add custom connector → paste this URL:',
-      mcpUrl,
-      '',
-      '# Codex CLI / any client with Streamable HTTP MCP support:',
-      `codex mcp add internship --url "${mcpUrl}"`,
-      '',
-      '# Claude Code CLI:',
-      `claude mcp add -t http internship "${mcpUrl}"`,
-    ].join('\n');
-  }
-  if (client === 'codex') {
-    return codexToml(transport, displayKey);
-  }
-  if (transport === 'docker') {
-    return JSON.stringify(
-      {
-        mcpServers: {
-          internship: {
-            command: 'docker',
-            args: [
-              'run', '-i', '--rm',
-              '-v', 'internship-home:/root/.internship-agent',
-              '-e', 'INTERNSHIP_API_KEY',
-              'ghcr.io/internship-app1/internship-mcp-server:latest',
-            ],
-            env: { INTERNSHIP_API_KEY: displayKey },
-          },
-          playwright: { command: 'npx', args: ['@playwright/mcp@latest'] },
-        },
-      },
-      null,
-      2,
-    );
-  }
-  return JSON.stringify(
-    {
-      mcpServers: {
-        internship: {
-          command: 'uvx',
-          args: ['internship-mcp'],
-          env: { INTERNSHIP_API_KEY: displayKey },
-        },
-        playwright: { command: 'npx', args: ['@playwright/mcp@latest'] },
-      },
-    },
-    null,
-    2,
-  );
 }
 
 function formatDate(iso: string | null): string {
@@ -127,8 +44,8 @@ const DeveloperPage: React.FC = () => {
   const [newKeyName, setNewKeyName] = useState('');
   const [freshKey, setFreshKey] = useState('');
   const [copied, setCopied] = useState(false);
-  const [client, setClient] = useState<ClientId>('claude-code');
-  const [transport, setTransport] = useState<Transport>('uvx');
+  const [client, setClient] = useState<McpClientId>('codex');
+  const [mode, setMode] = useState<McpSetupMode>('uvx');
 
   const fetchKeys = useCallback(async () => {
     if (!isSignedIn) return;
@@ -233,8 +150,9 @@ const DeveloperPage: React.FC = () => {
   }
 
   const origin = currentOrigin();
-  const snippet = configSnippet(client, transport, freshKey, origin);
-  const selectedClient = CLIENTS.find((c) => c.id === client)!;
+  const setup = getMcpSetup(client, mode, freshKey, origin);
+  const selectedClient = getMcpClient(client);
+  const selectedMode = getMcpMode(mode);
 
   return (
     <div className="min-h-screen bg-bg text-text-primary">
@@ -380,82 +298,80 @@ const DeveloperPage: React.FC = () => {
             Connect your agent
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-3">
-            {CLIENTS.map((c) => (
+          <div className="grid sm:grid-cols-2 gap-3 mb-4">
+            <label className="block">
+              <span className="block font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
+                Client
+              </span>
+              <select
+                value={client}
+                onChange={(e) => setClient(e.target.value as McpClientId)}
+                className="w-full bg-surface border border-lp-border px-3 py-2.5 font-mono text-xs text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
+              >
+                {MCP_CLIENTS.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="block font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
+                Mode
+              </span>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as McpSetupMode)}
+                className="w-full bg-surface border border-lp-border px-3 py-2.5 font-mono text-xs text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
+              >
+                {MCP_MODES.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {MCP_MODES.map((m) => (
               <button
-                key={c.id}
-                onClick={() => setClient(c.id)}
+                key={m.id}
+                onClick={() => setMode(m.id)}
                 className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                  client === c.id
+                  mode === m.id
                     ? 'border-text-primary text-text-primary'
                     : 'border-lp-border text-text-tertiary hover:text-text-secondary'
                 }`}
               >
-                {c.label}
+                {m.label}
               </button>
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-3">
-            <button
-              onClick={() => setTransport('hosted')}
-              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                transport === 'hosted'
-                  ? 'border-text-primary text-text-primary'
-                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              Hosted · zero install
-            </button>
-            <button
-              onClick={() => setTransport('uvx')}
-              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                transport === 'uvx'
-                  ? 'border-text-primary text-text-primary'
-                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              uvx · full agent (recommended)
-            </button>
-            <button
-              onClick={() => setTransport('docker')}
-              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                transport === 'docker'
-                  ? 'border-text-primary text-text-primary'
-                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              Docker · advanced
-            </button>
+          <div className="border border-lp-border bg-surface p-4 mb-3">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
+              {selectedClient.label} / {selectedMode.label}
+            </div>
+            <p className="font-mono text-[11px] leading-relaxed text-text-secondary mb-2">
+              {setup.capability}
+            </p>
+            <p className="font-mono text-[10px] text-text-tertiary">
+              {mode === 'hosted' ? 'Use this command or config in your client.' : (
+                <>Save to <span className="text-text-secondary">{setup.configPath}</span>.</>
+              )}
+            </p>
           </div>
 
           <p className="font-mono text-[10px] text-text-tertiary mb-2">
-            {transport === 'hosted' ? (
-              <>
-                Zero-install discovery endpoint for cloud/chat connectors and HTTP MCP clients.
-                It exposes job search and scoring only; use uvx for resume parsing, local profile
-                storage, resume compile, packets, and browser prefill.
-                The hosted URL is <span className="text-text-secondary">{origin}/mcp?key=&lt;YOUR_API_KEY_HERE&gt;</span>.
-              </>
-            ) : (
-              <>
-                Save to <span className="text-text-secondary">{selectedClient.configPath}</span>
-                {transport === 'uvx' && (
-                  <>. On first run, the agent will ask whether you want unlimited local compiles by installing TeX or the 15/week remote fallback.</>
-                )}
-              </>
-            )}
+            {setup.notes.join(' ')}
           </p>
 
           <div className="relative border border-lp-border bg-surface">
             <button
-              onClick={() => copySnippet(snippet)}
+              onClick={() => copySnippet(setup.snippet)}
               className="absolute top-3 right-3 border border-lp-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-text-secondary hover:text-text-primary transition-colors bg-bg"
             >
               {copied ? 'Copied' : 'Copy'}
             </button>
             <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-text-secondary">
-              {snippet}
+              {setup.snippet}
             </pre>
           </div>
           {!freshKey && (
@@ -463,7 +379,7 @@ const DeveloperPage: React.FC = () => {
               Generate a key above and it will be filled into the snippet automatically.
             </p>
           )}
-          {client === 'codex' && transport !== 'hosted' && (
+          {client === 'codex' && mode !== 'hosted' && (
             <p className="font-mono text-[10px] text-text-tertiary mt-2">
               Codex uses <span className="text-text-secondary">~/.codex/config.toml</span>,
               not a project <span className="text-text-secondary">.mcp.json</span>. Restart
@@ -471,7 +387,7 @@ const DeveloperPage: React.FC = () => {
               from the full docs.
             </p>
           )}
-          {transport === 'hosted' && (
+          {mode === 'hosted' && (
             <p className="font-mono text-[10px] text-text-tertiary mt-2">
               Keep hosted keys disposable. If your connector supports headers, prefer
               <span className="text-text-secondary"> X-API-Key</span>; otherwise use the URL
