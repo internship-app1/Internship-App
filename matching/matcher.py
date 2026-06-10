@@ -807,41 +807,44 @@ def intelligent_prefilter_jobs(jobs, resume_skills, resume_metadata, target_coun
     years_experience = resume_metadata.get('years_of_experience', 0)
     is_student = resume_metadata.get('is_student', True)
 
-    filtered_jobs = []
-    for job in jobs:
-        job_title = job.get('title', '').lower()
-        job_description = job.get('description', '').lower()
-
-        # Filter out senior/inappropriate roles
-        senior_indicators = ['senior', 'lead', 'principal', 'staff', 'architect', 'manager', 'director']
-        if any(indicator in job_title for indicator in senior_indicators):
-            if experience_level in ['student', 'entry_level'] or years_experience < 3:
-                continue  # Skip senior roles for junior candidates
-
-        # Filter out high experience requirements
-        import re
-        exp_patterns = [r'(\d+)\+?\s*years?\s*(?:of\s+)?experience', r'(\d+)\+?\s*years?\s*(?:of\s+)?(?:software|development|programming)']
-        skip_job = False
-        for pattern in exp_patterns:
-            matches = re.findall(pattern, f"{job_title} {job_description}")
-            for match in matches:
-                try:
-                    required_years = int(match)
-                    if required_years >= 5 and years_experience < 3:
-                        skip_job = True
-                        break
-                except ValueError:
-                    continue
-            if skip_job:
-                break
-
-        if skip_job:
-            continue
-
-        filtered_jobs.append(job)
+    filtered_jobs = [
+        job for job in jobs
+        if _passes_hard_filters(job, experience_level, years_experience)
+    ]
 
     # Return all filtered jobs (no hardcoded scoring)
     return filtered_jobs[:target_count]
+
+
+def _passes_hard_filters(job, experience_level, years_experience) -> bool:
+    """Stage 1A hard rules: senior-role and years-required exclusions.
+
+    Shared by intelligent_prefilter_jobs and the LLM-free prefilter_and_score
+    core — keep behaviour identical for both callers.
+    """
+    job_title = job.get('title', '').lower()
+    job_description = job.get('description', '').lower()
+
+    # Filter out senior/inappropriate roles
+    senior_indicators = ['senior', 'lead', 'principal', 'staff', 'architect', 'manager', 'director']
+    if any(indicator in job_title for indicator in senior_indicators):
+        if experience_level in ['student', 'entry_level'] or years_experience < 3:
+            return False  # Skip senior roles for junior candidates
+
+    # Filter out high experience requirements
+    import re
+    exp_patterns = [r'(\d+)\+?\s*years?\s*(?:of\s+)?experience', r'(\d+)\+?\s*years?\s*(?:of\s+)?(?:software|development|programming)']
+    for pattern in exp_patterns:
+        matches = re.findall(pattern, f"{job_title} {job_description}")
+        for match in matches:
+            try:
+                required_years = int(match)
+                if required_years >= 5 and years_experience < 3:
+                    return False
+            except ValueError:
+                continue
+
+    return True
 
 
 def batch_analyze_jobs_with_llm(filtered_jobs, resume_skills, resume_text, resume_metadata, max_jobs_per_batch=None, use_parallel=True, model="claude-sonnet-4-5-20250929", enable_caching=True, progress_callback=None):
@@ -1969,3 +1972,81 @@ def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, prog
 
 
  
+
+# ---------------------------------------------------------------------------
+# Deterministic prefilter + scoring core for the MCP /api/v1 surface.
+# NO LLM CALLS — the calling agent does all reasoning over these scores.
+# ---------------------------------------------------------------------------
+
+def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
+    """LLM-free prefilter and scoring used by POST /api/v1/jobs/prefilter.
+
+    Combines:
+      - intelligent_prefilter_jobs hard rules (senior-role / years-required filters)
+      - metadata_matcher.calculate_metadata_match_score (weighted metadata)
+      - simple_keyword_scoring (fuzzy required-skills coverage)
+
+    resume_profile is the small, PII-free object the MCP sends:
+      {skills, experience_level, years_of_experience, location,
+       willing_to_relocate, remote_ok}
+
+    Returns one dict per job (hard-filtered jobs included with
+    hard_filter_passed=False so the agent can see what was excluded), each with
+    keyword_score / metadata_score / combined_score / skill_matches / skill_gaps.
+    """
+    from matching.metadata_matcher import (
+        calculate_metadata_match_score,
+        extract_job_metadata,
+    )
+
+    skills = resume_profile.get("skills", []) or []
+    experience_level = resume_profile.get("experience_level", "student")
+    years = resume_profile.get("years_of_experience", 0) or 0
+
+    # Map the profile enum (student|entry_level|experienced) onto the levels
+    # used by the metadata compatibility table and the hard-rule filter.
+    _LEVEL_MAP = {"student": "student", "entry_level": "junior", "experienced": "mid"}
+    resume_metadata = {
+        "experience_level": _LEVEL_MAP.get(experience_level, "student"),
+        "years_of_experience": years,
+        "is_student": experience_level == "student",
+        "location_preferences": (
+            [resume_profile["location"]] if resume_profile.get("location") else []
+        ),
+        "industry_preferences": [],
+        "remote_preference": bool(resume_profile.get("remote_ok", False)),
+        "relocation_willingness": bool(resume_profile.get("willing_to_relocate", False)),
+        "citizenship": "unknown",
+    }
+
+    results = []
+    for job in jobs:
+        keyword_score = simple_keyword_scoring(job, skills)
+        job_metadata = extract_job_metadata(job)
+        metadata_score, _desc = calculate_metadata_match_score(resume_metadata, job_metadata)
+        combined_score = round(keyword_score * 0.7 + metadata_score * 0.3)
+
+        job_skills = job.get("required_skills", []) or []
+        skill_matches = [
+            js for js in job_skills
+            if any(fuzzy_skill_match(rs, js) for rs in skills)
+        ]
+        skill_gaps = [js for js in job_skills if js not in skill_matches]
+
+        results.append({
+            "job_hash": job.get("job_hash"),
+            "company": job.get("company"),
+            "title": job.get("title"),
+            "location": job.get("location"),
+            "apply_link": job.get("apply_link"),
+            "keyword_score": keyword_score,
+            "metadata_score": metadata_score,
+            "combined_score": combined_score,
+            "skill_matches": skill_matches,
+            "skill_gaps": skill_gaps,
+            "hard_filter_passed": _passes_hard_filters(job, experience_level, years),
+            "description_preview": (job.get("description") or "")[:500],
+        })
+
+    results.sort(key=lambda r: (r["hard_filter_passed"], r["combined_score"]), reverse=True)
+    return results
