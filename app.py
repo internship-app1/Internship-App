@@ -251,6 +251,16 @@ else:
 UPLOAD_FOLDER = BASE_DIR / "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# ---------------------------------------------------------------------------
+# MCP /api/v1 surface (per-user API keys) + /developer key CRUD (Clerk auth).
+# v1_app is a sub-app so its OpenAPI contract is published at
+# /api/v1/openapi.json even though the main app's docs are disabled.
+# NO Claude calls live behind these routes — see mcp_api.py.
+# ---------------------------------------------------------------------------
+from mcp_api import v1_app as _mcp_v1_app, developer_router as _developer_router
+app.mount("/api/v1", _mcp_v1_app)
+app.include_router(_developer_router)
+
 
 
 async def daily_cache_refresh_task():
