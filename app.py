@@ -59,6 +59,16 @@ load_dotenv()
 TRACK_USAGE = os.getenv("TRACK_USAGE", "true").strip().lower() == "true"
 logger.info(f"Usage tracking (quotas + rate limits): {'ENABLED' if TRACK_USAGE else 'DISABLED'}")
 
+# Hosted MCP endpoint (zero-install tier, /mcp). The mcp SDK needs Python
+# >= 3.10; the dev venv is 3.9, so the import is guarded — the app boots
+# without it and simply doesn't mount /mcp. Production (3.11) serves it.
+try:
+    import mcp_remote as _mcp_remote
+    logger.info("Hosted MCP endpoint available — will mount at /mcp")
+except ImportError as _mcp_err:
+    _mcp_remote = None
+    logger.warning(f"Hosted MCP endpoint disabled (mcp SDK unavailable): {_mcp_err}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage startup and shutdown with a proper lifespan context."""
@@ -144,7 +154,13 @@ async def lifespan(app: FastAPI):
     refresh_task = asyncio.create_task(daily_cache_refresh_task())
     logger.info("Daily cache refresh scheduler started")
 
-    yield  # server is running
+    if _mcp_remote is not None:
+        # FastAPI does not run a mounted sub-app's lifespan — the MCP
+        # session manager must be started from the parent lifespan.
+        async with _mcp_remote.remote_mcp.session_manager.run():
+            yield  # server is running
+    else:
+        yield  # server is running
 
     # ---- shutdown ----
     refresh_task.cancel()
@@ -260,6 +276,26 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 from mcp_api import v1_app as _mcp_v1_app, developer_router as _developer_router
 app.mount("/api/v1", _mcp_v1_app)
 app.include_router(_developer_router)
+
+# Hosted MCP (zero-install tier): /mcp — guarded above for Python < 3.10
+if _mcp_remote is not None:
+    app.mount("/mcp", _mcp_remote.streamable_app())
+
+    class _McpSlashRewrite:
+        """Map /mcp -> /mcp/ at the ASGI layer. Starlette's Mount answers the
+        bare path with a 307, but MCP clients POST and won't follow it —
+        users paste '/mcp' without a trailing slash."""
+        def __init__(self, app):
+            self.app = app
+
+        async def __call__(self, scope, receive, send):
+            if scope.get("type") == "http" and scope.get("path") == "/mcp":
+                scope = dict(scope)
+                scope["path"] = "/mcp/"
+                scope["raw_path"] = b"/mcp/"
+            await self.app(scope, receive, send)
+
+    app.add_middleware(_McpSlashRewrite)
 
 
 

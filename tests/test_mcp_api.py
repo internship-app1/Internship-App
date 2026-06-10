@@ -272,6 +272,25 @@ class TestPrefilterAndScore:
 
 
 # ---------------------------------------------------------------------------
+# Hosted MCP mount (/mcp) — guarded for Python < 3.10
+# ---------------------------------------------------------------------------
+
+class TestHostedMcpGuard:
+    def test_app_boots_with_or_without_mcp_sdk(self, client):
+        """On 3.9 venvs the mcp SDK is absent: the app must boot with /mcp
+        unmounted. On >=3.10 with mcp installed, /mcp must be mounted."""
+        import app as appmod
+
+        mounted = any(getattr(r, "path", "") == "/mcp" for r in appmod.app.routes)
+        if appmod._mcp_remote is None:
+            assert not mounted
+            # catch-all serves the SPA shell instead of an MCP error
+            assert client.get("/api/v1/openapi.json").status_code == 200
+        else:
+            assert mounted
+
+
+# ---------------------------------------------------------------------------
 # Weekly remote-compile quota (15/week per user, API-key plane)
 # ---------------------------------------------------------------------------
 
