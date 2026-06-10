@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import CodeSnippet from '../components/CodeSnippet';
 import McpSetupDropdown from '../components/McpSetupDropdown';
 import { useResolvedTheme } from '../components/theme-provider';
 import {
@@ -50,23 +51,12 @@ const SubLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const CodeBlock: React.FC<{ children: string; title?: string }> = ({ children, title }) => (
-  <div className="docs-code-panel rounded-lg border overflow-hidden mb-5 max-w-[680px]">
-    {title && (
-      <div className="docs-code-header px-4 py-2 border-b font-mono text-[11px]">
-        {title}
-      </div>
-    )}
-    <div className="overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap">
-      {children.split('\n').map((line, index) => (
-        <div key={index} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4">
-          <span className="select-none text-right text-[11px] leading-6 opacity-70">
-            {index + 1}
-          </span>
-          <span>{line || ' '}</span>
-        </div>
-      ))}
-    </div>
-  </div>
+  <CodeSnippet
+    title={title ?? 'Code snippet'}
+    subtitle="Documentation"
+    code={children}
+    className="mb-5 max-w-[680px]"
+  />
 );
 
 const InlineCode: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -106,9 +96,11 @@ interface RequestSampleProps {
 }
 
 const RequestSample: React.FC<RequestSampleProps> = ({ lang, onLangChange, samples }) => (
-  <div className="docs-code-panel rounded-lg border overflow-hidden mb-5 max-w-[680px]">
-    <div className="docs-code-header flex items-center justify-between px-4 py-2 border-b">
-      <span className="font-mono text-[11px]">Example request</span>
+  <div className="mb-5 max-w-[680px]">
+    <div className="flex items-center justify-between gap-3 mb-2">
+      <div className="font-sans text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+        Example request
+      </div>
       <select
         value={lang}
         onChange={(e) => onLangChange(e.target.value as Lang)}
@@ -120,16 +112,12 @@ const RequestSample: React.FC<RequestSampleProps> = ({ lang, onLangChange, sampl
         ))}
       </select>
     </div>
-    <div className="overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap">
-      {samples[lang].split('\n').map((line, index) => (
-        <div key={index} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4">
-          <span className="select-none text-right text-[11px] leading-6 opacity-70">
-            {index + 1}
-          </span>
-          <span>{line || ' '}</span>
-        </div>
-      ))}
-    </div>
+    <CodeSnippet
+      title="Request"
+      subtitle={LANG_LABELS[lang]}
+      code={samples[lang]}
+      className="max-w-[680px]"
+    />
   </div>
 );
 
@@ -510,8 +498,8 @@ const DocsPage: React.FC = () => {
   const selectedMcpClient = getMcpClient(mcpClient);
   const selectedMcpMode = getMcpMode(mcpMode);
   const docsThemeVars = {
-    '--lp-bg': resolvedTheme === 'dark' ? '#050608' : '#ffffff',
-    '--lp-surface': resolvedTheme === 'dark' ? '#0f1724' : '#f6f8fb',
+    '--lp-bg': resolvedTheme === 'dark' ? '#000000' : '#ffffff',
+    '--lp-surface': resolvedTheme === 'dark' ? '#050608' : '#ffffff',
     '--lp-text-primary': resolvedTheme === 'dark' ? '#f8fafc' : '#111827',
     '--lp-text-secondary': resolvedTheme === 'dark' ? '#cbd5e1' : '#374151',
     '--lp-text-tertiary': resolvedTheme === 'dark' ? '#94a3b8' : '#6b7280',

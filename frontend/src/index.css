@@ -17,6 +17,8 @@
     --lp-ia-hover:      #3D3930;
     --lp-ia-subtle:     rgba(31, 27, 22, 0.08);
     --lp-ia-pill:       #5A5247;
+    --code-snippet-text: #dbe7f5;
+    --code-snippet-muted: #8a98ab;
     /* Brand Colors */
     --brand-primary:       263 70% 58%;
     --brand-primary-light: 263 70% 70%;
@@ -63,6 +65,8 @@
     --lp-ia-hover:      #A5B4FC;
     --lp-ia-subtle:     rgba(129, 140, 248, 0.12);
     --lp-ia-pill:       #C7D2FE;
+    --code-snippet-text: #dbe7f5;
+    --code-snippet-muted: #8a98ab;
 
     --background:          240 10% 4%;
     --foreground:          0 0% 98%;
@@ -103,6 +107,8 @@
     --docs-code-border: rgba(148, 163, 184, 0.24);
     --docs-code-text: #dbe7f5;
     --docs-code-muted: #8a98ab;
+    --code-snippet-text: #dbe7f5;
+    --code-snippet-muted: #8a98ab;
   }
 
   .docs-page .font-sans {
@@ -127,22 +133,30 @@
     color: var(--docs-code-text) !important;
   }
 
-  .code-panel {
+  .code-snippet {
     background: #0b1220;
     border-color: rgba(148, 163, 184, 0.24);
     color: #dbe7f5;
+    border-radius: 0.9rem;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+    overflow: hidden;
   }
 
-  .code-panel-header {
+  .code-snippet__chrome {
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(148, 163, 184, 0.24);
     color: #8a98ab;
   }
 
-  .code-inline {
+  .code-snippet__body {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 32%);
+  }
+
+  .code-inline, .docs-inline-code {
     background: #0b1220;
     border-color: rgba(148, 163, 184, 0.24);
     color: #dbe7f5;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 }
 

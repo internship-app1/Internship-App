@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth, SignInButton } from '@clerk/react';
 import Header from '../components/Header';
+import CodeSnippet from '../components/CodeSnippet';
 import McpSetupDropdown from '../components/McpSetupDropdown';
 import { API_BASE_URL } from '../lib/api';
 import { useUsage } from '../hooks/useUsage';
@@ -360,17 +361,13 @@ const DeveloperPage: React.FC = () => {
             {setup.notes.join(' ')}
           </p>
 
-          <div className="relative code-panel border">
-            <button
-              onClick={() => copySnippet(setup.snippet)}
-              className="absolute top-3 right-3 border code-panel-header px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors"
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-            <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed">
-              {setup.snippet}
-            </pre>
-          </div>
+          <CodeSnippet
+            title={client === 'codex' ? '~/.codex/config.toml' : 'MCP configuration'}
+            subtitle={selectedMode.label}
+            code={setup.snippet}
+            copyText={setup.snippet}
+            className="mb-3"
+          />
           {!freshKey && (
             <p className="font-mono text-[10px] text-text-tertiary mt-2">
               Generate a key above and it will be filled into the snippet automatically.
@@ -378,16 +375,16 @@ const DeveloperPage: React.FC = () => {
           )}
           {client === 'codex' && mode !== 'hosted' && (
             <p className="font-mono text-[10px] text-text-tertiary mt-2">
-              Codex uses <span className="text-text-secondary">~/.codex/config.toml</span>,
-              not a project <span className="text-text-secondary">.mcp.json</span>. Restart
-              Codex after saving, or use <span className="text-text-secondary">codex mcp add</span>
+              Codex uses <code className="code-inline text-text-secondary">~/.codex/config.toml</code>,
+              not a project <code className="code-inline text-text-secondary">.mcp.json</code>. Restart
+              Codex after saving, or use <code className="code-inline text-text-secondary">codex mcp add</code>
               from the full docs.
             </p>
           )}
           {mode === 'hosted' && (
             <p className="font-mono text-[10px] text-text-tertiary mt-2">
               Keep hosted keys disposable. If your connector supports headers, prefer
-              <span className="text-text-secondary"> X-API-Key</span>; otherwise use the URL
+              <code className="code-inline text-text-secondary"> X-API-Key</code>; otherwise use the URL
               key for testing and revoke it when done.
             </p>
           )}
