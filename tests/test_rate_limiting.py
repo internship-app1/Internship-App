@@ -88,25 +88,45 @@ class TestUserHistoryRateLimit:
 
 
 # ---------------------------------------------------------------------------
-# /api/match — 3/10minutes, no auth required
+# /api/match — 3/10minutes, requires auth
 # ---------------------------------------------------------------------------
 
 class TestMatchRateLimit:
     @pytest.fixture(autouse=True)
     def setup(self, api_client, reset_rate_limiter):
+        from app import app
+        from auth import require_user
+        app.dependency_overrides[require_user] = lambda: "test-user-id"
         self.client = api_client
+        yield
+        app.dependency_overrides.pop(require_user, None)
+
+    def test_requires_auth(self):
+        """Unauthenticated POST to /api/match must be rejected with 401."""
+        from app import app
+        from auth import require_user
+        # Drop the override for this test so the real dependency runs.
+        app.dependency_overrides.pop(require_user, None)
+        resp = self.client.post(
+            "/api/match",
+            files={"resume": ("test.pdf", io.BytesIO(fake_pdf()), "application/pdf")},
+            data={"think_deeper": "false"},
+        )
+        assert resp.status_code == 401, f"Expected 401 without auth, got {resp.status_code}"
 
     def test_allows_3_requests_then_rejects(self):
-        """Fourth POST to /api/match within 10 minutes must be 429."""
+        """Fourth authenticated POST to /api/match within 10 minutes must be 429."""
         # The rate limiter fires before the handler body runs, so even if the
         # first 3 requests return a non-200 (bad PDF parse, etc.) they still
         # consume quota. We just need the 4th to be 429.
+        headers = auth_headers("test-user-id")
         with patch("app.parse_resume", return_value={"skills": [], "raw_text": ""}), \
              patch("app.analyze_and_match_single_call", return_value=[]):
             statuses = []
             for _ in range(4):
                 resp = self.client.post(
                     "/api/match",
+                    headers=headers,
                     files={"resume": ("test.pdf", io.BytesIO(fake_pdf()), "application/pdf")},
                     data={"think_deeper": "false"},
                 )
