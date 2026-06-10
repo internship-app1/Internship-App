@@ -145,8 +145,9 @@ uvicorn app:app --host 0.0.0.0 --port $PORT
 | GET | `/api/v1/jobs` | MCP: list active jobs (X-API-Key, 120/h) |
 | GET | `/api/v1/jobs/{hash}` | MCP: full untruncated JD (X-API-Key, 120/h) |
 | POST | `/api/v1/jobs/prefilter` | MCP: deterministic keyword+metadata scoring (X-API-Key, 120/h) |
-| POST | `/api/v1/resume/compile` | MCP: fallback pdflatex compile (60/day, 3 concurrent, 15/week quota) |
+| POST | `/api/v1/resume/compile` | MCP: fallback pdflatex compile (15/week, 3 concurrent) |
 | GET | `/api/v1/openapi.json` | Published MCP contract (sub-app OpenAPI; main-app docs stay disabled) |
+| POST | `/mcp` | Hosted MCP discovery tier (streamable HTTP, Python ≥3.10 only): jobs_list/job_get/jobs_prefilter |
 | GET | `/{full_path}` | Catch-all → serves React SPA `index.html` |
 
 **`/api/v1` is the MCP surface** (see `mcp_api.py` and the workspace CLAUDE.md one level
@@ -456,6 +457,20 @@ This section tracks architectural decisions and non-obvious changes made during 
   (key_prefix-attributed). Checked BEFORE compiling; recorded only on success; cache
   hits free. Surfaced on /usage (own card, labelled API-key) + /developer (usage strip).
   Deliberately separate from the tailor quota so agent usage ≠ web-app usage.
+
+**Hosted MCP discovery tier (hosted-mcp branch)**
+- New `/mcp` mount (`mcp_remote.py`) serves streamable HTTP for zero-install clients.
+  It intentionally exposes only stateless discovery tools: `jobs_list`, `job_get`, and
+  `jobs_prefilter` plus a resource that points users to the full local agent.
+- No profile vault, resume parsing, remote compile, packets, tracker, or Playwright on
+  hosted MCP. This keeps PII and heavy work off our servers.
+- Auth accepts `X-API-Key` or `?key=` for claude.ai custom connector compatibility.
+  Header wins when both are present. OAuth is the v2 replacement.
+- The `mcp` SDK requires Python ≥3.10. `app.py` guards the import so the local 3.9 venv
+  still boots and skips `/mcp`; production 3.11 mounts it. Keep this guard unless local
+  dev/CI moves to 3.11.
+- Starlette redirects `/mcp` → `/mcp/` for mounted apps; MCP clients POST and may not
+  follow 307s. The `_McpSlashRewrite` middleware rewrites the bare path in-process.
 
 **Testing footguns (recurring)**
 - App.test.tsx's Route mock renders EVERY route's element — stub each new page in the
