@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth, SignInButton } from '@clerk/react';
 import Header from '../components/Header';
+import McpSetupDropdown from '../components/McpSetupDropdown';
 import { API_BASE_URL } from '../lib/api';
 import { useUsage } from '../hooks/useUsage';
 import {
@@ -33,6 +34,18 @@ function formatDate(iso: string | null): string {
     month: 'short', day: 'numeric', year: 'numeric',
   });
 }
+
+const CLIENT_DROPDOWN_ITEMS = MCP_CLIENTS.map((client) => ({
+  ...client,
+  group: 'AI agent CLI',
+  icon: client.label.split(' ').map((word) => word[0]).join('').slice(0, 2),
+}));
+
+const MODE_DROPDOWN_ITEMS = MCP_MODES.map((mode) => ({
+  ...mode,
+  group: 'Setup path',
+  icon: mode.shortLabel.slice(0, 2),
+}));
 
 const DeveloperPage: React.FC = () => {
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -298,35 +311,19 @@ const DeveloperPage: React.FC = () => {
             Connect your agent
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            <label className="block">
-              <span className="block font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
-                Client
-              </span>
-              <select
-                value={client}
-                onChange={(e) => setClient(e.target.value as McpClientId)}
-                className="w-full bg-surface border border-lp-border px-3 py-2.5 font-mono text-xs text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
-              >
-                {MCP_CLIENTS.map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="block font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
-                Mode
-              </span>
-              <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as McpSetupMode)}
-                className="w-full bg-surface border border-lp-border px-3 py-2.5 font-mono text-xs text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
-              >
-                {MCP_MODES.map((m) => (
-                  <option key={m.id} value={m.id}>{m.label}</option>
-                ))}
-              </select>
-            </label>
+          <div className="flex flex-wrap gap-3 mb-4">
+            <McpSetupDropdown
+              label="Client"
+              value={client}
+              items={CLIENT_DROPDOWN_ITEMS}
+              onChange={setClient}
+            />
+            <McpSetupDropdown
+              label="Mode"
+              value={mode}
+              items={MODE_DROPDOWN_ITEMS}
+              onChange={setMode}
+            />
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">

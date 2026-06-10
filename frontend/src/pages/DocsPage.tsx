@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import McpSetupDropdown from '../components/McpSetupDropdown';
 import {
   getMcpClient,
   getMcpMode,
@@ -470,6 +471,18 @@ const NAV = [
   ['errors', 'Errors & Rate Limits'],
 ] as const;
 
+const CLIENT_DROPDOWN_ITEMS = MCP_CLIENTS.map((client) => ({
+  ...client,
+  group: 'AI agent CLI',
+  icon: client.label.split(' ').map((word) => word[0]).join('').slice(0, 2),
+}));
+
+const MODE_DROPDOWN_ITEMS = MCP_MODES.map((mode) => ({
+  ...mode,
+  group: 'Setup path',
+  icon: mode.shortLabel.slice(0, 2),
+}));
+
 const DocsPage: React.FC = () => {
   const [active, setActive] = useState<string>('overview');
   const [lang, setLang] = useState<Lang>('curl');
@@ -655,35 +668,19 @@ const DocsPage: React.FC = () => {
             />
 
             <div className="rounded-lg border border-lp-border overflow-hidden mb-6 max-w-[680px]">
-              <div className="grid sm:grid-cols-2 gap-3 p-4 bg-surface border-b border-lp-border">
-                <label className="block">
-                  <span className="block font-sans text-[12px] font-semibold uppercase tracking-wide text-text-tertiary mb-2">
-                    Choose your client
-                  </span>
-                  <select
-                    value={mcpClient}
-                    onChange={(e) => setMcpClient(e.target.value as McpClientId)}
-                    className="w-full bg-bg border border-lp-border rounded px-3 py-2 font-sans text-[13px] text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
-                  >
-                    {MCP_CLIENTS.map((client) => (
-                      <option key={client.id} value={client.id}>{client.label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="block font-sans text-[12px] font-semibold uppercase tracking-wide text-text-tertiary mb-2">
-                    Choose hosted vs full local agent
-                  </span>
-                  <select
-                    value={mcpMode}
-                    onChange={(e) => setMcpMode(e.target.value as McpSetupMode)}
-                    className="w-full bg-bg border border-lp-border rounded px-3 py-2 font-sans text-[13px] text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
-                  >
-                    {MCP_MODES.map((mode) => (
-                      <option key={mode.id} value={mode.id}>{mode.label}</option>
-                    ))}
-                  </select>
-                </label>
+              <div className="flex flex-wrap gap-3 p-4 bg-surface border-b border-lp-border">
+                <McpSetupDropdown
+                  label="Client"
+                  value={mcpClient}
+                  items={CLIENT_DROPDOWN_ITEMS}
+                  onChange={setMcpClient}
+                />
+                <McpSetupDropdown
+                  label="Mode"
+                  value={mcpMode}
+                  items={MODE_DROPDOWN_ITEMS}
+                  onChange={setMcpMode}
+                />
               </div>
 
               <div className="p-4 border-b border-lp-border">
