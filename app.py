@@ -463,7 +463,9 @@ async def match_resume(
     resume: UploadFile = File(...),
     user_id: str = Depends(require_user),
 ):
-    """Match resume to internship opportunities (legacy HTML route — requires auth)."""
+    """Legacy HTML route. Locked behind require_user, which the dashboard form
+    cannot satisfy — intentionally unreachable; kept only until the template
+    flow is deleted."""
     try:
         # Validate file
         if not resume:
