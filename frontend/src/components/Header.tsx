@@ -37,6 +37,11 @@ const Header: React.FC = () => {
           Usage
         </Link>
       )}
+      {isSignedIn && (
+        <Link to="/developer" onClick={closeMenu} className="font-mono text-xs text-text-secondary hover:text-text-primary transition-colors">
+          Developer
+        </Link>
+      )}
     </>
   );
 
