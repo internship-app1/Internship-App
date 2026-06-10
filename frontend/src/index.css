@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..900;1,8..60,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300..900;1,300..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300..900;1,8..60,300..900&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -94,6 +94,55 @@
   }
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .docs-page {
+    --docs-font-sans: 'Source Sans 3', 'Inter', system-ui, sans-serif;
+    --docs-code-panel: #0b1220;
+    --docs-code-header: rgba(255, 255, 255, 0.03);
+    --docs-code-border: rgba(148, 163, 184, 0.24);
+    --docs-code-text: #dbe7f5;
+    --docs-code-muted: #8a98ab;
+  }
+
+  .docs-page .font-sans {
+    font-family: var(--docs-font-sans) !important;
+  }
+
+  .docs-page .docs-code-panel {
+    background: var(--docs-code-panel) !important;
+    border-color: var(--docs-code-border) !important;
+    color: var(--docs-code-text) !important;
+  }
+
+  .docs-page .docs-code-header {
+    background: var(--docs-code-header) !important;
+    border-color: var(--docs-code-border) !important;
+    color: var(--docs-code-muted) !important;
+  }
+
+  .docs-page .docs-inline-code {
+    background: var(--docs-code-panel) !important;
+    border-color: var(--docs-code-border) !important;
+    color: var(--docs-code-text) !important;
+  }
+
+  .code-panel {
+    background: #0b1220;
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #dbe7f5;
+  }
+
+  .code-panel-header {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #8a98ab;
+  }
+
+  .code-inline {
+    background: #0b1220;
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #dbe7f5;
   }
 }
 

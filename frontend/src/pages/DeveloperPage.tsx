@@ -360,14 +360,14 @@ const DeveloperPage: React.FC = () => {
             {setup.notes.join(' ')}
           </p>
 
-          <div className="relative border border-lp-border bg-surface">
+          <div className="relative code-panel border">
             <button
               onClick={() => copySnippet(setup.snippet)}
-              className="absolute top-3 right-3 border border-lp-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-text-secondary hover:text-text-primary transition-colors bg-bg"
+              className="absolute top-3 right-3 border code-panel-header px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors"
             >
               {copied ? 'Copied' : 'Copy'}
             </button>
-            <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-text-secondary">
+            <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed">
               {setup.snippet}
             </pre>
           </div>

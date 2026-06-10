@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import McpSetupDropdown from '../components/McpSetupDropdown';
+import { useResolvedTheme } from '../components/theme-provider';
 import {
   getMcpClient,
   getMcpMode,
@@ -49,20 +50,27 @@ const SubLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const CodeBlock: React.FC<{ children: string; title?: string }> = ({ children, title }) => (
-  <div className="rounded-lg border border-lp-border overflow-hidden mb-5 max-w-[680px]">
+  <div className="docs-code-panel rounded-lg border overflow-hidden mb-5 max-w-[680px]">
     {title && (
-      <div className="px-4 py-2 bg-surface border-b border-lp-border font-mono text-[11px] text-text-tertiary">
+      <div className="docs-code-header px-4 py-2 border-b font-mono text-[11px]">
         {title}
       </div>
     )}
-    <pre className="bg-surface overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed text-text-secondary">
-      {children}
-    </pre>
+    <div className="overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap">
+      {children.split('\n').map((line, index) => (
+        <div key={index} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4">
+          <span className="select-none text-right text-[11px] leading-6 opacity-70">
+            {index + 1}
+          </span>
+          <span>{line || ' '}</span>
+        </div>
+      ))}
+    </div>
   </div>
 );
 
 const InlineCode: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <code className="font-mono text-[13px] text-text-primary bg-surface border border-lp-border rounded px-1.5 py-0.5">
+  <code className="docs-inline-code font-mono text-[13px] border rounded px-1.5 py-0.5">
     {children}
   </code>
 );
@@ -98,23 +106,30 @@ interface RequestSampleProps {
 }
 
 const RequestSample: React.FC<RequestSampleProps> = ({ lang, onLangChange, samples }) => (
-  <div className="rounded-lg border border-lp-border overflow-hidden mb-5 max-w-[680px]">
-    <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-lp-border">
-      <span className="font-mono text-[11px] text-text-tertiary">Example request</span>
+  <div className="docs-code-panel rounded-lg border overflow-hidden mb-5 max-w-[680px]">
+    <div className="docs-code-header flex items-center justify-between px-4 py-2 border-b">
+      <span className="font-mono text-[11px]">Example request</span>
       <select
         value={lang}
         onChange={(e) => onLangChange(e.target.value as Lang)}
         aria-label="Example language"
-        className="bg-bg border border-lp-border rounded px-2 py-1 font-sans text-[12px] text-text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary cursor-pointer"
+        className="bg-[rgba(255,255,255,0.05)] border border-[color:var(--docs-code-border)] rounded px-2 py-1 font-sans text-[12px] text-[var(--docs-code-text)] focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary cursor-pointer"
       >
         {(Object.keys(LANG_LABELS) as Lang[]).map((l) => (
           <option key={l} value={l}>{LANG_LABELS[l]}</option>
         ))}
       </select>
     </div>
-    <pre className="bg-surface overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed text-text-secondary">
-      {samples[lang]}
-    </pre>
+    <div className="overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap">
+      {samples[lang].split('\n').map((line, index) => (
+        <div key={index} className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4">
+          <span className="select-none text-right text-[11px] leading-6 opacity-70">
+            {index + 1}
+          </span>
+          <span>{line || ' '}</span>
+        </div>
+      ))}
+    </div>
   </div>
 );
 
@@ -489,10 +504,19 @@ const DocsPage: React.FC = () => {
   const [mcpClient, setMcpClient] = useState<McpClientId>('codex');
   const [mcpMode, setMcpMode] = useState<McpSetupMode>('uvx');
   const [copiedSetup, setCopiedSetup] = useState(false);
+  const resolvedTheme = useResolvedTheme();
   const origin = currentOrigin();
   const mcpSetup = getMcpSetup(mcpClient, mcpMode, '<YOUR_API_KEY_HERE>', origin);
   const selectedMcpClient = getMcpClient(mcpClient);
   const selectedMcpMode = getMcpMode(mcpMode);
+  const docsThemeVars = {
+    '--lp-bg': resolvedTheme === 'dark' ? '#050608' : '#ffffff',
+    '--lp-surface': resolvedTheme === 'dark' ? '#0f1724' : '#f6f8fb',
+    '--lp-text-primary': resolvedTheme === 'dark' ? '#f8fafc' : '#111827',
+    '--lp-text-secondary': resolvedTheme === 'dark' ? '#cbd5e1' : '#374151',
+    '--lp-text-tertiary': resolvedTheme === 'dark' ? '#94a3b8' : '#6b7280',
+    '--lp-border': resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.10)' : 'rgba(17, 24, 39, 0.12)',
+  } as React.CSSProperties;
 
   const copyMcpSetup = async () => {
     await navigator.clipboard.writeText(mcpSetup.snippet);
@@ -520,7 +544,7 @@ const DocsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-bg text-text-primary">
+    <div className="docs-page min-h-screen bg-bg text-text-primary" style={docsThemeVars}>
       <Header />
       <div className="max-w-[1100px] mx-auto px-6 py-10 lg:flex lg:gap-12">
         {/* Sidebar */}
