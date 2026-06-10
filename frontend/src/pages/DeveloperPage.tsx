@@ -24,6 +24,10 @@ const CLIENTS: { id: ClientId; label: string; configPath: string }[] = [
   { id: 'cline', label: 'Cline', configPath: 'cline_mcp_settings.json' },
 ];
 
+function currentOrigin(): string {
+  return typeof window === 'undefined' ? 'https://internshipmatcher.com' : window.location.origin;
+}
+
 function codexToml(transport: Transport, displayKey: string): string {
   if (transport === 'docker') {
     return [
@@ -49,16 +53,17 @@ function codexToml(transport: Transport, displayKey: string): string {
   ].join('\n');
 }
 
-function configSnippet(client: ClientId, transport: Transport, key: string): string {
+function configSnippet(client: ClientId, transport: Transport, key: string, origin: string): string {
   const displayKey = key || 'im_live_...';
   if (transport === 'hosted') {
+    const mcpUrl = `${origin}/mcp?key=${displayKey}`;
     return [
       '# Zero install — job search & fit scoring only (applying needs the full agent).',
       '# claude.ai: Settings → Connectors → Add custom connector → paste this URL:',
-      `https://internshipmatcher.com/mcp?key=${displayKey}`,
+      mcpUrl,
       '',
       '# Claude Code CLI:',
-      `claude mcp add -t http internship "https://internshipmatcher.com/mcp?key=${displayKey}"`,
+      `claude mcp add -t http internship "${mcpUrl}"`,
     ].join('\n');
   }
   if (client === 'codex') {
@@ -224,7 +229,8 @@ const DeveloperPage: React.FC = () => {
     );
   }
 
-  const snippet = configSnippet(client, transport, freshKey);
+  const origin = currentOrigin();
+  const snippet = configSnippet(client, transport, freshKey, origin);
   const selectedClient = CLIENTS.find((c) => c.id === client)!;
 
   return (
@@ -425,6 +431,7 @@ const DeveloperPage: React.FC = () => {
               <>
                 Zero-install discovery endpoint. It exposes job search and scoring only; use uvx for
                 resume parsing, local profile storage, resume compile, packets, and browser prefill.
+                The hosted URL is <span className="text-text-secondary">{origin}/mcp?key=...</span>.
               </>
             ) : (
               <>

@@ -10,6 +10,10 @@ import Header from '../components/Header';
 
 const API_BASE = 'https://internship-app-production.up.railway.app';
 
+function currentOrigin(): string {
+  return typeof window === 'undefined' ? 'https://internshipmatcher.com' : window.location.origin;
+}
+
 const Para: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="font-sans text-[15px] leading-7 text-text-secondary mb-4 max-w-[680px]">
     {children}
@@ -460,6 +464,8 @@ const NAV = [
 const DocsPage: React.FC = () => {
   const [active, setActive] = useState<string>('overview');
   const [lang, setLang] = useState<Lang>('curl');
+  const origin = currentOrigin();
+  const hostedMcpUrl = `${origin}/mcp?key=im_live_...`;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -634,7 +640,12 @@ const DocsPage: React.FC = () => {
               Applying still needs the full local agent because your encrypted profile,
               resume files, browser session, and application tracker stay on your machine.
             </Para>
-            <CodeBlock title="claude.ai custom connector / HTTP MCP URL">{`https://internshipmatcher.com/mcp?key=im_live_...`}</CodeBlock>
+            <CodeBlock title="claude.ai custom connector / HTTP MCP URL">{hostedMcpUrl}</CodeBlock>
+            <Para>
+              <InlineCode>/mcp</InlineCode> is not a browser page: a normal browser request may
+              return a protocol error such as <InlineCode>406</InlineCode>. Test it from an MCP
+              client or connector using the URL above.
+            </Para>
 
             <H3>Full agent: uvx (recommended)</H3>
             <Para>
