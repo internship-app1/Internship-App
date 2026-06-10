@@ -1573,11 +1573,16 @@ async def tailor_resume_endpoint(
 @app.get("/api/usage")
 @limiter.limit("20/minute")
 async def get_usage(request: Request, user_id: str = Depends(require_user)):
-    from quota import get_tailor_quota_status, get_think_deeper_quota_status
+    from quota import (
+        get_remote_compile_quota_status,
+        get_tailor_quota_status,
+        get_think_deeper_quota_status,
+    )
     db = get_db()
     try:
         tailor = get_tailor_quota_status(db, user_id)
         deep = get_think_deeper_quota_status(db, user_id)
+        remote_compile = get_remote_compile_quota_status(db, user_id)
     finally:
         db.close()
 
@@ -1593,6 +1598,9 @@ async def get_usage(request: Request, user_id: str = Depends(require_user)):
     return JSONResponse({
         "tailor_resume": _shape(tailor),
         "think_deeper": _shape(deep),
+        # Consumed by API-key remote compiles (MCP /api/v1), NOT by the in-app
+        # tailor feature — the frontend surfaces that distinction.
+        "remote_compile": _shape(remote_compile),
     })
 
 

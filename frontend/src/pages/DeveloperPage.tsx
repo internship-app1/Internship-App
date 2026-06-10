@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth, SignInButton } from '@clerk/react';
 import Header from '../components/Header';
 import { API_BASE_URL } from '../lib/api';
+import { useUsage } from '../hooks/useUsage';
 
 interface ApiKeyMeta {
   id: number;
@@ -100,6 +101,7 @@ function formatDate(iso: string | null): string {
 
 const DeveloperPage: React.FC = () => {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { data: usage } = useUsage();
   const [keys, setKeys] = useState<ApiKeyMeta[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -317,6 +319,41 @@ const DeveloperPage: React.FC = () => {
             </div>
           )}
         </section>
+
+        {/* Remote compile usage (API-key quota) */}
+        {usage?.remote_compile && (
+          <section className="mb-12">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
+              Remote compile usage
+            </div>
+            <div className="border border-lp-border bg-surface p-5">
+              <div className="flex items-baseline gap-1.5 mb-3">
+                <span className={`font-serif text-3xl leading-none ${
+                  usage.remote_compile.remaining === 0 ? 'text-red-500' : 'text-text-primary'
+                }`}>
+                  {usage.remote_compile.used}
+                </span>
+                <span className="font-mono text-sm text-text-tertiary">
+                  / {usage.remote_compile.limit} this week
+                </span>
+              </div>
+              <div className="w-full h-px bg-lp-border mb-4 overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    usage.remote_compile.remaining === 0 ? 'bg-red-500' : 'bg-text-primary'
+                  }`}
+                  style={{ width: `${Math.min((usage.remote_compile.used / usage.remote_compile.limit) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="font-mono text-[11px] leading-relaxed text-text-tertiary">
+                Counts resume compiles your <span className="text-text-secondary">API keys</span> run
+                on our servers (MCP with COMPILE=remote, e.g. the uvx quick start). Local Docker
+                compiles are unlimited and never touch this quota. Also shown on the{' '}
+                <a href="/usage" className="underline hover:text-text-primary">Usage page</a>.
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Config snippets */}
         <section className="mb-12">
