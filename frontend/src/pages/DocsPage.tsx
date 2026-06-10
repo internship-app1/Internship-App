@@ -619,15 +619,54 @@ const DocsPage: React.FC = () => {
                   </Link>.
                 </>,
                 <>
-                  Add the server to your client config — the Developer page renders a
-                  ready-to-paste snippet for your exact client and transport. Docker is
-                  recommended (resume PDFs compile locally, fully private); uvx is the
-                  zero-install quick start.
+                  Pick the right path on the Developer page. Hosted is zero-install
+                  discovery only; uvx is the recommended full apply agent with local
+                  profile storage; Docker is the advanced reproducible option.
                 </>,
                 <>Ask your agent to get to work.</>,
               ]}
             />
-            <CodeBlock title=".mcp.json (Claude Code) · ~/.cursor/mcp.json (Cursor) — Docker, recommended">{`{
+            <H3>Hosted MCP: zero-install discovery</H3>
+            <Para>
+              Use this when you want an agent to search jobs and score fit without
+              installing anything locally. It exposes only <InlineCode>jobs_list</InlineCode>,{' '}
+              <InlineCode>job_get</InlineCode>, and <InlineCode>jobs_prefilter</InlineCode>.
+              Applying still needs the full local agent because your encrypted profile,
+              resume files, browser session, and application tracker stay on your machine.
+            </Para>
+            <CodeBlock title="claude.ai custom connector / HTTP MCP URL">{`https://internshipmatcher.com/mcp?key=im_live_...`}</CodeBlock>
+
+            <H3>Full agent: uvx (recommended)</H3>
+            <Para>
+              This is the Supabase-style setup: paste one config block, no clone, no Docker.
+              On first run the agent asks whether to install TeX locally for unlimited
+              resume compiles or use the remote fallback capped at 15 compiles/week.
+            </Para>
+            <CodeBlock title=".mcp.json (Claude Code) · ~/.cursor/mcp.json (Cursor) — uvx, recommended">{`{
+  "mcpServers": {
+    "internship": {
+      "command": "uvx",
+      "args": ["internship-mcp"],
+      "env": { "INTERNSHIP_API_KEY": "im_live_..." }
+    },
+    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] }
+  }
+}`}</CodeBlock>
+            <CodeBlock title="Optional local TeX install for unlimited compiles">{`# macOS
+brew install --cask basictex && sudo tlmgr update --self && sudo tlmgr install enumitem titlesec parskip microtype
+
+# Debian / Ubuntu
+sudo apt install texlive-latex-extra
+
+# Windows
+Install MiKTeX from https://miktex.org`}</CodeBlock>
+
+            <H3>Docker: advanced reproducible path</H3>
+            <Para>
+              Docker is still useful when you want pinned TeX Live, poppler, and OCR baked
+              into a single image. It is no longer the primary onboarding path.
+            </Para>
+            <CodeBlock title=".mcp.json — Docker advanced">{`{
   "mcpServers": {
     "internship": {
       "command": "docker",
@@ -713,10 +752,11 @@ and prefill the applications for my review.`}</CodeBlock>
             </Endpoint>
 
             {/* ------------------- POST /compile -------------------- */}
-            <Endpoint method="POST" path="/api/v1/resume/compile" limit="60 / day · 3 concurrent">
+            <Endpoint method="POST" path="/api/v1/resume/compile" limit="15 / week · 3 concurrent">
               <Para>
-                Fallback PDF compiler for environments without local TeX — the Docker
-                MCP image compiles locally and never calls this. Over-capacity requests
+                Fallback PDF compiler for environments without local TeX. The full uvx
+                agent uses it only when <InlineCode>pdflatex</InlineCode> is not installed;
+                local TeX and Docker compiles never call this endpoint. Over-capacity requests
                 are rejected immediately with <InlineCode>429</InlineCode> and a{' '}
                 <InlineCode>Retry-After</InlineCode> header rather than queued, and
                 identical payloads are served from a content cache.
@@ -737,7 +777,7 @@ and prefill the applications for my review.`}</CodeBlock>
                 ['401', 'Missing, invalid, or revoked API key. Regenerate on the Developer page.'],
                 ['404', 'Unknown job_hash.'],
                 ['422', 'Request body failed validation — e.g. experience_level must be exactly student, entry_level, or experienced.'],
-                ['429', 'Rate limit exceeded, or all compile slots busy (check Retry-After). Compile locally via Docker to avoid compile limits entirely.'],
+                ['429', 'Rate limit exceeded, weekly remote compile quota reached, or all compile slots busy (check Retry-After). Install TeX locally or use Docker to avoid remote compile limits entirely.'],
               ].map(([code, desc]) => (
                 <div key={code} className="flex gap-4 px-4 py-3">
                   <code className="font-mono text-[13px] font-semibold text-text-primary w-10 shrink-0">{code}</code>
@@ -747,7 +787,7 @@ and prefill the applications for my review.`}</CodeBlock>
             </div>
             <Para>
               Limits are per API key: jobs and prefilter at 120 requests/hour, remote
-              compile at 60/day with 3 concurrent slots. The MCP server surfaces these
+              compile at 15/week with 3 concurrent slots. The MCP server surfaces these
               as legible errors to your agent and backs off automatically on network
               failures.
             </Para>

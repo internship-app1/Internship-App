@@ -162,9 +162,9 @@ const UsagePage: React.FC = () => {
               note={
                 <>
                   Consumed by your <span className="text-text-secondary">API key</span> when
-                  the MCP server compiles resumes remotely (COMPILE=remote) — separate from
-                  the in-app Tailored Resumes quota above. Docker users compiling locally
-                  never use this. Manage keys on the{' '}
+                  the full MCP agent falls back to server-side resume compilation — separate
+                  from the in-app Tailored Resumes quota above. Installing TeX locally, or
+                  using Docker, keeps compiles off this quota. Manage keys on the{' '}
                   <a href="/developer" className="underline hover:text-text-primary">Developer page</a>.
                 </>
               }

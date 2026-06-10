@@ -14,7 +14,7 @@ interface ApiKeyMeta {
 }
 
 type ClientId = 'claude-code' | 'cursor' | 'codex' | 'windsurf' | 'cline';
-type Transport = 'docker' | 'uvx';
+type Transport = 'hosted' | 'uvx' | 'docker';
 
 const CLIENTS: { id: ClientId; label: string; configPath: string }[] = [
   { id: 'claude-code', label: 'Claude Code', configPath: '.mcp.json (project root)' },
@@ -41,7 +41,7 @@ function codexToml(transport: Transport, displayKey: string): string {
     '[mcp_servers.internship]',
     'command = "uvx"',
     'args = ["internship-mcp"]',
-    `env = { INTERNSHIP_API_KEY = "${displayKey}", COMPILE = "remote" }`,
+    `env = { INTERNSHIP_API_KEY = "${displayKey}" }`,
     '',
     '[mcp_servers.playwright]',
     'command = "npx"',
@@ -51,6 +51,16 @@ function codexToml(transport: Transport, displayKey: string): string {
 
 function configSnippet(client: ClientId, transport: Transport, key: string): string {
   const displayKey = key || 'im_live_...';
+  if (transport === 'hosted') {
+    return [
+      '# Zero install — job search & fit scoring only (applying needs the full agent).',
+      '# claude.ai: Settings → Connectors → Add custom connector → paste this URL:',
+      `https://internshipmatcher.com/mcp?key=${displayKey}`,
+      '',
+      '# Claude Code CLI:',
+      `claude mcp add -t http internship "https://internshipmatcher.com/mcp?key=${displayKey}"`,
+    ].join('\n');
+  }
   if (client === 'codex') {
     return codexToml(transport, displayKey);
   }
@@ -81,7 +91,7 @@ function configSnippet(client: ClientId, transport: Transport, key: string): str
         internship: {
           command: 'uvx',
           args: ['internship-mcp'],
-          env: { INTERNSHIP_API_KEY: displayKey, COMPILE: 'remote' },
+          env: { INTERNSHIP_API_KEY: displayKey },
         },
         playwright: { command: 'npx', args: ['@playwright/mcp@latest'] },
       },
@@ -110,7 +120,7 @@ const DeveloperPage: React.FC = () => {
   const [freshKey, setFreshKey] = useState('');
   const [copied, setCopied] = useState(false);
   const [client, setClient] = useState<ClientId>('claude-code');
-  const [transport, setTransport] = useState<Transport>('docker');
+  const [transport, setTransport] = useState<Transport>('uvx');
 
   const fetchKeys = useCallback(async () => {
     if (!isSignedIn) return;
@@ -347,8 +357,8 @@ const DeveloperPage: React.FC = () => {
               </div>
               <p className="font-mono text-[11px] leading-relaxed text-text-tertiary">
                 Counts resume compiles your <span className="text-text-secondary">API keys</span> run
-                on our servers (MCP with COMPILE=remote, e.g. the uvx quick start). Local Docker
-                compiles are unlimited and never touch this quota. Also shown on the{' '}
+                on our servers when the full agent falls back to remote compile. Installing TeX locally
+                makes compiles unlimited and keeps them off our servers. Also shown on the{' '}
                 <a href="/usage" className="underline hover:text-text-primary">Usage page</a>.
               </p>
             </div>
@@ -377,16 +387,16 @@ const DeveloperPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             <button
-              onClick={() => setTransport('docker')}
+              onClick={() => setTransport('hosted')}
               className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                transport === 'docker'
+                transport === 'hosted'
                   ? 'border-text-primary text-text-primary'
                   : 'border-lp-border text-text-tertiary hover:text-text-secondary'
               }`}
             >
-              Docker · local compile (recommended)
+              Hosted · zero install
             </button>
             <button
               onClick={() => setTransport('uvx')}
@@ -396,12 +406,34 @@ const DeveloperPage: React.FC = () => {
                   : 'border-lp-border text-text-tertiary hover:text-text-secondary'
               }`}
             >
-              uvx · quick start
+              uvx · full agent (recommended)
+            </button>
+            <button
+              onClick={() => setTransport('docker')}
+              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
+                transport === 'docker'
+                  ? 'border-text-primary text-text-primary'
+                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              Docker · advanced
             </button>
           </div>
 
           <p className="font-mono text-[10px] text-text-tertiary mb-2">
-            Save to <span className="text-text-secondary">{selectedClient.configPath}</span>
+            {transport === 'hosted' ? (
+              <>
+                Zero-install discovery endpoint. It exposes job search and scoring only; use uvx for
+                resume parsing, local profile storage, resume compile, packets, and browser prefill.
+              </>
+            ) : (
+              <>
+                Save to <span className="text-text-secondary">{selectedClient.configPath}</span>
+                {transport === 'uvx' && (
+                  <>. On first run, the agent will ask whether you want unlimited local compiles by installing TeX or the 15/week remote fallback.</>
+                )}
+              </>
+            )}
           </p>
 
           <div className="relative border border-lp-border bg-surface">
@@ -434,7 +466,7 @@ const DeveloperPage: React.FC = () => {
             submission (v2) is opt-in, capped per session, and logged. Your applicant
             profile and EEO answers are stored encrypted on your machine and are never
             sent to our servers. Rate limits apply per key: jobs and prefilter 120/hour,
-            remote compile 60/day.
+            remote compile 15/week.
           </p>
         </section>
       </main>
