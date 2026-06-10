@@ -113,6 +113,18 @@ class ThinkDeeperRequestLog(Base):
     __table_args__ = (Index('idx_think_deeper_user_time', 'user_id', 'requested_at'),)
 
 
+class RemoteCompileLog(Base):
+    """Append-only log of REMOTE resume compiles on the MCP /api/v1 path,
+    used for the weekly per-user quota. Local (Docker) compiles never hit
+    this — the quota exists because remote compiles burn our CPU."""
+    __tablename__ = "remote_compile_log"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    requested_at = Column(DateTime, default=_utcnow, nullable=False, index=True)
+    key_prefix = Column(String(16), nullable=True)   # which API key triggered it
+    __table_args__ = (Index('idx_remote_compile_user_time', 'user_id', 'requested_at'),)
+
+
 class ApiKey(Base):
     """Per-user API keys for the MCP /api/v1 surface (issued from /developer).
 
