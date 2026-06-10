@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query, Depends, Header
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -259,7 +259,12 @@ _CSP_REPORT_ONLY = (
     "frame-src https://*.clerk.accounts.dev https://*.clerk.com; "
     "frame-ancestors 'self'; "
     "base-uri 'self'; "
-    "object-src 'none'"
+    "object-src 'none'; "
+    # Violations are POSTed here and logged so they can be reviewed before
+    # flipping the policy to enforced. (report-uri is deprecated in favor of
+    # report-to, but it remains the mechanism browsers reliably support
+    # without a Reporting-Endpoints setup.)
+    "report-uri /api/csp-report"
 )
 
 
@@ -273,6 +278,22 @@ async def add_security_headers(request: Request, call_next):
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     response.headers.setdefault("Content-Security-Policy-Report-Only", _CSP_REPORT_ONLY)
     return response
+
+
+@app.post("/api/csp-report")
+@limiter.limit("30/minute")
+async def csp_report(request: Request):
+    """Collect CSP violation reports (browsers POST these unauthenticated).
+
+    Reports land in the application log; grep for 'CSP violation' on Railway
+    to review them before flipping the policy from report-only to enforced.
+    """
+    try:
+        body = await request.body()
+        logger.warning("CSP violation: %s", body[:4096].decode("utf-8", "replace"))
+    except Exception as e:
+        logger.warning(f"CSP report could not be read: {e}")
+    return Response(status_code=204)
 
 
 # Session middleware: SECRET_KEY must be set in production. No insecure default.
