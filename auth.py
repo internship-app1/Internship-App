@@ -102,4 +102,7 @@ async def require_user(request: Request) -> str:
     if not user_id:
         raise HTTPException(status_code=401, detail="Token is missing 'sub' claim")
 
+    # Expose the VERIFIED identity for downstream consumers that can't take a
+    # dependency (e.g. the slowapi rate-limit key function).
+    request.state.verified_user_id = user_id
     return user_id

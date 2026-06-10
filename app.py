@@ -164,22 +164,17 @@ async def lifespan(app: FastAPI):
 
 def _get_rate_limit_key(request: Request) -> str:
     """
-    Rate-limit by Clerk user_id when the request carries a valid Bearer token,
-    falling back to client IP. This prevents shared IPs (campus / office NAT)
-    from exhausting each other's quotas.
+    Rate-limit by Clerk user_id when auth has VERIFIED the token, falling back
+    to client IP. require_user (auth.py) runs as a FastAPI dependency before
+    slowapi's check fires and stashes the verified sub on request.state — we
+    never decode the JWT ourselves, so forged tokens with arbitrary sub values
+    cannot rotate buckets to sidestep the abuse floor.
+    Keying on user_id prevents shared IPs (campus / office NAT) from
+    exhausting each other's quotas.
     """
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        try:
-            import jwt as _jwt
-            payload = _jwt.decode(
-                auth[7:], options={"verify_signature": False}
-            )
-            sub = payload.get("sub")
-            if sub:
-                return f"user:{sub}"
-        except Exception:
-            pass
+    sub = getattr(request.state, "verified_user_id", None)
+    if sub:
+        return f"user:{sub}"
     return f"ip:{request.client.host if request.client else 'unknown'}"
 
 
