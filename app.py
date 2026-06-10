@@ -837,7 +837,14 @@ async def stream_match_resume(
                 yield {"data": json.dumps({'error': f'Invalid file type: {file_extension}'})}
             return EventSourceResponse(error_response())
 
-        _reject_bad_content_type(resume.content_type, file_extension)
+        # Surface validation failures as SSE error events (like the checks
+        # above) rather than bare HTTP errors the streaming UI can't render.
+        try:
+            _reject_bad_content_type(resume.content_type, file_extension)
+        except HTTPException as e:
+            async def ct_error_response(detail=e.detail):
+                yield {"data": json.dumps({'error': detail})}
+            return EventSourceResponse(ct_error_response())
 
         # Read file content ONCE, before the generator
         file_content = await resume.read()
@@ -849,7 +856,12 @@ async def stream_match_resume(
                 yield {"data": json.dumps({'error': 'Empty file uploaded'})}
             return EventSourceResponse(error_response())
 
-        _enforce_upload_size(file_content)
+        try:
+            _enforce_upload_size(file_content)
+        except HTTPException as e:
+            async def size_error_response(detail=e.detail):
+                yield {"data": json.dumps({'error': detail})}
+            return EventSourceResponse(size_error_response())
 
         # Check resume cache before doing S3 upload or any LLM work
         if user_id and resume_hash:
