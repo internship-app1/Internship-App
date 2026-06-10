@@ -56,7 +56,7 @@ function codexToml(transport: Transport, displayKey: string): string {
 function configSnippet(client: ClientId, transport: Transport, key: string, origin: string): string {
   const displayKey = key || 'im_live_...';
   if (transport === 'hosted') {
-    const mcpUrl = `${origin}/mcp?key=${displayKey}`;
+    const mcpUrl = `${origin}/mcp?key=${key || '<YOUR_API_KEY_HERE>'}`;
     return [
       '# Zero install — job search & fit scoring only (applying needs the full agent).',
       '# claude.ai: Settings → Connectors → Add custom connector → paste this URL:',
@@ -431,7 +431,7 @@ const DeveloperPage: React.FC = () => {
               <>
                 Zero-install discovery endpoint. It exposes job search and scoring only; use uvx for
                 resume parsing, local profile storage, resume compile, packets, and browser prefill.
-                The hosted URL is <span className="text-text-secondary">{origin}/mcp?key=...</span>.
+                The hosted URL is <span className="text-text-secondary">{origin}/mcp?key=&lt;YOUR_API_KEY_HERE&gt;</span>.
               </>
             ) : (
               <>

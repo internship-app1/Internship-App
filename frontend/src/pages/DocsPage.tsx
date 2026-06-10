@@ -465,7 +465,7 @@ const DocsPage: React.FC = () => {
   const [active, setActive] = useState<string>('overview');
   const [lang, setLang] = useState<Lang>('curl');
   const origin = currentOrigin();
-  const hostedMcpUrl = `${origin}/mcp?key=im_live_...`;
+  const hostedMcpUrl = `${origin}/mcp?key=<YOUR_API_KEY_HERE>`;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
