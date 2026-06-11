@@ -116,13 +116,15 @@ def jobs_prefilter(
     resume_profile: Dict,
     filters: Optional[Dict] = None,
     target_count: int = 40,
+    exclude_hashes: Optional[List[str]] = None,
 ) -> Dict:
     """Deterministic keyword + metadata scoring against a small PII-free
     resume_profile: {skills: [...], experience_level: student|entry_level|
     experienced, years_of_experience, location, willing_to_relocate, remote_ok}.
     YOU extract the skills from the user's resume yourself — never send resume
     text anywhere. Treat combined_score as a prefilter; your judgment over the
-    full descriptions (job_get) is the real ranking."""
+    full descriptions (job_get) is the real ranking.
+    exclude_hashes: optional list of job_hashes to omit (e.g. already-applied jobs)."""
     _require_user(ctx)
     _LEVEL_NORM = {
         "student": "student", "intern": "student", "undergraduate": "student",
@@ -144,6 +146,9 @@ def jobs_prefilter(
     jobs = _fetch_jobs(
         f.get("since_hours"), f.get("max_days_old", 30), f.get("location"), f.get("q")
     )
+    if exclude_hashes:
+        excluded = set(exclude_hashes)
+        jobs = [j for j in jobs if j.get("job_hash") not in excluded]
     scored = prefilter_and_score(resume_profile, jobs)
     target = max(1, min(target_count, 200))
     return {
