@@ -9,6 +9,12 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+# Bounds on resume input to prevent resource-exhaustion via crafted files.
+MAX_PDF_PAGES = 15
+# Cap decompressed image size to defend against decompression-bomb images.
+MAX_IMAGE_PIXELS = 40_000_000  # ~40 MP
+
+
 def extract_json_from_response(text: str) -> str:
     """Extract JSON from Claude response, handling markdown code blocks."""
     # Remove markdown code blocks if present
@@ -197,6 +203,7 @@ def parse_resume(file_content, filename, use_llm=True, progress_callback=None):
         try:
             from PIL import Image
             import pytesseract
+            Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
             image = Image.open(io.BytesIO(file_content))
             text = pytesseract.image_to_string(image)
         except Exception as e:
@@ -205,7 +212,7 @@ def parse_resume(file_content, filename, use_llm=True, progress_callback=None):
     else:
         try:
             with pdfplumber.open(io.BytesIO(file_content)) as pdf:
-                for page in pdf.pages:
+                for page in pdf.pages[:MAX_PDF_PAGES]:
                     page_text = page.extract_text()
                     if page_text:
                         text += page_text
@@ -257,6 +264,7 @@ def extract_text_only(file_content: bytes, filename: str, progress_callback=None
         try:
             from PIL import Image
             import pytesseract
+            Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
             image = Image.open(io.BytesIO(file_content))
             text = pytesseract.image_to_string(image)
         except Exception as e:
@@ -264,7 +272,7 @@ def extract_text_only(file_content: bytes, filename: str, progress_callback=None
     else:
         try:
             with pdfplumber.open(io.BytesIO(file_content)) as pdf:
-                for page in pdf.pages:
+                for page in pdf.pages[:MAX_PDF_PAGES]:
                     page_text = page.extract_text()
                     if page_text:
                         text += page_text

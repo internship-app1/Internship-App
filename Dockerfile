@@ -31,8 +31,9 @@ COPY . .
 ARG REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY
 ENV REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY=$REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY
 
-# Build React frontend so GET / serves it directly
-RUN cd frontend && npm install && npm run build
+# Build React frontend so GET / serves it directly.
+# GENERATE_SOURCEMAP=false keeps unminified source out of the production bundle.
+RUN cd frontend && npm install && GENERATE_SOURCEMAP=false npm run build
 
 # Expose port (Railway will inject the actual PORT)
 EXPOSE $PORT

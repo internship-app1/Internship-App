@@ -4,11 +4,12 @@ Integration tests for rate limiting.
 How auth works in these tests:
   - `require_user` FastAPI dependency is overridden via app.dependency_overrides
     so no real Clerk JWT verification happens.
-  - A fake JWT is still sent in the Authorization header because _get_rate_limit_key
-    (app.py:144) reads that header *independently* of the dependency, decoding it
-    without signature verification to extract the `sub` claim as the rate limit key.
-  - jwt.encode({"sub": "..."}, "no-secret", algorithm="HS256") produces a structurally
-    valid JWT that the rate limiter can decode.
+  - The override (`fake_verified_user`) mimics the real dependency's contract:
+    it sets request.state.verified_user_id, which _get_rate_limit_key uses as
+    the rate-limit key. The limiter itself never decodes the JWT — it only
+    trusts the verified identity stashed on request.state by auth.
+  - A structurally valid (but unsigned) JWT is still sent in the Authorization
+    header; the override decodes it to pick the per-test `sub`.
 """
 import asyncio
 import io
@@ -17,18 +18,35 @@ import jwt
 
 from unittest.mock import patch
 
+from fastapi import Request
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 def make_fake_token(sub: str) -> str:
-    """Unsigned JWT — _get_rate_limit_key decodes it without signature check."""
+    """Unsigned JWT — only decoded by the fake_verified_user test override."""
     return jwt.encode({"sub": sub}, "no-secret", algorithm="HS256")
 
 
 def auth_headers(sub: str = "test-user-id") -> dict:
     return {"Authorization": f"Bearer {make_fake_token(sub)}"}
+
+
+def fake_verified_user(request: Request) -> str:
+    """Test double for require_user — mirrors its contract: returns the sub
+    from the (unsigned) test JWT and sets request.state.verified_user_id so
+    the rate limiter keys on it, exactly like the real verified path."""
+    auth = request.headers.get("Authorization", "")
+    sub = "test-user-id"
+    if auth.startswith("Bearer "):
+        try:
+            sub = jwt.decode(auth[7:], options={"verify_signature": False}).get("sub", sub)
+        except Exception:
+            pass
+    request.state.verified_user_id = sub
+    return sub
 
 
 def fake_pdf() -> bytes:
@@ -56,7 +74,7 @@ class TestUserHistoryRateLimit:
     def setup(self, api_client, reset_rate_limiter):
         from app import app
         from auth import require_user
-        app.dependency_overrides[require_user] = lambda: "test-user-id"
+        app.dependency_overrides[require_user] = fake_verified_user
         self.client = api_client
         yield
         app.dependency_overrides.pop(require_user, None)
@@ -88,25 +106,45 @@ class TestUserHistoryRateLimit:
 
 
 # ---------------------------------------------------------------------------
-# /api/match — 3/10minutes, no auth required
+# /api/match — 3/10minutes, requires auth
 # ---------------------------------------------------------------------------
 
 class TestMatchRateLimit:
     @pytest.fixture(autouse=True)
     def setup(self, api_client, reset_rate_limiter):
+        from app import app
+        from auth import require_user
+        app.dependency_overrides[require_user] = fake_verified_user
         self.client = api_client
+        yield
+        app.dependency_overrides.pop(require_user, None)
+
+    def test_requires_auth(self):
+        """Unauthenticated POST to /api/match must be rejected with 401."""
+        from app import app
+        from auth import require_user
+        # Drop the override for this test so the real dependency runs.
+        app.dependency_overrides.pop(require_user, None)
+        resp = self.client.post(
+            "/api/match",
+            files={"resume": ("test.pdf", io.BytesIO(fake_pdf()), "application/pdf")},
+            data={"think_deeper": "false"},
+        )
+        assert resp.status_code == 401, f"Expected 401 without auth, got {resp.status_code}"
 
     def test_allows_3_requests_then_rejects(self):
-        """Fourth POST to /api/match within 10 minutes must be 429."""
+        """Fourth authenticated POST to /api/match within 10 minutes must be 429."""
         # The rate limiter fires before the handler body runs, so even if the
         # first 3 requests return a non-200 (bad PDF parse, etc.) they still
         # consume quota. We just need the 4th to be 429.
+        headers = auth_headers("test-user-id")
         with patch("app.parse_resume", return_value={"skills": [], "raw_text": ""}), \
              patch("app.analyze_and_match_single_call", return_value=[]):
             statuses = []
             for _ in range(4):
                 resp = self.client.post(
                     "/api/match",
+                    headers=headers,
                     files={"resume": ("test.pdf", io.BytesIO(fake_pdf()), "application/pdf")},
                     data={"think_deeper": "false"},
                 )
@@ -129,8 +167,7 @@ class TestPerUserIsolation:
     def setup(self, api_client, reset_rate_limiter):
         from app import app
         from auth import require_user
-        # Override returns a static value; rate limit key comes from the JWT sub
-        app.dependency_overrides[require_user] = lambda: "any-user"
+        app.dependency_overrides[require_user] = fake_verified_user
         self.client = api_client
         yield
         app.dependency_overrides.pop(require_user, None)

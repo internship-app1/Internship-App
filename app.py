@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form, Query, Depends, Header
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse, FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -40,7 +40,7 @@ import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
 from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db
-from auth import require_user
+from auth import require_user, get_clerk_domain
 
 # Base directory of this file (used for templates/static/uploads paths)
 BASE_DIR = Path(__file__).resolve().parent
@@ -48,6 +48,10 @@ BASE_DIR = Path(__file__).resolve().parent
 # Bump whenever a scoring/prompt change makes cached results stale.
 # Old entries become misses automatically — no manual purge needed.
 PROMPT_VERSION = "v2"
+
+# Max accepted resume upload size. Bounds memory use and token-cost abuse;
+# real resumes are well under this.
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
 # Load environment variables
 load_dotenv()
@@ -182,29 +186,29 @@ async def lifespan(app: FastAPI):
 
 def _get_rate_limit_key(request: Request) -> str:
     """
-    Rate-limit by Clerk user_id when the request carries a valid Bearer token,
-    falling back to client IP. This prevents shared IPs (campus / office NAT)
-    from exhausting each other's quotas.
+    Rate-limit by Clerk user_id when auth has VERIFIED the token, falling back
+    to client IP. require_user (auth.py) runs as a FastAPI dependency before
+    slowapi's check fires and stashes the verified sub on request.state — we
+    never decode the JWT ourselves, so forged tokens with arbitrary sub values
+    cannot rotate buckets to sidestep the abuse floor.
+    Keying on user_id prevents shared IPs (campus / office NAT) from
+    exhausting each other's quotas.
     """
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        try:
-            import jwt as _jwt
-            payload = _jwt.decode(
-                auth[7:], options={"verify_signature": False}
-            )
-            sub = payload.get("sub")
-            if sub:
-                return f"user:{sub}"
-        except Exception:
-            pass
+    sub = getattr(request.state, "verified_user_id", None)
+    if sub:
+        return f"user:{sub}"
     return f"ip:{request.client.host if request.client else 'unknown'}"
 
 
 _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-# enabled=TRACK_USAGE — when usage tracking is off, every @limiter.limit(...)
-# decorator becomes a no-op, removing all rate limiting / waiting times.
-limiter = Limiter(key_func=_get_rate_limit_key, storage_uri=_REDIS_URL, enabled=TRACK_USAGE)
+_ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+# Abuse-prevention rate limiting is decoupled from the TRACK_USAGE product
+# toggle: production is ALWAYS rate-limited (so flipping TRACK_USAGE=false in
+# prod can't remove the abuse floor), while local dev can disable everything
+# via TRACK_USAGE=false for unrestricted testing.
+_RATE_LIMIT_ENABLED = TRACK_USAGE or _ENVIRONMENT == "production"
+limiter = Limiter(key_func=_get_rate_limit_key, storage_uri=_REDIS_URL, enabled=_RATE_LIMIT_ENABLED)
+logger.info(f"Rate limiting: {'ENABLED' if _RATE_LIMIT_ENABLED else 'DISABLED'}")
 
 # Global concurrency gate — prevents OOM from simultaneous LLM calls.
 # Railway hobby tier has ~512 MB RAM; each analysis can use 100–200 MB.
@@ -236,27 +240,130 @@ app.add_middleware(
         "http://www.internshipmatcher.com",
         "https://internshipmatcher.com",
         "https://www.internshipmatcher.com",
-        "http://3.149.255.34",
         "http://localhost:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-    ],  # Domain, EC2, and local dev
-
+    ],  # Domain + local dev only
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],  # Important for SSE streaming
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+    # SSE responses are read via the EventSource body, not custom headers,
+    # so no headers need to be exposed cross-origin.
 )
 
-# Add session middleware for basic session support
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "your-secret-key-here"))
+
+# ---------------------------------------------------------------------------
+# Security response headers
+# ---------------------------------------------------------------------------
+# Clerk instance domain — derived from the publishable key via the same
+# source of truth as the JWKS/JWT logic (auth.get_clerk_domain), so the CSP
+# can never drift from the domain auth actually uses. Falls back to the
+# known production domain when no key is configured (local dev).
+try:
+    _CLERK_DOMAIN = get_clerk_domain()
+except Exception as _clerk_domain_err:
+    _CLERK_DOMAIN = "clerk.internshipmatcher.com"
+    logger.warning(f"Could not derive Clerk domain ({_clerk_domain_err}); CSP using fallback {_CLERK_DOMAIN}")
+# Content-Security-Policy is shipped in Report-Only mode first so violations are
+# logged by the browser without breaking the app. Once the console is clean,
+# rename the header to "Content-Security-Policy" to enforce it.
+_CSP_REPORT_ONLY = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com "
+    f"https://*.clerk.accounts.dev https://*.clerk.com https://{_CLERK_DOMAIN}; "
+    "connect-src 'self' https://www.google-analytics.com https://*.clerk.accounts.dev "
+    f"https://*.clerk.com https://{_CLERK_DOMAIN} https://*.supabase.co; "
+    "worker-src 'self' blob:; "
+    "img-src 'self' data: https:; "
+    "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self' data:; "
+    "frame-src https://*.clerk.accounts.dev https://*.clerk.com; "
+    "frame-ancestors 'self'; "
+    "base-uri 'self'; "
+    "object-src 'none'; "
+    # Violations are POSTed here and logged so they can be reviewed before
+    # flipping the policy to enforced. (report-uri is deprecated in favor of
+    # report-to, but it remains the mechanism browsers reliably support
+    # without a Reporting-Endpoints setup.)
+    "report-uri /api/csp-report"
+)
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Content-Security-Policy-Report-Only", _CSP_REPORT_ONLY)
+    return response
+
+
+@app.post("/api/csp-report")
+@limiter.limit("30/minute")
+async def csp_report(request: Request):
+    """Collect CSP violation reports (browsers POST these unauthenticated).
+
+    Reports land in the application log; grep for 'CSP violation' on Railway
+    to review them before flipping the policy from report-only to enforced.
+    """
+    try:
+        body = await request.body()
+        logger.warning("CSP violation: %s", body[:4096].decode("utf-8", "replace"))
+    except Exception as e:
+        logger.warning(f"CSP report could not be read: {e}")
+    return Response(status_code=204)
+
+
+# Session middleware: SECRET_KEY must be set in production. No insecure default.
+_SECRET_KEY = os.getenv("SECRET_KEY")
+if not _SECRET_KEY:
+    if _ENVIRONMENT == "production":
+        raise RuntimeError("SECRET_KEY environment variable must be set in production.")
+    _SECRET_KEY = secrets.token_urlsafe(32)  # ephemeral key for local dev only
+    logger.warning("SECRET_KEY not set — using an ephemeral dev key (sessions reset on restart).")
+app.add_middleware(SessionMiddleware, secret_key=_SECRET_KEY)
 
 _INTERNSHIP_MATCHER_API_KEY = os.getenv("INTERNSHIP_MATCHER_API_KEY")
 
 async def require_api_key(x_api_key: str = Header(None)):
-    if not _INTERNSHIP_MATCHER_API_KEY or x_api_key != _INTERNSHIP_MATCHER_API_KEY:
+    if not _INTERNSHIP_MATCHER_API_KEY or not x_api_key or not secrets.compare_digest(
+        x_api_key.encode("utf-8"), _INTERNSHIP_MATCHER_API_KEY.encode("utf-8")
+    ):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
+# Map allowed file extensions to acceptable MIME types for server-side validation.
+_ALLOWED_CONTENT_TYPES = {
+    "pdf": {"application/pdf"},
+    "png": {"image/png"},
+    "jpg": {"image/jpeg"},
+    "jpeg": {"image/jpeg"},
+}
+
+
+def _reject_bad_content_type(content_type, file_extension: str) -> None:
+    """Reject uploads whose declared MIME type doesn't match their extension."""
+    allowed = _ALLOWED_CONTENT_TYPES.get(file_extension)
+    # Normalize "application/pdf; charset=..." to the bare type.
+    bare = (content_type or "").split(";")[0].strip().lower()
+    if allowed and bare and bare not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File content type '{bare}' does not match extension '.{file_extension}'.",
+        )
+
+
+def _enforce_upload_size(file_content: bytes) -> None:
+    """Reject uploads larger than MAX_UPLOAD_BYTES."""
+    if len(file_content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.",
+        )
 
 # Setup templates and static files using absolute paths
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -426,8 +533,14 @@ async def dashboard(request: Request):
 
 
 @app.post("/match", response_class=HTMLResponse)
-async def match_resume(request: Request, resume: UploadFile = File(...)):
-    """Match resume to internship opportunities"""
+async def match_resume(
+    request: Request,
+    resume: UploadFile = File(...),
+    user_id: str = Depends(require_user),
+):
+    """Legacy HTML route. Locked behind require_user, which the dashboard form
+    cannot satisfy — intentionally unreachable; kept only until the template
+    flow is deleted."""
     try:
         # Validate file
         if not resume:
@@ -464,6 +577,8 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
                 "results": None,
                 "error": f"Error reading the uploaded file: {str(e)}"
             })
+
+        _enforce_upload_size(file_content)
 
         logger.info(f"Upload: {resume.filename} ({len(file_content)} bytes, {resume.content_type})")
 
@@ -549,7 +664,12 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
 @app.post("/api/match")
 @limiter.limit("3/10minutes")
-async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true")):
+async def api_match_resume(
+    request: Request,
+    resume: UploadFile = File(...),
+    think_deeper: str = Form("true"),
+    user_id: str = Depends(require_user),
+):
     """API endpoint for React frontend - returns JSON instead of HTML"""
     try:
         # Validate file
@@ -559,21 +679,27 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
         # Check file extension
         file_extension = resume.filename.split('.')[-1].lower() if resume.filename else ''
         allowed_extensions = ['pdf', 'png', 'jpg', 'jpeg']
-        
+
         if file_extension not in allowed_extensions:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Invalid file type '{file_extension}'. Please upload a PDF, PNG, JPG, or JPEG file."
             )
+
+        _reject_bad_content_type(resume.content_type, file_extension)
 
         # Read file content
         try:
             file_content = await resume.read()
             if not file_content:
                 raise HTTPException(status_code=400, detail="The uploaded file appears to be empty. Please upload a valid resume file.")
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error reading file: {e}")
             raise HTTPException(status_code=400, detail=f"Error reading the uploaded file: {str(e)}")
+
+        _enforce_upload_size(file_content)
 
         logger.info(f"Upload: {resume.filename} ({len(file_content)} bytes, {resume.content_type})")
 
@@ -786,6 +912,15 @@ async def stream_match_resume(
                 yield {"data": json.dumps({'error': f'Invalid file type: {file_extension}'})}
             return EventSourceResponse(error_response())
 
+        # Surface validation failures as SSE error events (like the checks
+        # above) rather than bare HTTP errors the streaming UI can't render.
+        try:
+            _reject_bad_content_type(resume.content_type, file_extension)
+        except HTTPException as e:
+            async def ct_error_response(detail=e.detail):
+                yield {"data": json.dumps({'error': detail})}
+            return EventSourceResponse(ct_error_response())
+
         # Read file content ONCE, before the generator
         file_content = await resume.read()
         filename = resume.filename
@@ -795,6 +930,13 @@ async def stream_match_resume(
             async def error_response():
                 yield {"data": json.dumps({'error': 'Empty file uploaded'})}
             return EventSourceResponse(error_response())
+
+        try:
+            _enforce_upload_size(file_content)
+        except HTTPException as e:
+            async def size_error_response(detail=e.detail):
+                yield {"data": json.dumps({'error': detail})}
+            return EventSourceResponse(size_error_response())
 
         # Check resume cache before doing S3 upload or any LLM work
         if user_id and resume_hash:
@@ -1212,7 +1354,7 @@ async def cache_status(request: Request, _: None = Depends(require_api_key)):
 
 
 @app.get("/api/test-matching")
-async def test_matching():
+async def test_matching(_: None = Depends(require_api_key)):
     """Debug endpoint to test matching system with sample data"""
     try:
         # Sample test data
@@ -1384,7 +1526,7 @@ async def database_stats(request: Request, _: None = Depends(require_api_key)):
 
 @app.get("/api/refresh-health")
 @limiter.limit("10/minute")
-async def refresh_health(request: Request):
+async def refresh_health(request: Request, _: None = Depends(require_api_key)):
     """Check the health of the cache refresh system"""
     try:
         from job_database import get_db, CacheMetadata, Job
@@ -1508,10 +1650,10 @@ def _sanitize_filename(value: str) -> str:
 async def tailor_resume_endpoint(
     request: Request,
     resume: UploadFile = File(...),
-    job_title: str = Form(...),
-    company: str = Form(...),
-    job_description: str = Form(default=""),
-    job_hash: str = Form(default=""),
+    job_title: str = Form(..., max_length=300),
+    company: str = Form(..., max_length=300),
+    job_description: str = Form(default="", max_length=20000),
+    job_hash: str = Form(default="", max_length=128),
     user_id: str = Depends(require_user),
 ):
     from quota import get_tailor_quota_status, record_tailor_request, WEEKLY_TAILOR_LIMIT
@@ -1558,10 +1700,14 @@ async def tailor_resume_endpoint(
         logger.error(f"Tailor error (user={user_id}): unsupported format — {resume.filename}")
         raise HTTPException(status_code=400, detail="Only PDF resumes are supported")
 
+    _reject_bad_content_type(resume.content_type, "pdf")
+
     file_content = await resume.read()
     if not file_content:
         logger.error(f"Tailor error (user={user_id}): empty file")
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    _enforce_upload_size(file_content)
 
     import time
     start_time = time.time()
