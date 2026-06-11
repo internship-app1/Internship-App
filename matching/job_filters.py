@@ -159,7 +159,7 @@ def _job_offers_no_sponsorship(job: Dict[str, Any]) -> bool:
     """True if the posting explicitly does NOT offer visa sponsorship (🛂 marker or text)."""
     title = job.get("title", "") or ""
     text = f"{title} {job.get('description', '')}".lower()
-    if "🛂" in title or "🛂" in text:
+    if "🛂" in text:
         return True
     no_sponsor_phrases = [
         "no sponsorship", "does not offer sponsorship", "not offer sponsorship",
@@ -305,7 +305,15 @@ def _passes_avoid_companies(job: Dict[str, Any], avoid_companies: List[str]) -> 
         return True
     for avoided in avoid_companies:
         a = _canonical_company(avoided)
-        if a and (a in company or company in a):
+        if not a:
+            continue
+        # Exact canonical match, or whole-word containment in either direction.
+        # Word boundaries stop "Meta" from excluding "Metamorphic Labs".
+        if (
+            a == company
+            or _matches_position_keyword(company, a)
+            or _matches_position_keyword(a, company)
+        ):
             return False
     return True
 

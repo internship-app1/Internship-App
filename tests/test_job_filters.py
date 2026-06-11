@@ -166,6 +166,16 @@ class TestAvoidCompanies:
         assert _passes_avoid_companies(_job(company="Amazon"), ["amazon"]) is False
         assert _passes_avoid_companies(_job(company="Google"), ["amazon"]) is True
 
+    def test_no_substring_false_positive(self):
+        # "Meta" must not exclude "Metamorphic Labs" (meta is a substring, not a word).
+        assert _passes_avoid_companies(_job(company="Metamorphic Labs"), ["Meta"]) is True
+        assert _passes_avoid_companies(_job(company="Meta"), ["Meta"]) is False
+
+    def test_matches_whole_word_with_legal_suffix(self):
+        # Canonicalization strips suffixes so "Amazon" still excludes real Amazon entities.
+        assert _passes_avoid_companies(_job(company="Amazon.com Inc"), ["Amazon"]) is False
+        assert _passes_avoid_companies(_job(company="Amazon Web Services"), ["Amazon"]) is False
+
 
 # ---------------------------------------------------------------------------
 # normalize_filters / has_active_filters / apply_filters
