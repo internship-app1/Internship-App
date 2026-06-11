@@ -272,6 +272,140 @@ class TestPrefilterAndScore:
 
 
 # ---------------------------------------------------------------------------
+# Hosted MCP mount (/mcp) — guarded for Python < 3.10
+# ---------------------------------------------------------------------------
+
+class TestHostedMcpGuard:
+    def test_app_boots_with_or_without_mcp_sdk(self, client):
+        """On 3.9 venvs the mcp SDK is absent: the app must boot with /mcp
+        unmounted. On >=3.10 with mcp installed, /mcp must be mounted."""
+        import app as appmod
+
+        mounted = any(getattr(r, "path", "") == "/mcp" for r in appmod.app.routes)
+        if appmod._mcp_remote is None:
+            assert not mounted
+            # catch-all serves the SPA shell instead of an MCP error
+            assert client.get("/api/v1/openapi.json").status_code == 200
+        else:
+            assert mounted
+
+
+# ---------------------------------------------------------------------------
+# Weekly remote-compile quota (15/week per user, API-key plane)
+# ---------------------------------------------------------------------------
+
+class TestRemoteCompileQuota:
+    def _fill_quota(self, user_id):
+        from job_database import get_db
+        from quota import WEEKLY_REMOTE_COMPILE_LIMIT, record_remote_compile
+
+        db = get_db()
+        try:
+            for _ in range(WEEKLY_REMOTE_COMPILE_LIMIT):
+                record_remote_compile(db, user_id, key_prefix="im_live_test")
+            db.commit()
+        finally:
+            db.close()
+
+    def test_quota_status_counts_and_resets(self):
+        from job_database import get_db
+        from quota import (
+            WEEKLY_REMOTE_COMPILE_LIMIT,
+            get_remote_compile_quota_status,
+            record_remote_compile,
+        )
+
+        db = get_db()
+        try:
+            status = get_remote_compile_quota_status(db, "quota_user")
+            assert status == {"limit": WEEKLY_REMOTE_COMPILE_LIMIT, "used": 0,
+                              "remaining": WEEKLY_REMOTE_COMPILE_LIMIT, "reset_at": None}
+            record_remote_compile(db, "quota_user", key_prefix="im_live_abcd")
+            db.commit()
+            status = get_remote_compile_quota_status(db, "quota_user")
+            assert status["used"] == 1
+            assert status["remaining"] == WEEKLY_REMOTE_COMPILE_LIMIT - 1
+            assert status["reset_at"] is not None
+        finally:
+            db.close()
+
+    def test_quota_is_per_user(self):
+        from job_database import get_db
+        from quota import get_remote_compile_quota_status
+
+        self._fill_quota("user_full")
+        db = get_db()
+        try:
+            assert get_remote_compile_quota_status(db, "user_full")["remaining"] == 0
+            assert get_remote_compile_quota_status(db, "user_other")["used"] == 0
+        finally:
+            db.close()
+
+    def test_exhausted_quota_returns_429_before_compiling(self, client, monkeypatch):
+        import mcp_api
+
+        raw, _ = create_api_key("user_quota_429", "q")
+        self._fill_quota("user_quota_429")
+
+        def _boom(*a, **k):
+            raise AssertionError("compile must not run once quota is exhausted")
+
+        monkeypatch.setattr(mcp_api, "compile_resume_json_to_pdf", _boom)
+        r = client.post(
+            "/api/v1/resume/compile",
+            headers={"X-API-Key": raw},
+            json={"resume_json": {"name": "x"}},
+        )
+        assert r.status_code == 429
+        assert "Weekly remote-compile quota" in r.json()["detail"]
+
+    def test_successful_compile_records_usage_with_key_prefix(self, client, monkeypatch):
+        import mcp_api
+        from job_database import RemoteCompileLog, get_db
+
+        raw, _ = create_api_key("user_quota_rec", "q")
+        monkeypatch.setattr(
+            mcp_api, "compile_resume_json_to_pdf",
+            lambda *a, **k: (b"%PDF-fake", {"pages": 1}),
+        )
+        r = client.post(
+            "/api/v1/resume/compile",
+            headers={"X-API-Key": raw},
+            json={"resume_json": {"name": "record-me"}},
+        )
+        assert r.status_code == 200
+        db = get_db()
+        try:
+            row = db.query(RemoteCompileLog).filter(
+                RemoteCompileLog.user_id == "user_quota_rec"
+            ).one()
+            assert row.key_prefix == raw[:12]
+        finally:
+            db.close()
+
+    def test_cache_hit_does_not_consume_quota(self, client, monkeypatch):
+        import mcp_api
+        from job_database import get_db
+        from quota import get_remote_compile_quota_status
+
+        raw, _ = create_api_key("user_quota_cache", "q")
+        monkeypatch.setattr(
+            mcp_api, "compile_resume_json_to_pdf",
+            lambda *a, **k: (b"%PDF-fake", {"pages": 1}),
+        )
+        payload = {"resume_json": {"name": "cache-me"}}
+        assert client.post("/api/v1/resume/compile",
+                           headers={"X-API-Key": raw}, json=payload).status_code == 200
+        assert client.post("/api/v1/resume/compile",
+                           headers={"X-API-Key": raw}, json=payload).status_code == 200
+        db = get_db()
+        try:
+            assert get_remote_compile_quota_status(db, "user_quota_cache")["used"] == 1
+        finally:
+            db.close()
+
+
+# ---------------------------------------------------------------------------
 # Compile core (requires pdflatex — skipped on machines without TeX)
 # ---------------------------------------------------------------------------
 

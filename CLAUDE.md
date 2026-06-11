@@ -30,7 +30,8 @@ A full-stack web app that matches students to software internships using AI. Use
 ```
 /
 ├── app.py                    # FastAPI app — all routes, startup/shutdown lifecycle
-├── job_database.py           # SQLAlchemy ORM models (jobs, cache_metadata, resume_cache)
+├── mcp_api.py                # MCP /api/v1 sub-app (X-API-Key auth, NO model calls) + /developer key CRUD
+├── job_database.py           # SQLAlchemy ORM models (jobs, cache_metadata, resume_cache, api_keys, quota logs)
 ├── job_cache.py              # Hybrid Redis + DB caching layer
 ├── s3_service.py             # AWS S3 resume upload/download
 ├── main.py                   # CLI entry point for local testing
@@ -80,6 +81,9 @@ A full-stack web app that matches students to software internships using AI. Use
     │   │   ├── LandingPage.tsx   # /  — marketing page
     │   │   ├── FindPage.tsx      # /find — main app (upload + results)
     │   │   ├── HistoryPage.tsx   # /history — past analyses
+    │   │   ├── UsagePage.tsx     # /usage — weekly quota cards (incl. remote_compile)
+    │   │   ├── DeveloperPage.tsx # /developer — API keys + MCP client config snippets
+    │   │   ├── DocsPage.tsx      # /docs — public API/MCP docs (sans-serif reading UI)
     │   │   ├── LoginPage.tsx     # /login
     │   │   └── HomePage.tsx
     │   ├── components/
@@ -136,7 +140,21 @@ uvicorn app:app --host 0.0.0.0 --port $PORT
 | POST | `/api/refresh-cache` | Manually trigger full job scrape |
 | POST | `/api/refresh-cache-incremental` | Incremental scrape |
 | GET | `/api/database-stats` | DB statistics |
+| GET | `/api/usage` | Per-user quota status (tailor, think-deeper, remote_compile) |
+| GET/POST/DELETE | `/api/developer/keys` | API-key CRUD for the /developer page (Clerk auth) |
+| GET | `/api/v1/jobs` | MCP: list active jobs (X-API-Key, 120/h) |
+| GET | `/api/v1/jobs/{hash}` | MCP: full untruncated JD (X-API-Key, 120/h) |
+| POST | `/api/v1/jobs/prefilter` | MCP: deterministic keyword+metadata scoring (X-API-Key, 120/h) |
+| POST | `/api/v1/resume/compile` | MCP: fallback pdflatex compile (15/week, 3 concurrent) |
+| GET | `/api/v1/openapi.json` | Published MCP contract (sub-app OpenAPI; main-app docs stay disabled) |
+| POST | `/mcp` | Hosted MCP discovery tier (streamable HTTP, Python ≥3.10 only): jobs_list/job_get/jobs_prefilter |
 | GET | `/{full_path}` | Catch-all → serves React SPA `index.html` |
+
+**`/api/v1` is the MCP surface** (see `mcp_api.py` and the workspace CLAUDE.md one level
+up): a mounted FastAPI sub-app, per-user `api_keys` auth, **zero model calls** — all AI
+reasoning belongs to the calling agent. The deterministic cores it wraps are
+`matching/matcher.prefilter_and_score` and `resume_tailor/tailor_resume.compile_resume_json_to_pdf`
+(the latter is shared by value with internship-mcp — compile parity rule applies).
 
 ---
 
@@ -241,6 +259,16 @@ python -m evals.run --no-cache --no-judge-cache  # force full re-run
 - Keyed by `(user_id, resume_hash)` — suffix `_deep` for think-deeper mode
 - 30-day TTL via `expires_at`
 
+**`api_keys`** — per-user MCP keys (raw `im_live_<32 base62>` shown once, SHA-256 stored)
+- `verify_api_key` bumps `last_used`; `revoked` is a soft kill switch
+- Distinct from `INTERNSHIP_MATCHER_API_KEY` (shared admin gate) — never conflate them
+
+**`tailor_request_log` / `think_deeper_request_log` / `remote_compile_log`** — append-only
+weekly-quota ledgers (rolling 7-day window, helpers in `quota.py`). `remote_compile_log`
+(15/week) is consumed ONLY by API-key remote compiles on `/api/v1/resume/compile` and
+carries the triggering `key_prefix`; it is deliberately separate from the in-app tailor
+quota so users can tell agent usage from web-app usage.
+
 Schema auto-created via `Base.metadata.create_all()` — no Alembic migration files exist.
 
 ---
@@ -265,6 +293,9 @@ Resume results cached in `resume_cache` table (30 days). Background `asyncio` ta
 - **Supabase:** Frontend Supabase client optionally uses Clerk JWT for RLS, but it's not enforced
 - `CLERK_PUBLISHABLE_KEY` backend env var (same value as `REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY`) is required for JWKS URL derivation
 - Auth was migrated: Google OAuth → Stack Auth → Clerk (some legacy code remains)
+- **Third auth plane (MCP):** `require_api_key_user` in `auth.py` verifies per-user
+  `X-API-Key` keys from the `api_keys` table — used only by `/api/v1`. Rate-limit
+  bucket for these routes is `sha256(full key)` (never a raw prefix slice).
 
 ---
 
@@ -396,3 +427,54 @@ This section tracks architectural decisions and non-obvious changes made during 
 - Zero-API-cost by default: frozen cached extractions, no Anthropic spend unless `--no-cache`.
 - Agent-as-judge pattern: Claude Code acts as model+judge instead of calling real Sonnet.
 - Use this before merging any prompt edit to `RESUME_ANALYSIS_SYSTEM_PROMPT`.
+
+### developer-page / docs-page / compile-quota branches (PRs #25–#27, Jun 2026)
+
+**MCP apply-agent surface added (PR #25)**
+- New `/api/v1` mounted FastAPI sub-app (`mcp_api.py`) — the data plane for the public
+  `internship-mcp-server` repo (github.com/internship-app1/internship-mcp-server).
+  Prime Directive: NO model calls behind any `/api/v1` route; the calling agent does all
+  reasoning. A test monkeypatches `anthropic.Anthropic` to raise to enforce this.
+- Deterministic cores extracted ADDITIVELY (web behavior unchanged):
+  `compile_resume_json_to_pdf` in `tailor_resume.py` (font lock → widow backstop →
+  spacing stretch → widow diagnostics; shared by value with the MCP repo — parity rule)
+  and `prefilter_and_score` + `_passes_hard_filters` in `matcher.py`.
+- `/developer` page: key CRUD, per-client MCP config snippets (Codex tab renders real
+  TOML, not JSON), ToS disclaimer.
+- Review fixes worth remembering: rate-limit bucket = sha256(full key) — raw[:12] only
+  has 4 random chars past "im_live_" and collides; compile overload uses a bounded
+  admission COUNTER, not Semaphore.locked() (point-in-time check let requests queue
+  instead of 429ing).
+
+**Docs page (PR #26)**
+- Public `/docs` (DocsPage.tsx): sans-serif reading UI (the site's mono-everywhere style
+  was unreadable for long-form docs), sticky sidebar with IntersectionObserver highlight,
+  cURL/Python/JS request-sample selector (one shared preference), field-level schema
+  tables with type/required badges.
+
+**Remote-compile weekly quota (PR #27)**
+- 15/week per account for `/api/v1/resume/compile`, ledger `remote_compile_log`
+  (key_prefix-attributed). Checked BEFORE compiling; recorded only on success; cache
+  hits free. Surfaced on /usage (own card, labelled API-key) + /developer (usage strip).
+  Deliberately separate from the tailor quota so agent usage ≠ web-app usage.
+
+**Hosted MCP discovery tier (hosted-mcp branch)**
+- New `/mcp` mount (`mcp_remote.py`) serves streamable HTTP for zero-install clients.
+  It intentionally exposes only stateless discovery tools: `jobs_list`, `job_get`, and
+  `jobs_prefilter` plus a resource that points users to the full local agent.
+- No profile vault, resume parsing, remote compile, packets, tracker, or Playwright on
+  hosted MCP. This keeps PII and heavy work off our servers.
+- Auth accepts `X-API-Key` or `?key=` for claude.ai custom connector compatibility.
+  Header wins when both are present. OAuth is the v2 replacement.
+- The `mcp` SDK requires Python ≥3.10. `app.py` guards the import so the local 3.9 venv
+  still boots and skips `/mcp`; production 3.11 mounts it. Keep this guard unless local
+  dev/CI moves to 3.11.
+- Starlette redirects `/mcp` → `/mcp/` for mounted apps; MCP clients POST and may not
+  follow 307s. The `_McpSlashRewrite` middleware rewrites the bare path in-process.
+
+**Testing footguns (recurring)**
+- App.test.tsx's Route mock renders EVERY route's element — stub each new page in the
+  mock list or the suite fails on unmocked hooks (bit us twice: DeveloperPage, DocsPage).
+- conftest's `sqlite:///:memory:` DB is per-connection; tests that cross threads
+  (TestClient, asyncio.to_thread) need the file-backed-DB fixture in test_mcp_api.py.
+- tests/test_resume_parser.py mock failures pre-date this work (verified on clean HEAD).

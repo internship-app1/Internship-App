@@ -313,8 +313,10 @@ def _compile_cache_key(resume_json: dict, options: CompileOptions) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+# No slowapi limit here: the 15/week quota (checked below) is strictly
+# tighter than the old 60/day rate limit, and the bounded-admission counter
+# already sheds bursts.
 @v1_app.post("/resume/compile", response_model=CompileResponse)
-@v1_limiter.limit("60/day")
 async def v1_compile(
     request: Request,
     body: CompileRequest,
@@ -328,8 +330,33 @@ async def v1_compile(
     cache_key = _compile_cache_key(body.resume_json, body.options)
     cached = _compile_cache.get(cache_key)
     if cached:
+        # Cache hits are free — they cost no CPU and don't consume quota.
         pdf_bytes, diagnostics = cached
         return {"pdf_base64": base64.b64encode(pdf_bytes).decode(), "diagnostics": diagnostics}
+
+    # Weekly per-user quota (15/week) — separate from the in-app tailor quota;
+    # this one is consumed by API-key traffic only. Enforced like the other
+    # quotas: only when usage tracking is on.
+    if _TRACK_USAGE:
+        from job_database import get_db
+        from quota import WEEKLY_REMOTE_COMPILE_LIMIT, get_remote_compile_quota_status
+
+        db = get_db()
+        try:
+            quota = get_remote_compile_quota_status(db, user_id)
+        finally:
+            db.close()
+        if quota["remaining"] <= 0:
+            reset = quota["reset_at"].isoformat() if quota["reset_at"] else "in <7 days"
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    f"Weekly remote-compile quota reached ({WEEKLY_REMOTE_COMPILE_LIMIT}/week "
+                    f"per account, resets {reset}). This limit applies only to API-key "
+                    "remote compiles — compile locally via Docker (COMPILE=local) for "
+                    "unlimited compiles."
+                ),
+            )
 
     global _compile_active
     if _compile_active >= COMPILE_CONCURRENCY:
@@ -352,6 +379,22 @@ async def v1_compile(
         raise HTTPException(status_code=422, detail=f"Compile failed: {e}")
     finally:
         _compile_active -= 1
+
+    # Record quota consumption (with the key that triggered it) AFTER a
+    # successful compile — failed compiles don't burn quota.
+    try:
+        from job_database import get_db
+        from quota import record_remote_compile
+
+        db = get_db()
+        try:
+            raw_key = request.headers.get("X-API-Key", "")
+            record_remote_compile(db, user_id, key_prefix=raw_key[:12] or None)
+            db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning("failed to record remote compile usage: %s", e)
 
     if len(_compile_cache) >= _COMPILE_CACHE_MAX:
         _compile_cache.pop(next(iter(_compile_cache)))

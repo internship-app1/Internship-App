@@ -1,7 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth, SignInButton } from '@clerk/react';
 import Header from '../components/Header';
+import CodeSnippet from '../components/CodeSnippet';
+import McpSetupDropdown from '../components/McpSetupDropdown';
 import { API_BASE_URL } from '../lib/api';
+import { useUsage } from '../hooks/useUsage';
+import { CLIENT_DROPDOWN_ITEMS, MODE_DROPDOWN_ITEMS } from '../lib/mcpDropdownItems';
+import {
+  getMcpClient,
+  getMcpMode,
+  getMcpSetup,
+  McpClientId,
+  McpSetupMode,
+} from '../data/mcpSetup';
 
 interface ApiKeyMeta {
   id: number;
@@ -12,82 +23,8 @@ interface ApiKeyMeta {
   revoked: boolean;
 }
 
-type ClientId = 'claude-code' | 'cursor' | 'codex' | 'windsurf' | 'cline';
-type Transport = 'docker' | 'uvx';
-
-const CLIENTS: { id: ClientId; label: string; configPath: string }[] = [
-  { id: 'claude-code', label: 'Claude Code', configPath: '.mcp.json (project root)' },
-  { id: 'cursor', label: 'Cursor', configPath: '~/.cursor/mcp.json' },
-  { id: 'codex', label: 'Codex', configPath: '~/.codex/config.toml (mcp_servers)' },
-  { id: 'windsurf', label: 'Windsurf', configPath: '~/.codeium/windsurf/mcp_config.json' },
-  { id: 'cline', label: 'Cline', configPath: 'cline_mcp_settings.json' },
-];
-
-function codexToml(transport: Transport, displayKey: string): string {
-  if (transport === 'docker') {
-    return [
-      '[mcp_servers.internship]',
-      'command = "docker"',
-      'args = ["run", "-i", "--rm", "-v", "internship-home:/root/.internship-agent", "-e", "INTERNSHIP_API_KEY", "ghcr.io/internship-app1/internship-mcp-server:latest"]',
-      `env = { INTERNSHIP_API_KEY = "${displayKey}" }`,
-      '',
-      '[mcp_servers.playwright]',
-      'command = "npx"',
-      'args = ["@playwright/mcp@latest"]',
-    ].join('\n');
-  }
-  return [
-    '[mcp_servers.internship]',
-    'command = "uvx"',
-    'args = ["internship-mcp"]',
-    `env = { INTERNSHIP_API_KEY = "${displayKey}", COMPILE = "remote" }`,
-    '',
-    '[mcp_servers.playwright]',
-    'command = "npx"',
-    'args = ["@playwright/mcp@latest"]',
-  ].join('\n');
-}
-
-function configSnippet(client: ClientId, transport: Transport, key: string): string {
-  const displayKey = key || 'im_live_...';
-  if (client === 'codex') {
-    return codexToml(transport, displayKey);
-  }
-  if (transport === 'docker') {
-    return JSON.stringify(
-      {
-        mcpServers: {
-          internship: {
-            command: 'docker',
-            args: [
-              'run', '-i', '--rm',
-              '-v', 'internship-home:/root/.internship-agent',
-              '-e', 'INTERNSHIP_API_KEY',
-              'ghcr.io/internship-app1/internship-mcp-server:latest',
-            ],
-            env: { INTERNSHIP_API_KEY: displayKey },
-          },
-          playwright: { command: 'npx', args: ['@playwright/mcp@latest'] },
-        },
-      },
-      null,
-      2,
-    );
-  }
-  return JSON.stringify(
-    {
-      mcpServers: {
-        internship: {
-          command: 'uvx',
-          args: ['internship-mcp'],
-          env: { INTERNSHIP_API_KEY: displayKey, COMPILE: 'remote' },
-        },
-        playwright: { command: 'npx', args: ['@playwright/mcp@latest'] },
-      },
-    },
-    null,
-    2,
-  );
+function currentOrigin(): string {
+  return typeof window === 'undefined' ? 'https://internshipmatcher.com' : window.location.origin;
 }
 
 function formatDate(iso: string | null): string {
@@ -98,8 +35,16 @@ function formatDate(iso: string | null): string {
   });
 }
 
+const SectionHeading: React.FC<{ title: string; blurb?: string }> = ({ title, blurb }) => (
+  <div className="mb-4">
+    <h2 className="font-sans text-[18px] font-semibold text-text-primary">{title}</h2>
+    {blurb && <p className="font-sans text-[14px] leading-6 text-text-tertiary mt-1">{blurb}</p>}
+  </div>
+);
+
 const DeveloperPage: React.FC = () => {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { data: usage } = useUsage();
   const [keys, setKeys] = useState<ApiKeyMeta[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -107,8 +52,8 @@ const DeveloperPage: React.FC = () => {
   const [newKeyName, setNewKeyName] = useState('');
   const [freshKey, setFreshKey] = useState('');
   const [copied, setCopied] = useState(false);
-  const [client, setClient] = useState<ClientId>('claude-code');
-  const [transport, setTransport] = useState<Transport>('docker');
+  const [client, setClient] = useState<McpClientId>('codex');
+  const [mode, setMode] = useState<McpSetupMode>('uvx');
 
   const fetchKeys = useCallback(async () => {
     if (!isSignedIn) return;
@@ -199,7 +144,7 @@ const DeveloperPage: React.FC = () => {
           <h2 className="font-serif text-3xl text-text-primary mb-3">
             Sign in to manage API keys.
           </h2>
-          <p className="font-mono text-xs text-text-tertiary mb-8 max-w-sm">
+          <p className="font-sans text-[15px] leading-7 text-text-secondary mb-8 max-w-sm">
             API keys connect the internship MCP server to your account.
           </p>
           <SignInButton mode="modal">
@@ -212,8 +157,10 @@ const DeveloperPage: React.FC = () => {
     );
   }
 
-  const snippet = configSnippet(client, transport, freshKey);
-  const selectedClient = CLIENTS.find((c) => c.id === client)!;
+  const origin = currentOrigin();
+  const setup = getMcpSetup(client, mode, freshKey, origin);
+  const selectedClient = getMcpClient(client);
+  const selectedMode = getMcpMode(mode);
 
   return (
     <div className="min-h-screen bg-bg text-text-primary">
@@ -226,8 +173,8 @@ const DeveloperPage: React.FC = () => {
               Account / Developer
             </span>
           </div>
-          <h1 className="font-serif text-3xl text-text-primary">API keys.</h1>
-          <p className="font-mono text-xs text-text-tertiary mt-2 max-w-lg">
+          <h1 className="font-sans text-[28px] font-semibold tracking-[-0.01em] text-text-primary">API keys</h1>
+          <p className="font-sans text-[15px] leading-7 text-text-secondary mt-2 max-w-lg">
             Connect any MCP agent — Claude Code, Cursor, Codex, Windsurf, Cline — to the
             apply agent. Your agent does the thinking; these keys only fetch jobs, run
             deterministic scoring, and (optionally) compile PDFs.
@@ -235,27 +182,28 @@ const DeveloperPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="border border-red-500/40 bg-red-500/5 px-4 py-3 mb-8 font-mono text-xs text-red-500">
+          <div className="border border-red-500/40 bg-red-500/5 px-4 py-3 mb-8 font-sans text-[14px] text-red-500">
             {error}
           </div>
         )}
 
         {/* Create key */}
         <section className="mb-12">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-            Create a key
-          </div>
+          <SectionHeading
+            title="Create a key"
+            blurb="Name it after where it lives — keys are shown once and can be revoked any time."
+          />
           <div className="flex gap-3">
             <input
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
               placeholder="Key name (optional, e.g. “laptop / cursor”)"
-              className="flex-1 bg-surface border border-lp-border px-4 py-2.5 font-mono text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
+              className="flex-1 bg-surface border border-lp-border px-4 py-2.5 font-sans text-[14px] text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
             />
             <button
               onClick={createKey}
               disabled={creating}
-              className="bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity disabled:opacity-40"
+              className="bg-text-primary text-bg px-5 py-2.5 font-sans text-[14px] font-medium hover:opacity-80 transition-opacity disabled:opacity-40"
             >
               {creating ? 'Creating…' : 'Generate key →'}
             </button>
@@ -263,7 +211,7 @@ const DeveloperPage: React.FC = () => {
 
           {freshKey && (
             <div className="mt-4 border border-lp-border bg-surface p-4">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
+              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-text-tertiary mb-2">
                 Your new key — shown once, copy it now
               </div>
               <div className="flex items-center gap-3">
@@ -283,27 +231,25 @@ const DeveloperPage: React.FC = () => {
 
         {/* Key list */}
         <section className="mb-12">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-            Active keys
-          </div>
+          <SectionHeading title="Active keys" />
           {loading ? (
             <div className="flex items-center justify-center h-24">
               <div className="h-6 w-6 border-2 border-text-primary border-t-transparent animate-spin" />
             </div>
           ) : keys.length === 0 ? (
-            <p className="font-mono text-xs text-text-tertiary">No keys yet.</p>
+            <p className="font-sans text-[14px] text-text-tertiary">No keys yet.</p>
           ) : (
             <div className="border border-lp-border divide-y divide-lp-border">
               {keys.map((k) => (
                 <div key={k.id} className="flex items-center gap-4 px-4 py-3">
                   <code className="font-mono text-xs text-text-primary">{k.key_prefix}…</code>
-                  <span className="font-mono text-xs text-text-secondary flex-1 truncate">
+                  <span className="font-sans text-[14px] text-text-secondary flex-1 truncate">
                     {k.name || 'unnamed'}
                   </span>
-                  <span className="font-mono text-[10px] text-text-tertiary hidden sm:block">
+                  <span className="font-sans text-[12px] text-text-tertiary hidden sm:block">
                     created {formatDate(k.created_at)}
                   </span>
-                  <span className="font-mono text-[10px] text-text-tertiary hidden sm:block">
+                  <span className="font-sans text-[12px] text-text-tertiary hidden sm:block">
                     last used {formatDate(k.last_used)}
                   </span>
                   <button
@@ -318,86 +264,122 @@ const DeveloperPage: React.FC = () => {
           )}
         </section>
 
+        {/* Remote compile usage (API-key quota) */}
+        {usage?.remote_compile && (
+          <section className="mb-12">
+            <SectionHeading
+              title="Remote compile usage"
+              blurb="Resume compiles your API keys run on our servers when the local agent has no TeX install."
+            />
+            <div className="border border-lp-border bg-surface p-5">
+              <div className="flex items-baseline gap-1.5 mb-3">
+                <span className={`font-serif text-3xl leading-none ${
+                  usage.remote_compile.remaining === 0 ? 'text-red-500' : 'text-text-primary'
+                }`}>
+                  {usage.remote_compile.used}
+                </span>
+                <span className="font-mono text-sm text-text-tertiary">
+                  / {usage.remote_compile.limit} this week
+                </span>
+              </div>
+              <div className="w-full h-px bg-lp-border mb-4 overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    usage.remote_compile.remaining === 0 ? 'bg-red-500' : 'bg-text-primary'
+                  }`}
+                  style={{ width: `${Math.min((usage.remote_compile.used / usage.remote_compile.limit) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="font-sans text-[14px] leading-6 text-text-tertiary">
+                Installing TeX locally makes compiles unlimited and keeps them off our
+                servers. Also shown on the{' '}
+                <a href="/usage" className="underline hover:text-text-primary">Usage page</a>.
+              </p>
+            </div>
+          </section>
+        )}
+
         {/* Config snippets */}
         <section className="mb-12">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-            Connect your agent
+          <SectionHeading
+            title="Connect your agent"
+            blurb="Pick your client and setup path, then copy the generated config."
+          />
+
+          <div className="flex flex-wrap gap-3 mb-4">
+            <McpSetupDropdown
+              label="Client"
+              value={client}
+              items={CLIENT_DROPDOWN_ITEMS}
+              onChange={setClient}
+            />
+            <McpSetupDropdown
+              label="Mode"
+              value={mode}
+              items={MODE_DROPDOWN_ITEMS}
+              onChange={setMode}
+            />
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-3">
-            {CLIENTS.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setClient(c.id)}
-                className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                  client === c.id
-                    ? 'border-text-primary text-text-primary'
-                    : 'border-lp-border text-text-tertiary hover:text-text-secondary'
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
+          <div className="border border-lp-border bg-surface p-4 mb-3">
+            <div className="font-sans text-[13px] font-semibold text-text-primary mb-1">
+              {selectedClient.label} · {selectedMode.label}
+            </div>
+            <p className="font-sans text-[14px] leading-6 text-text-secondary mb-2">
+              {setup.capability}
+            </p>
+            <p className="font-sans text-[13px] text-text-tertiary">
+              {mode === 'hosted' ? 'Use this command or config in your client.' : (
+                <>Save to <span className="font-mono text-[12px] text-text-secondary">{setup.configPath}</span>.</>
+              )}
+            </p>
           </div>
 
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => setTransport('docker')}
-              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                transport === 'docker'
-                  ? 'border-text-primary text-text-primary'
-                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              Docker · local compile (recommended)
-            </button>
-            <button
-              onClick={() => setTransport('uvx')}
-              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                transport === 'uvx'
-                  ? 'border-text-primary text-text-primary'
-                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
-              }`}
-            >
-              uvx · quick start
-            </button>
-          </div>
-
-          <p className="font-mono text-[10px] text-text-tertiary mb-2">
-            Save to <span className="text-text-secondary">{selectedClient.configPath}</span>
+          <p className="font-sans text-[13px] leading-6 text-text-tertiary mb-2">
+            {setup.notes.join(' ')}
           </p>
 
-          <div className="relative border border-lp-border bg-surface">
-            <button
-              onClick={() => copySnippet(snippet)}
-              className="absolute top-3 right-3 border border-lp-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-text-secondary hover:text-text-primary transition-colors bg-bg"
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-            <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-text-secondary">
-              {snippet}
-            </pre>
-          </div>
+          <CodeSnippet
+            title={setup.configPath}
+            subtitle={selectedMode.label}
+            code={setup.snippet}
+            language={setup.snippetLang}
+            copyText={setup.snippet}
+            className="mb-3"
+          />
           {!freshKey && (
-            <p className="font-mono text-[10px] text-text-tertiary mt-2">
+            <p className="font-sans text-[13px] leading-6 text-text-tertiary mt-2">
               Generate a key above and it will be filled into the snippet automatically.
+            </p>
+          )}
+          {client === 'codex' && mode !== 'hosted' && (
+            <p className="font-sans text-[13px] leading-6 text-text-tertiary mt-2">
+              Codex uses <code className="code-inline text-text-secondary">~/.codex/config.toml</code>,
+              not a project <code className="code-inline text-text-secondary">.mcp.json</code>. Restart
+              Codex after saving, or use <code className="code-inline text-text-secondary">codex mcp add</code>
+              from the full docs.
+            </p>
+          )}
+          {mode === 'hosted' && (
+            <p className="font-sans text-[13px] leading-6 text-text-tertiary mt-2">
+              Keep hosted keys disposable. If your connector supports headers, prefer
+              <code className="code-inline text-text-secondary"> X-API-Key</code>; otherwise use the URL
+              key for testing and revoke it when done.
             </p>
           )}
         </section>
 
         {/* Disclaimer */}
         <section className="pt-6 border-t border-lp-border">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
-            Terms of use
-          </div>
-          <p className="font-mono text-[11px] leading-relaxed text-text-tertiary max-w-2xl">
+          <SectionHeading title="Terms of use" />
+          <p className="font-sans text-[14px] leading-6 text-text-tertiary max-w-2xl">
             The apply agent assists with applications you direct. You are responsible for
             reviewing every application before submission, for the truthfulness of all
             answers, and for complying with each job board's terms of service. Automated
             submission (v2) is opt-in, capped per session, and logged. Your applicant
             profile and EEO answers are stored encrypted on your machine and are never
             sent to our servers. Rate limits apply per key: jobs and prefilter 120/hour,
-            remote compile 60/day.
+            remote compile 15/week.
           </p>
         </section>
       </main>
