@@ -162,7 +162,7 @@ async def lifespan(app: FastAPI):
         # the lifespan multiple times per process, so reset _ran before each
         # run. In production the lifespan only runs once — harmless there.
         sm = _mcp_remote.remote_mcp.session_manager
-        sm._ran = False
+        sm._has_started = False  # allow re-run when lifespan cycles in tests
         async with sm.run():
             yield  # server is running
     else:
