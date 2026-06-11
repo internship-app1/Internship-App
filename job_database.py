@@ -635,6 +635,29 @@ def get_job_by_hash(job_hash: str, db: Optional[Session] = None) -> Optional[Dic
             close_db(db)
 
 
+def update_job_jd(job_hash: str, description: str, job_requirements: str, required_skills: List[str]) -> bool:
+    """Persist real JD text and skills fetched lazily from the apply_link.
+    Called once on first job_get when the stored description is synthetic boilerplate.
+    """
+    db = get_db()
+    try:
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        if not job:
+            return False
+        job.description = description
+        job.job_requirements = job_requirements
+        if required_skills:
+            job.required_skills = json.dumps(required_skills)
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error("Error updating JD for %s: %s", job_hash[:12], e)
+        db.rollback()
+        return False
+    finally:
+        close_db(db)
+
+
 def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
     """
     Get jobs added in the last N hours, filtered by posting date.
