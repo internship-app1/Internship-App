@@ -33,6 +33,7 @@ from job_database import (
     get_new_jobs_since,
     list_api_keys,
     revoke_api_key,
+    update_job_jd,
 )
 from matching.matcher import prefilter_and_score
 from resume_tailor.tailor_resume import compile_resume_json_to_pdf
@@ -132,6 +133,8 @@ class ResumeProfile(BaseModel):
     location: Optional[str] = None
     willing_to_relocate: bool = False
     remote_ok: bool = False
+    citizenship: Optional[str] = None
+    industry_preferences: List[str] = Field(default_factory=list)
 
     @field_validator("experience_level", mode="before")
     @classmethod
@@ -143,6 +146,21 @@ class ResumeProfile(BaseModel):
                 f"(got: {v!r})"
             )
         return normalized
+
+    @field_validator("citizenship", mode="before")
+    @classmethod
+    def normalize_citizenship(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        mapping = {
+            "us_citizen": "us_citizen", "citizen": "us_citizen", "us citizen": "us_citizen",
+            "permanent_resident": "permanent_resident", "green_card": "permanent_resident",
+            "green card": "permanent_resident", "pr": "permanent_resident",
+            "international": "international", "visa": "international",
+            "f1": "international", "f-1": "international",
+            "h1b": "international", "h-1b": "international",
+        }
+        return mapping.get(str(v).lower().strip())  # None if unrecognized — soft fail
 
 
 class PrefilterFilters(BaseModel):
@@ -170,6 +188,7 @@ class PrefilterCandidate(BaseModel):
     combined_score: int
     skill_matches: List[str]
     skill_gaps: List[str]
+    desc_skill_matches: List[str] = Field(default_factory=list)
     hard_filter_passed: bool
     description_preview: str
 
@@ -279,10 +298,32 @@ async def v1_job_detail(
     job_hash: str,
     user_id: str = Depends(require_api_key_user),
 ):
-    """Full job record including the untruncated description."""
+    """Full job record including the untruncated description. On first call for
+    a job with synthetic boilerplate, fetches the real JD from the apply_link
+    and caches it — subsequent calls return instantly from the DB."""
     job = await asyncio.to_thread(get_job_by_hash, job_hash)
     if not job:
         raise HTTPException(status_code=404, detail="Unknown job_hash")
+    # Lazy real-JD enrichment: only fires when description is synthetic boilerplate
+    # (never for jobs already enriched). Zero cost on repeat calls.
+    if "This role involves" in (job.get("description") or ""):
+        try:
+            from job_scrapers.scrape_github_internships import scrape_job_details_from_apply_link
+            from matching.matcher import extract_skills_from_text
+            details = await asyncio.to_thread(
+                scrape_job_details_from_apply_link, job["apply_link"]
+            )
+            if details and details.get("description"):
+                real_desc = details["description"]
+                real_reqs = details.get("job_requirements") or ""
+                real_skills = extract_skills_from_text(real_desc + " " + real_reqs)
+                await asyncio.to_thread(
+                    update_job_jd, job["job_hash"], real_desc, real_reqs, real_skills
+                )
+                job = {**job, "description": real_desc, "job_requirements": real_reqs,
+                       "required_skills": real_skills or job.get("required_skills") or []}
+        except Exception as e:
+            logger.debug("lazy JD fetch failed for %s: %s", job_hash[:12], e)
     return {
         "job_hash": job["job_hash"],
         "company": job["company"],
