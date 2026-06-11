@@ -311,7 +311,7 @@ AWS_SECRET_ACCESS_KEY
 AWS_REGION              # default: us-east-1
 AWS_BUCKET_NAME         # S3 bucket for resumes
 SECRET_KEY              # Session middleware secret
-ENVIRONMENT             # "development" or "production"
+ENVIRONMENT             # "development" | "staging" | "production"
 PORT                    # Injected by Railway/Render
 CLERK_PUBLISHABLE_KEY   # Same as REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY — used to derive JWKS URL
 TRACK_USAGE             # "true" (default) | "false" — disables quotas/rate limits for local dev
