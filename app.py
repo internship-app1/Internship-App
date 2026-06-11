@@ -971,7 +971,10 @@ async def stream_match_resume(
                 return
 
             # Apply user-supplied filters (location, position, company size, citizenship, avoided companies)
-            normalized_filters = normalize_filters(_parse_filters(filters))
+            raw_filters = _parse_filters(filters)
+            normalized_filters = normalize_filters(raw_filters)
+            # Preserve the user's original payload (nice casing + ids) for history display.
+            applied_filters_payload = raw_filters if has_active_filters(normalized_filters) else None
             if has_active_filters(normalized_filters):
                 total_before = len(jobs)
                 jobs = apply_normalized_filters(jobs, normalized_filters)
@@ -1099,7 +1102,7 @@ async def stream_match_resume(
                 if user_id and resume_hash:
                     try:
                         save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
-                        set_resume_cache(user_id, save_cache_key, final_results, resume_skills)
+                        set_resume_cache(user_id, save_cache_key, final_results, resume_skills, applied_filters_payload)
                         logger.info(f"Saved results to resume cache for user {user_id}")
                     except Exception as cache_err:
                         logger.warning(f"Failed to save resume cache: {cache_err}")

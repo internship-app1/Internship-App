@@ -50,6 +50,7 @@ const PROGRESS_MILESTONES = [
 const buildFiltersPayload = (f: JobFilterState) => ({
   locations: f.locations,
   positions: f.positions,
+  target_companies: f.targetCompanies,
   company_sizes: f.companySizes,
   citizenship: f.citizenship,
   avoid_companies: f.avoidCompanies,
@@ -431,7 +432,7 @@ const FindPage: React.FC = () => {
     <div className="min-h-screen bg-bg text-text-primary">
       <Header />
 
-      <main className="max-w-[860px] mx-auto px-6 py-12 space-y-0">
+      <main className="max-w-[1080px] mx-auto px-6 py-12 space-y-0">
 
         {/* Hero */}
         <div className="pt-6 pb-10 border-b border-lp-border">
@@ -449,9 +450,10 @@ const FindPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Upload card */}
+        {/* Upload card + filters sidebar */}
         <div className="py-8 border-b border-lp-border">
-          <div className="max-w-2xl">
+          <div className="flex flex-col lg:flex-row lg:gap-10 lg:items-start">
+          <div className="flex-1 min-w-0 lg:max-w-2xl">
             <div className="flex items-center gap-2 mb-5">
               <Upload className="h-4 w-4 text-text-secondary" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
@@ -506,9 +508,6 @@ const FindPage: React.FC = () => {
               {/* Think Deeper toggle */}
               <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
 
-              {/* Search filters */}
-              <JobFilters value={filters} onChange={setFilters} disabled={isLoading} />
-
               <button
                 type="submit"
                 className={`w-full md:w-auto px-8 py-2.5 bg-text-primary text-bg font-mono text-xs tracking-wide hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
@@ -528,6 +527,12 @@ const FindPage: React.FC = () => {
                 )}
               </button>
             </form>
+          </div>
+
+            {/* Filters — right sidebar (stacks below upload on mobile) */}
+            <aside className="w-full lg:w-80 lg:flex-shrink-0 mt-8 lg:mt-0">
+              <JobFilters value={filters} onChange={setFilters} disabled={isLoading} alwaysOpen />
+            </aside>
           </div>
         </div>
 

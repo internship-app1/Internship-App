@@ -15,6 +15,7 @@ from matching.job_filters import (
     _passes_position,
     _passes_company_size,
     _passes_avoid_companies,
+    _passes_target_companies,
     normalize_filters,
     has_active_filters,
     apply_filters,
@@ -178,6 +179,28 @@ class TestAvoidCompanies:
 
 
 # ---------------------------------------------------------------------------
+# _passes_target_companies — include-only big-company filter
+# ---------------------------------------------------------------------------
+class TestTargetCompanies:
+    def test_no_filter(self):
+        assert _passes_target_companies(_job(company="TinyStartup"), []) is True
+
+    def test_includes_only_selected(self):
+        assert _passes_target_companies(_job(company="Google"), ["Google"]) is True
+        assert _passes_target_companies(_job(company="TinyStartup"), ["Google"]) is False
+
+    def test_matches_legal_suffix_variants(self):
+        assert _passes_target_companies(_job(company="Amazon.com Inc"), ["Amazon"]) is True
+        assert _passes_target_companies(_job(company="Amazon Web Services"), ["Amazon"]) is True
+
+    def test_no_substring_false_positive(self):
+        assert _passes_target_companies(_job(company="Metamorphic Labs"), ["Meta"]) is False
+
+    def test_blank_company_excluded(self):
+        assert _passes_target_companies(_job(company=""), ["Google"]) is False
+
+
+# ---------------------------------------------------------------------------
 # normalize_filters / has_active_filters / apply_filters
 # ---------------------------------------------------------------------------
 class TestNormalizeAndApply:
@@ -217,3 +240,17 @@ class TestNormalizeAndApply:
     def test_apply_no_filters_returns_original(self):
         jobs = [_job(company="A"), _job(company="B")]
         assert apply_filters(jobs, {}) is jobs
+
+    def test_normalize_target_companies(self):
+        n = normalize_filters({"target_companies": ["Google", "Meta"]})
+        assert n["target_companies"] == ["Google", "Meta"]
+        assert has_active_filters(n) is True
+
+    def test_apply_target_companies_restricts(self):
+        jobs = [
+            _job(company="Google", title="SWE Intern"),
+            _job(company="TinyStartup", title="SWE Intern"),
+            _job(company="Nvidia", title="SWE Intern"),
+        ]
+        out = apply_filters(jobs, {"target_companies": ["Google", "Nvidia"]})
+        assert sorted(j["company"] for j in out) == ["Google", "Nvidia"]

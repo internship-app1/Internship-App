@@ -212,6 +212,8 @@ def normalize_filters(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         "company_sizes": sorted(company_sizes),
         "citizenship": citizenship,
         "avoid_companies": _as_str_list(raw.get("avoid_companies")),
+        # Restrict results to these specific (typically large/well-known) employers.
+        "target_companies": _as_str_list(raw.get("target_companies")),
     }
 
 
@@ -224,6 +226,7 @@ def has_active_filters(normalized: Dict[str, Any]) -> bool:
         or normalized.get("positions")
         or normalized.get("company_sizes")
         or normalized.get("avoid_companies")
+        or normalized.get("target_companies")
         or normalized.get("citizenship", "any") != "any"
     )
 
@@ -318,6 +321,27 @@ def _passes_avoid_companies(job: Dict[str, Any], avoid_companies: List[str]) -> 
     return True
 
 
+def _passes_target_companies(job: Dict[str, Any], target_companies: List[str]) -> bool:
+    """Include-only filter: keep a job only if its employer is one of the
+    user-selected companies (whole-word/canonical match, mirroring the avoid logic)."""
+    if not target_companies:
+        return True
+    company = _canonical_company(job.get("company", ""))
+    if not company:
+        return False
+    for target in target_companies:
+        t = _canonical_company(target)
+        if not t:
+            continue
+        if (
+            t == company
+            or _matches_position_keyword(company, t)
+            or _matches_position_keyword(t, company)
+        ):
+            return True
+    return False
+
+
 def apply_normalized_filters(jobs: List[Dict[str, Any]], normalized: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Filter ``jobs`` using an ALREADY-normalized filters dict (see normalize_filters).
 
@@ -332,10 +356,12 @@ def apply_normalized_filters(jobs: List[Dict[str, Any]], normalized: Dict[str, A
     company_sizes = normalized["company_sizes"]
     citizenship = normalized["citizenship"]
     avoid_companies = normalized["avoid_companies"]
+    target_companies = normalized.get("target_companies", [])
 
     filtered = [
         job for job in jobs
         if _passes_avoid_companies(job, avoid_companies)
+        and _passes_target_companies(job, target_companies)
         and _passes_location(job, locations)
         and _passes_position(job, positions)
         and _passes_company_size(job, company_sizes)
@@ -346,7 +372,7 @@ def apply_normalized_filters(jobs: List[Dict[str, Any]], normalized: Dict[str, A
         f"[Filters] {len(filtered)}/{len(jobs)} jobs passed "
         f"(locations={locations}, positions={sorted(positions)}, "
         f"company_sizes={sorted(company_sizes)}, citizenship={citizenship}, "
-        f"avoid={avoid_companies})"
+        f"avoid={avoid_companies}, target={target_companies})"
     )
     return filtered
 
