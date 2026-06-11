@@ -157,7 +157,13 @@ async def lifespan(app: FastAPI):
     if _mcp_remote is not None:
         # FastAPI does not run a mounted sub-app's lifespan — the MCP
         # session manager must be started from the parent lifespan.
-        async with _mcp_remote.remote_mcp.session_manager.run():
+        # StreamableHTTPSessionManager has a one-shot _ran guard that raises
+        # if .run() is called twice on the same instance. Test fixtures cycle
+        # the lifespan multiple times per process, so reset _ran before each
+        # run. In production the lifespan only runs once — harmless there.
+        sm = _mcp_remote.remote_mcp.session_manager
+        sm._ran = False
+        async with sm.run():
             yield  # server is running
     else:
         yield  # server is running
