@@ -1,0 +1,408 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { useAuth, SignInButton } from '@clerk/react';
+import Header from '../components/Header';
+import { API_BASE_URL } from '../lib/api';
+
+interface ApiKeyMeta {
+  id: number;
+  key_prefix: string;
+  name: string | null;
+  created_at: string | null;
+  last_used: string | null;
+  revoked: boolean;
+}
+
+type ClientId = 'claude-code' | 'cursor' | 'codex' | 'windsurf' | 'cline';
+type Transport = 'docker' | 'uvx';
+
+const CLIENTS: { id: ClientId; label: string; configPath: string }[] = [
+  { id: 'claude-code', label: 'Claude Code', configPath: '.mcp.json (project root)' },
+  { id: 'cursor', label: 'Cursor', configPath: '~/.cursor/mcp.json' },
+  { id: 'codex', label: 'Codex', configPath: '~/.codex/config.toml (mcp_servers)' },
+  { id: 'windsurf', label: 'Windsurf', configPath: '~/.codeium/windsurf/mcp_config.json' },
+  { id: 'cline', label: 'Cline', configPath: 'cline_mcp_settings.json' },
+];
+
+function codexToml(transport: Transport, displayKey: string): string {
+  if (transport === 'docker') {
+    return [
+      '[mcp_servers.internship]',
+      'command = "docker"',
+      'args = ["run", "-i", "--rm", "-v", "internship-home:/root/.internship-agent", "-e", "INTERNSHIP_API_KEY", "ghcr.io/internship-app1/internship-mcp-server:latest"]',
+      `env = { INTERNSHIP_API_KEY = "${displayKey}" }`,
+      '',
+      '[mcp_servers.playwright]',
+      'command = "npx"',
+      'args = ["@playwright/mcp@latest"]',
+    ].join('\n');
+  }
+  return [
+    '[mcp_servers.internship]',
+    'command = "uvx"',
+    'args = ["internship-mcp"]',
+    `env = { INTERNSHIP_API_KEY = "${displayKey}", COMPILE = "remote" }`,
+    '',
+    '[mcp_servers.playwright]',
+    'command = "npx"',
+    'args = ["@playwright/mcp@latest"]',
+  ].join('\n');
+}
+
+function configSnippet(client: ClientId, transport: Transport, key: string): string {
+  const displayKey = key || 'im_live_...';
+  if (client === 'codex') {
+    return codexToml(transport, displayKey);
+  }
+  if (transport === 'docker') {
+    return JSON.stringify(
+      {
+        mcpServers: {
+          internship: {
+            command: 'docker',
+            args: [
+              'run', '-i', '--rm',
+              '-v', 'internship-home:/root/.internship-agent',
+              '-e', 'INTERNSHIP_API_KEY',
+              'ghcr.io/internship-app1/internship-mcp-server:latest',
+            ],
+            env: { INTERNSHIP_API_KEY: displayKey },
+          },
+          playwright: { command: 'npx', args: ['@playwright/mcp@latest'] },
+        },
+      },
+      null,
+      2,
+    );
+  }
+  return JSON.stringify(
+    {
+      mcpServers: {
+        internship: {
+          command: 'uvx',
+          args: ['internship-mcp'],
+          env: { INTERNSHIP_API_KEY: displayKey, COMPILE: 'remote' },
+        },
+        playwright: { command: 'npx', args: ['@playwright/mcp@latest'] },
+      },
+    },
+    null,
+    2,
+  );
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return '—';
+  const normalized = iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z';
+  return new Date(normalized).toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
+const DeveloperPage: React.FC = () => {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const [keys, setKeys] = useState<ApiKeyMeta[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [freshKey, setFreshKey] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [client, setClient] = useState<ClientId>('claude-code');
+  const [transport, setTransport] = useState<Transport>('docker');
+
+  const fetchKeys = useCallback(async () => {
+    if (!isSignedIn) return;
+    setLoading(true);
+    setError('');
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/api/developer/keys`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const json = await res.json();
+      setKeys(json.keys);
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load keys.');
+    } finally {
+      setLoading(false);
+    }
+  }, [isSignedIn, getToken]);
+
+  useEffect(() => { fetchKeys(); }, [fetchKeys]);
+
+  const createKey = async () => {
+    setCreating(true);
+    setError('');
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/api/developer/keys`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newKeyName || null }),
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const json = await res.json();
+      setFreshKey(json.key);
+      setNewKeyName('');
+      await fetchKeys();
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to create key.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const revokeKey = async (id: number) => {
+    if (!window.confirm('Revoke this key? Any MCP client using it will stop working.')) return;
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE_URL}/api/developer/keys/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      await fetchKeys();
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to revoke key.');
+    }
+  };
+
+  const copySnippet = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-bg text-text-primary">
+        <Header />
+        <div className="flex items-center justify-center h-64">
+          <div className="h-8 w-8 border-2 border-text-primary border-t-transparent animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-bg text-text-primary">
+        <Header />
+        <div className="max-w-[860px] mx-auto px-6 py-24">
+          <div className="flex flex-col gap-2 mb-6">
+            <span className="block w-8 h-px bg-text-tertiary" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+              Sign in required
+            </span>
+          </div>
+          <h2 className="font-serif text-3xl text-text-primary mb-3">
+            Sign in to manage API keys.
+          </h2>
+          <p className="font-mono text-xs text-text-tertiary mb-8 max-w-sm">
+            API keys connect the internship MCP server to your account.
+          </p>
+          <SignInButton mode="modal">
+            <button className="inline-block bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+              Sign in →
+            </button>
+          </SignInButton>
+        </div>
+      </div>
+    );
+  }
+
+  const snippet = configSnippet(client, transport, freshKey);
+  const selectedClient = CLIENTS.find((c) => c.id === client)!;
+
+  return (
+    <div className="min-h-screen bg-bg text-text-primary">
+      <Header />
+      <main className="max-w-[860px] mx-auto px-6 py-12">
+        <div className="mb-10 pb-6 border-b border-lp-border">
+          <div className="flex flex-col gap-2 mb-4">
+            <span className="block w-8 h-px bg-text-tertiary" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-text-secondary">
+              Account / Developer
+            </span>
+          </div>
+          <h1 className="font-serif text-3xl text-text-primary">API keys.</h1>
+          <p className="font-mono text-xs text-text-tertiary mt-2 max-w-lg">
+            Connect any MCP agent — Claude Code, Cursor, Codex, Windsurf, Cline — to the
+            apply agent. Your agent does the thinking; these keys only fetch jobs, run
+            deterministic scoring, and (optionally) compile PDFs.
+          </p>
+        </div>
+
+        {error && (
+          <div className="border border-red-500/40 bg-red-500/5 px-4 py-3 mb-8 font-mono text-xs text-red-500">
+            {error}
+          </div>
+        )}
+
+        {/* Create key */}
+        <section className="mb-12">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
+            Create a key
+          </div>
+          <div className="flex gap-3">
+            <input
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              placeholder="Key name (optional, e.g. “laptop / cursor”)"
+              className="flex-1 bg-surface border border-lp-border px-4 py-2.5 font-mono text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
+            />
+            <button
+              onClick={createKey}
+              disabled={creating}
+              className="bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity disabled:opacity-40"
+            >
+              {creating ? 'Creating…' : 'Generate key →'}
+            </button>
+          </div>
+
+          {freshKey && (
+            <div className="mt-4 border border-lp-border bg-surface p-4">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
+                Your new key — shown once, copy it now
+              </div>
+              <div className="flex items-center gap-3">
+                <code className="flex-1 font-mono text-xs text-text-primary break-all select-all">
+                  {freshKey}
+                </code>
+                <button
+                  onClick={() => copySnippet(freshKey)}
+                  className="border border-lp-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Key list */}
+        <section className="mb-12">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
+            Active keys
+          </div>
+          {loading ? (
+            <div className="flex items-center justify-center h-24">
+              <div className="h-6 w-6 border-2 border-text-primary border-t-transparent animate-spin" />
+            </div>
+          ) : keys.length === 0 ? (
+            <p className="font-mono text-xs text-text-tertiary">No keys yet.</p>
+          ) : (
+            <div className="border border-lp-border divide-y divide-lp-border">
+              {keys.map((k) => (
+                <div key={k.id} className="flex items-center gap-4 px-4 py-3">
+                  <code className="font-mono text-xs text-text-primary">{k.key_prefix}…</code>
+                  <span className="font-mono text-xs text-text-secondary flex-1 truncate">
+                    {k.name || 'unnamed'}
+                  </span>
+                  <span className="font-mono text-[10px] text-text-tertiary hidden sm:block">
+                    created {formatDate(k.created_at)}
+                  </span>
+                  <span className="font-mono text-[10px] text-text-tertiary hidden sm:block">
+                    last used {formatDate(k.last_used)}
+                  </span>
+                  <button
+                    onClick={() => revokeKey(k.id)}
+                    className="font-mono text-[10px] uppercase tracking-widest text-red-500/80 hover:text-red-500 transition-colors"
+                  >
+                    Revoke
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Config snippets */}
+        <section className="mb-12">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
+            Connect your agent
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            {CLIENTS.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setClient(c.id)}
+                className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
+                  client === c.id
+                    ? 'border-text-primary text-text-primary'
+                    : 'border-lp-border text-text-tertiary hover:text-text-secondary'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setTransport('docker')}
+              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
+                transport === 'docker'
+                  ? 'border-text-primary text-text-primary'
+                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              Docker · local compile (recommended)
+            </button>
+            <button
+              onClick={() => setTransport('uvx')}
+              className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
+                transport === 'uvx'
+                  ? 'border-text-primary text-text-primary'
+                  : 'border-lp-border text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              uvx · quick start
+            </button>
+          </div>
+
+          <p className="font-mono text-[10px] text-text-tertiary mb-2">
+            Save to <span className="text-text-secondary">{selectedClient.configPath}</span>
+          </p>
+
+          <div className="relative border border-lp-border bg-surface">
+            <button
+              onClick={() => copySnippet(snippet)}
+              className="absolute top-3 right-3 border border-lp-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-text-secondary hover:text-text-primary transition-colors bg-bg"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <pre className="overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-text-secondary">
+              {snippet}
+            </pre>
+          </div>
+          {!freshKey && (
+            <p className="font-mono text-[10px] text-text-tertiary mt-2">
+              Generate a key above and it will be filled into the snippet automatically.
+            </p>
+          )}
+        </section>
+
+        {/* Disclaimer */}
+        <section className="pt-6 border-t border-lp-border">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
+            Terms of use
+          </div>
+          <p className="font-mono text-[11px] leading-relaxed text-text-tertiary max-w-2xl">
+            The apply agent assists with applications you direct. You are responsible for
+            reviewing every application before submission, for the truthfulness of all
+            answers, and for complying with each job board's terms of service. Automated
+            submission (v2) is opt-in, capped per session, and logged. Your applicant
+            profile and EEO answers are stored encrypted on your machine and are never
+            sent to our servers. Rate limits apply per key: jobs and prefilter 120/hour,
+            remote compile 60/day.
+          </p>
+        </section>
+      </main>
+    </div>
+  );
+};
+
+export default DeveloperPage;

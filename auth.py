@@ -6,10 +6,11 @@ import base64
 import json
 import os
 import time
+from typing import Optional
 
 import httpx
 import jwt
-from fastapi import HTTPException, Request
+from fastapi import Header, HTTPException, Request
 
 # In-memory JWKS cache — refreshed every hour
 _jwks_cache: dict = {"keys": None, "fetched_at": 0.0}
@@ -102,4 +103,19 @@ async def require_user(request: Request) -> str:
     if not user_id:
         raise HTTPException(status_code=401, detail="Token is missing 'sub' claim")
 
+    return user_id
+
+
+def require_api_key_user(x_api_key: Optional[str] = Header(None)) -> str:
+    """
+    FastAPI dependency for the MCP /api/v1 surface — verifies a per-user API key
+    (X-API-Key header, issued from /developer) and returns the owning user_id.
+
+    Distinct from the shared INTERNSHIP_MATCHER_API_KEY admin gate in app.py.
+    """
+    from job_database import verify_api_key
+
+    user_id = verify_api_key(x_api_key)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or revoked API key")
     return user_id

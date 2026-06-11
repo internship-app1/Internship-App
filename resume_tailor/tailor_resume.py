@@ -1060,3 +1060,103 @@ def tailor_resume(
     data = _deduplicate_bullets(data)
     data = _repair_bullets(data, text)
     return refine_to_no_widows(data, text, rewrite_fn=_batch_widow_rewrite)
+
+
+# ---------------------------------------------------------------------------
+# Deterministic compile core — shared by value with the MCP's local compile.
+# NO Claude calls. This is the seam the /api/v1/resume/compile endpoint and
+# internship-mcp/compile_local.py both wrap; keep all three in lockstep
+# (compile-engine parity rule).
+# ---------------------------------------------------------------------------
+
+def compile_resume_json_to_pdf(
+    resume_json: dict, font_anchor: int = 11, spacing: str = "tight"
+) -> tuple[bytes, dict]:
+    """inject_into_template → font lock → _trim_to_single_line backstop →
+    spacing stretch. NO Claude calls. Returns (pdf_bytes, diagnostics).
+
+    diagnostics.widows lists bullets whose last wrapped line is still short —
+    the CALLING AGENT (not this code) rewrites those bullets and recompiles.
+    """
+    data = copy.deepcopy(resume_json)
+    latex = inject_into_template(data)
+
+    # ---- Font lock (parameterized anchor; mirrors _lock_font) ----
+    font = font_anchor if font_anchor in FONT_SIZES else _ANCHOR_FONT
+    pdf = _compile_at(latex, font, spacing)
+    if _count_pdf_pages(pdf) > 1:
+        for size in [s for s in FONT_SIZES if s < font]:
+            candidate = _compile_at(latex, size, spacing)
+            font = size
+            pdf = candidate
+            if _count_pdf_pages(candidate) <= 1:
+                break
+    elif _page1_fill_ratio(pdf) < UNDERFILL_RATIO:
+        for size in sorted([s for s in FONT_SIZES if s > font], reverse=True):
+            candidate = _compile_at(latex, size, spacing)
+            if _count_pdf_pages(candidate) <= 1:
+                font = size
+                pdf = candidate
+                break
+
+    # ---- Deterministic backstop: trim residual sub-floor orphans (no API) ----
+    preset = spacing if spacing in _SPACING_PRESETS else "tight"
+    try:
+        for _ in range(2):
+            cap = max_full_line_len(pdf)
+            if cap <= 0:
+                break
+            pairs = measure_bullets(pdf)
+            locations = _flatten_bullet_locations(data)
+            if len(locations) != len(pairs):
+                break
+            bad = [i for i, (_l1, l2) in enumerate(pairs) if l2 and (l2 / cap) < BACKSTOP_FLOOR]
+            if not bad:
+                break
+            for i in bad:
+                section, j, k = locations[i]
+                data[section][j]["bullets"][k] = _trim_to_single_line(
+                    data[section][j]["bullets"][k], cap
+                )
+            latex = inject_into_template(data)
+            pdf = _compile_at(latex, font, preset)
+    except _PdftotextUnavailable as exc:
+        logger.warning("compile core: widow backstop disabled — %s", exc)
+
+    # ---- Spacing stretch if underfilled (deterministic) ----
+    if preset == "tight" and _count_pdf_pages(pdf) == 1 and _page1_fill_ratio(pdf) < UNDERFILL_RATIO:
+        latex_for_stretch = inject_into_template(data)
+        for try_preset in ("normal", "relaxed"):
+            candidate = _compile_at(latex_for_stretch, font, try_preset)
+            if _count_pdf_pages(candidate) > 1:
+                break
+            pdf = candidate
+            preset = try_preset
+            if _page1_fill_ratio(pdf) >= UNDERFILL_RATIO:
+                break
+
+    # ---- Widow diagnostics for the agent's fix-and-recompile loop ----
+    widows = []
+    try:
+        cap = max_full_line_len(pdf)
+        pairs = measure_bullets(pdf)
+        locations = _flatten_bullet_locations(data)
+        if cap > 0 and len(locations) == len(pairs):
+            for i, (_l1, l2) in enumerate(pairs):
+                if l2 and (l2 / cap) < WIDOW_THRESHOLD:
+                    section, j, k = locations[i]
+                    widows.append({
+                        "section": section, "entry": j, "bullet": k,
+                        "last_line_chars": l2,
+                    })
+    except _PdftotextUnavailable:
+        pass
+
+    diagnostics = {
+        "pages": _count_pdf_pages(pdf),
+        "font_size": font,
+        "spacing": preset,
+        "fill_ratio": round(_page1_fill_ratio(pdf), 2),
+        "widows": widows,
+    }
+    return pdf, diagnostics

@@ -113,6 +113,125 @@ class ThinkDeeperRequestLog(Base):
     __table_args__ = (Index('idx_think_deeper_user_time', 'user_id', 'requested_at'),)
 
 
+class ApiKey(Base):
+    """Per-user API keys for the MCP /api/v1 surface (issued from /developer).
+
+    Distinct from the shared INTERNSHIP_MATCHER_API_KEY admin gate — these are
+    per-Clerk-user keys, hashed at rest, revocable individually.
+    """
+    __tablename__ = "api_keys"
+    id         = Column(Integer, primary_key=True)
+    user_id    = Column(String(255), index=True, nullable=False)   # Clerk sub
+    key_hash   = Column(String(64), unique=True, index=True)        # sha256(raw)
+    key_prefix = Column(String(16))                                 # "im_live_ab12" display
+    name       = Column(String(120), nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    last_used  = Column(DateTime, nullable=True)
+    revoked    = Column(Boolean, default=False, index=True)
+
+
+_API_KEY_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+
+def create_api_key(user_id: str, name: Optional[str] = None) -> tuple:
+    """Generate a new raw key `im_live_<32 base62>`, store only its SHA-256.
+
+    Returns (raw_key, ApiKey row as dict). The raw key is shown to the user once
+    and never persisted.
+    """
+    import secrets
+    raw = "im_live_" + "".join(secrets.choice(_API_KEY_ALPHABET) for _ in range(32))
+    key_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    db = get_db()
+    try:
+        row = ApiKey(
+            user_id=user_id,
+            key_hash=key_hash,
+            key_prefix=raw[:12],  # "im_live_ab12"
+            name=name,
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        return raw, _api_key_to_dict(row)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
+
+
+def verify_api_key(raw: str) -> Optional[str]:
+    """Hash the raw key, look it up, check revocation, bump last_used.
+
+    Returns the owning user_id or None if invalid/revoked.
+    """
+    if not raw or not raw.startswith("im_live_"):
+        return None
+    key_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    db = get_db()
+    try:
+        row = db.query(ApiKey).filter(
+            ApiKey.key_hash == key_hash,
+            ApiKey.revoked == False,  # noqa: E712 — SQLAlchemy comparison
+        ).first()
+        if not row:
+            return None
+        row.last_used = _utcnow()
+        db.commit()
+        return row.user_id
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error verifying API key: {e}")
+        return None
+    finally:
+        close_db(db)
+
+
+def revoke_api_key(user_id: str, key_id: int) -> bool:
+    """Revoke a key the user owns. Returns True if a key was revoked."""
+    db = get_db()
+    try:
+        row = db.query(ApiKey).filter(
+            ApiKey.id == key_id, ApiKey.user_id == user_id
+        ).first()
+        if not row or row.revoked:
+            return False
+        row.revoked = True
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error revoking API key {key_id}: {e}")
+        return False
+    finally:
+        close_db(db)
+
+
+def list_api_keys(user_id: str) -> List[Dict]:
+    """All non-revoked keys for a user (metadata only, never hashes)."""
+    db = get_db()
+    try:
+        rows = db.query(ApiKey).filter(
+            ApiKey.user_id == user_id,
+            ApiKey.revoked == False,  # noqa: E712
+        ).order_by(ApiKey.created_at.desc()).all()
+        return [_api_key_to_dict(r) for r in rows]
+    finally:
+        close_db(db)
+
+
+def _api_key_to_dict(row: "ApiKey") -> Dict:
+    return {
+        "id": row.id,
+        "key_prefix": row.key_prefix,
+        "name": row.name,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "last_used": row.last_used.isoformat() if row.last_used else None,
+        "revoked": bool(row.revoked),
+    }
+
+
 # Database initialization
 def init_database():
     """Initialize database tables"""

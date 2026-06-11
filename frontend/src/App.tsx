@@ -6,6 +6,7 @@ import LandingPage from './pages/LandingPage';
 import FindPage from './pages/FindPage';
 import HistoryPage from './pages/HistoryPage';
 import UsagePage from './pages/UsagePage';
+import DeveloperPage from './pages/DeveloperPage';
 import LoginPage from './pages/LoginPage';
 import TestJobDisplay from './components/TestJobDisplay';
 
@@ -37,6 +38,7 @@ function App() {
               <Route path="/find" element={<FindPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/usage" element={<UsagePage />} />
+              <Route path="/developer" element={<DeveloperPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/test" element={<TestJobDisplay />} />
             </Routes>
