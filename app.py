@@ -36,6 +36,7 @@ from resume_parser.parse_resume import extract_text_only
 from job_scrapers.dispatcher import scrape_jobs
 from matching.matcher import match_resume_to_jobs, analyze_and_match_single_call
 from matching.metadata_matcher import extract_resume_metadata
+from matching.job_filters import apply_normalized_filters, has_active_filters, normalize_filters
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
@@ -360,6 +361,24 @@ async def daily_cache_refresh_task():
             continue
 
 
+def _parse_filters(filters_raw: str) -> dict:
+    """Parse the JSON filters form field into a normalized filters dict.
+
+    Returns an empty (inactive) filters dict if parsing fails or input is blank,
+    so a malformed payload never breaks the matching pipeline.
+    """
+    if not filters_raw or not filters_raw.strip():
+        return {}
+    try:
+        parsed = json.loads(filters_raw)
+        if not isinstance(parsed, dict):
+            return {}
+        return parsed
+    except Exception as e:
+        logger.warning(f"Could not parse filters payload, ignoring: {e}")
+        return {}
+
+
 async def get_jobs_with_cache():
     """
     Get jobs using hybrid cache system (Redis + Database).
@@ -549,7 +568,7 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
 @app.post("/api/match")
 @limiter.limit("3/10minutes")
-async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true")):
+async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true"), filters: str = Form(default="")):
     """API endpoint for React frontend - returns JSON instead of HTML"""
     try:
         # Validate file
@@ -653,6 +672,18 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
         except Exception as e:
             logger.error(f"Error fetching jobs: {e}")
             raise HTTPException(status_code=500, detail=f"Error fetching internship opportunities: {str(e)}")
+
+        # Apply user-supplied filters (location, position, company size, citizenship, avoided companies)
+        normalized_filters = normalize_filters(_parse_filters(filters))
+        if has_active_filters(normalized_filters):
+            jobs = apply_normalized_filters(jobs, normalized_filters)
+            if not jobs:
+                return JSONResponse(content={
+                    "success": True,
+                    "message": "No internships matched your filters. Try loosening them and search again.",
+                    "jobs": [],
+                    "skills_found": resume_skills,
+                })
 
         # Match resume to jobs with intelligent prefiltering
         try:
@@ -765,6 +796,7 @@ async def stream_match_resume(
     resume: UploadFile = File(...),
     think_deeper: str = Form("true"),
     resume_hash: str = Form(default=""),
+    filters: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
     """Streaming endpoint that provides real-time progress updates"""
@@ -1003,6 +1035,22 @@ async def stream_match_resume(
                 except:
                     pass
                 return
+
+            # Apply user-supplied filters (location, position, company size, citizenship, avoided companies)
+            normalized_filters = normalize_filters(_parse_filters(filters))
+            if has_active_filters(normalized_filters):
+                total_before = len(jobs)
+                jobs = apply_normalized_filters(jobs, normalized_filters)
+                current_step[0] += 1
+                yield f"data: {json.dumps({'step': current_step[0], 'message': f'Applied your filters — {len(jobs)} of {total_before} internships match', 'progress': 35})}\n\n"
+                await asyncio.sleep(0.05)
+                if not jobs:
+                    yield f"data: {json.dumps({'step': current_step[0], 'message': 'No internships matched your filters. Try loosening them and search again.', 'final_results': [], 'matches_found': 0, 'total_results': 0, 'progress': 100, 'complete': True})}\n\n"
+                    try:
+                        delete_resume_from_s3(s3_key)
+                    except:
+                        pass
+                    return
 
             # Step 4: Single combined LLM call — skills extraction + job matching
             current_step[0] += 1
