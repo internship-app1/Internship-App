@@ -458,15 +458,6 @@ def analyze_job_requirements(job_title, job_description, required_skills):
     }
 
 
-def extract_skills_from_text(text):
-    """Extract skills from text using LLM-based analysis instead of hardcoded keywords."""
-    from matching.llm_skill_extractor import extract_job_skills_with_llm
-    
-    # Use LLM to extract skills from the text
-    # Treat the text as a job description for skill extraction
-    skills = extract_job_skills_with_llm("", text, "")
-    
-    return skills
 
 def generate_llm_based_description(job, llm_analysis, resume_skills):
     """

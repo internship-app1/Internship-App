@@ -86,7 +86,7 @@ class TestExtractSkillsWithLlm:
             "confidence_notes": "test",
         }
 
-        with patch("resume_parser.parse_resume.anthropic.Anthropic") as MockClaude:
+        with patch("anthropic.Anthropic") as MockClaude:
             MockClaude.return_value.messages.create.return_value = self._mock_claude(payload)
             skills = extract_skills_with_llm("resume text here")
 
@@ -98,7 +98,7 @@ class TestExtractSkillsWithLlm:
         payload = {"skills": [], "experience_level": "student",
                    "years_of_experience": 0, "is_student": True, "confidence_notes": ""}
 
-        with patch("resume_parser.parse_resume.anthropic.Anthropic") as MockClaude:
+        with patch("anthropic.Anthropic") as MockClaude:
             MockClaude.return_value.messages.create.return_value = self._mock_claude(payload)
             skills = extract_skills_with_llm("short text")
 
@@ -107,7 +107,7 @@ class TestExtractSkillsWithLlm:
     def test_raises_on_api_error(self):
         from resume_parser.parse_resume import extract_skills_with_llm
 
-        with patch("resume_parser.parse_resume.anthropic.Anthropic") as MockClaude:
+        with patch("anthropic.Anthropic") as MockClaude:
             MockClaude.return_value.messages.create.side_effect = Exception("API down")
             with pytest.raises(Exception, match="LLM skill extraction failed"):
                 extract_skills_with_llm("text")
@@ -151,9 +151,9 @@ class TestParseResume:
     def test_returns_skills_text_metadata(self):
         from resume_parser.parse_resume import parse_resume
 
-        with patch("resume_parser.parse_resume.pdfplumber.open",
+        with patch("pdfplumber.open",
                    return_value=self._mock_pdf(self.RESUME_TEXT)), \
-             patch("resume_parser.parse_resume.anthropic.Anthropic") as MockClaude:
+             patch("anthropic.Anthropic") as MockClaude:
             MockClaude.return_value.messages.create.return_value = \
                 self._mock_llm_response(["Python", "TypeScript"])
             skills, text, metadata = parse_resume(b"fake-pdf", "resume.pdf")
@@ -165,7 +165,7 @@ class TestParseResume:
     def test_empty_pdf_returns_empty(self):
         from resume_parser.parse_resume import parse_resume
 
-        with patch("resume_parser.parse_resume.pdfplumber.open",
+        with patch("pdfplumber.open",
                    return_value=self._mock_pdf("")):
             skills, text, metadata = parse_resume(b"fake-pdf", "resume.pdf")
 

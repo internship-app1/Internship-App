@@ -63,7 +63,7 @@ class TestSkillExtraction:
         mock_instance.messages.create.return_value = mock_response
         mock_anthropic.return_value = mock_instance
 
-    @patch('resume_parser.parse_resume.anthropic.Anthropic')
+    @patch('anthropic.Anthropic')
     def test_returns_list_of_strings(self, mock_anthropic):
         self._setup_mock(mock_anthropic, {"skills": ["Python", "React", "Docker"]})
         from resume_parser.parse_resume import extract_skills_with_llm
@@ -72,7 +72,7 @@ class TestSkillExtraction:
         assert len(skills) > 0
         assert all(isinstance(s, str) for s in skills)
 
-    @patch('resume_parser.parse_resume.anthropic.Anthropic')
+    @patch('anthropic.Anthropic')
     def test_extracts_known_skills(self, mock_anthropic):
         self._setup_mock(mock_anthropic, {"skills": ["Python", "React", "Docker"]})
         from resume_parser.parse_resume import extract_skills_with_llm
@@ -80,7 +80,7 @@ class TestSkillExtraction:
         skills_lower = [s.lower() for s in skills]
         assert any(k in skills_lower for k in ["python", "react", "docker"])
 
-    @patch('resume_parser.parse_resume.anthropic.Anthropic')
+    @patch('anthropic.Anthropic')
     def test_full_metadata_returned(self, mock_anthropic):
         self._setup_mock(mock_anthropic, {
             "skills": ["Python"],
@@ -108,7 +108,7 @@ class TestResumeTailorJson:
         mock_instance.messages.create.return_value = mock_response
         mock_anthropic.return_value = mock_instance
 
-    @patch('resume_tailor.tailor_resume.anthropic.Anthropic')
+    @patch('anthropic.Anthropic')
     def test_returns_expected_schema(self, mock_anthropic):
         self._setup_mock(mock_anthropic, {
             "name": "Alex", "email": "a@a", "experience": [], "education": [], "skills": [], "projects": []
@@ -119,7 +119,7 @@ class TestResumeTailorJson:
         for key in required_keys:
             assert key in result
 
-    @patch('resume_tailor.tailor_resume.anthropic.Anthropic')
+    @patch('anthropic.Anthropic')
     def test_experience_has_bullets(self, mock_anthropic):
         self._setup_mock(mock_anthropic, {
             "name": "Alex", 
