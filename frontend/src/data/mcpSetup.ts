@@ -13,10 +13,13 @@ export interface McpMode {
   shortLabel: string;
 }
 
+export type McpSnippetLang = 'json' | 'toml' | 'bash';
+
 export interface McpSetup {
   title: string;
   configPath: string;
   snippet: string;
+  snippetLang: McpSnippetLang;
   capability: string;
   setupSteps: string[];
   notes: string[];
@@ -32,9 +35,9 @@ export const MCP_CLIENTS: McpClient[] = [
 ];
 
 export const MCP_MODES: McpMode[] = [
-  { id: 'hosted', label: 'Hosted discovery', shortLabel: 'Hosted' },
-  { id: 'uvx', label: 'Full agent via uvx', shortLabel: 'uvx' },
-  { id: 'docker', label: 'Docker advanced', shortLabel: 'Docker' },
+  { id: 'hosted', label: 'Hosted (remote)', shortLabel: 'Hosted' },
+  { id: 'uvx', label: 'Local agent (uvx)', shortLabel: 'uvx' },
+  { id: 'docker', label: 'Local agent (Docker)', shortLabel: 'Docker' },
 ];
 
 const HOSTED_SMOKE_PROMPT = 'Use Internship Matcher to list software internships posted in the last 3 days. Then score which ones fit a student with Python, React, and backend API experience.';
@@ -142,13 +145,14 @@ export function getMcpSetup(clientId: McpClientId, mode: McpSetupMode, apiKey: s
         ? 'Run this CLI command'
         : client.configPath,
       snippet: hostedSnippet(client.id, hostedUrl),
-      capability: 'Hosted MCP is zero-install and exposes job search, job details, and deterministic fit scoring. Applying, resume/profile work, browser prefill, and local files require the full local agent.',
+      snippetLang: client.id === 'codex' || client.id === 'claude-code' ? 'bash' : 'json',
+      capability: 'Hosted MCP is zero-install and exposes job search, job details, and deterministic fit scoring. Applying, resume/profile work, browser prefill, and local files require the local agent.',
       setupSteps: [
-        'Choose your client.',
-        'Choose hosted discovery.',
-        'Copy this config or command.',
-        'Restart or reload your agent.',
-        'Run the smoke prompt.',
+        client.id === 'codex' || client.id === 'claude-code'
+          ? 'Run the command below in a terminal.'
+          : `Save the config below to ${client.configPath}.`,
+        'Restart or reload your client.',
+        'Paste the smoke prompt to verify.',
       ],
       notes: [
         `Hosted HTTP MCP URL: ${hostedUrl}`,
@@ -159,8 +163,8 @@ export function getMcpSetup(clientId: McpClientId, mode: McpSetupMode, apiKey: s
   }
 
   const fullAgentCapability = mode === 'uvx'
-    ? 'Full uvx mode runs the Internship Matcher MCP server locally with Playwright MCP. Resume parsing, encrypted profile storage, application packets, browser prefill, and local compile support run on your machine.'
-    : 'Docker mode is the advanced reproducible path. It runs the local agent from a container while still pairing it with Playwright MCP for browser prefill.';
+    ? 'Runs the Internship Matcher MCP server on your machine via uvx, paired with the Playwright MCP. Resume parsing, encrypted profile storage, application packets, browser prefill, and compiles all stay local.'
+    : 'The advanced, reproducible local path: runs the agent from a pinned Docker image (bundled TeX + OCR), paired with the Playwright MCP for browser prefill.';
 
   const snippet = client.id === 'codex'
     ? codexToml(mode, displayKey)
@@ -169,16 +173,15 @@ export function getMcpSetup(clientId: McpClientId, mode: McpSetupMode, apiKey: s
       : mcpJson('uvx', ['internship-mcp'], displayKey);
 
   return {
-    title: `${client.label} ${mode === 'uvx' ? 'full local agent' : 'Docker advanced'}`,
+    title: `${client.label} ${mode === 'uvx' ? 'local agent' : 'local agent (Docker)'}`,
     configPath: client.configPath,
     snippet,
+    snippetLang: client.id === 'codex' ? 'toml' : 'json',
     capability: fullAgentCapability,
     setupSteps: [
-      'Choose your client.',
-      mode === 'uvx' ? 'Choose full local agent via uvx.' : 'Choose Docker advanced.',
-      'Copy this config.',
-      'Restart your agent.',
-      'Run the smoke prompt.',
+      `Save the config below to ${client.configPath}.`,
+      'Restart your client so it launches the server.',
+      'Paste the smoke prompt to verify.',
     ],
     notes: client.id === 'codex'
       ? [

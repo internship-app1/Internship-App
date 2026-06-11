@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import CodeSnippet from '../components/CodeSnippet';
 import McpSetupDropdown from '../components/McpSetupDropdown';
+import OnThisPage, { TocItem } from '../components/docs/OnThisPage';
 import { useResolvedTheme } from '../components/theme-provider';
+import { CLIENT_DROPDOWN_ITEMS, MODE_DROPDOWN_ITEMS } from '../lib/mcpDropdownItems';
 import {
   getMcpClient,
   getMcpMode,
   getMcpSetup,
-  MCP_CLIENTS,
-  MCP_MODES,
   McpClientId,
   McpSetupMode,
 } from '../data/mcpSetup';
@@ -33,13 +33,13 @@ const Para: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const H2: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (
-  <h2 id={id} className="font-sans text-2xl font-semibold text-text-primary mb-4 pt-2 scroll-mt-24">
+  <h2 id={id} className="font-sans text-[22px] font-semibold tracking-[-0.01em] text-text-primary mb-4 pt-2 scroll-mt-24">
     {children}
   </h2>
 );
 
-const H3: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h3 className="font-sans text-lg font-semibold text-text-primary mt-8 mb-3">
+const H3: React.FC<{ id?: string; children: React.ReactNode }> = ({ id, children }) => (
+  <h3 id={id} className="font-sans text-[16px] font-semibold text-text-primary mt-8 mb-3 scroll-mt-24">
     {children}
   </h3>
 );
@@ -50,11 +50,11 @@ const SubLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </div>
 );
 
-const CodeBlock: React.FC<{ children: string; title?: string }> = ({ children, title }) => (
+const CodeBlock: React.FC<{ children: string; title?: string; lang?: string }> = ({ children, title, lang }) => (
   <CodeSnippet
     title={title ?? 'Code snippet'}
-    subtitle="Documentation"
     code={children}
+    language={lang ?? 'bash'}
     className="mb-5 max-w-[680px]"
   />
 );
@@ -114,8 +114,8 @@ const RequestSample: React.FC<RequestSampleProps> = ({ lang, onLangChange, sampl
     </div>
     <CodeSnippet
       title="Request"
-      subtitle={LANG_LABELS[lang]}
       code={samples[lang]}
+      language={lang === 'curl' ? 'bash' : lang}
       className="max-w-[680px]"
     />
   </div>
@@ -466,32 +466,46 @@ const COMPILE_RESPONSE_FIELDS: FieldDef[] = [
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
 
-const NAV = [
-  ['overview', 'Overview'],
-  ['authentication', 'Authentication'],
-  ['mcp-for-agents', 'MCP for Agents'],
-  ['endpoints', 'API Reference'],
-  ['errors', 'Errors & Rate Limits'],
-] as const;
+const NAV: TocItem[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'authentication', label: 'Authentication' },
+  {
+    id: 'mcp-for-agents',
+    label: 'MCP for Agents',
+    children: [
+      { id: 'mcp-choose-path', label: 'Choose your path' },
+      { id: 'mcp-setup', label: 'Set up your client' },
+      { id: 'mcp-local-tex', label: 'Optional local TeX' },
+      { id: 'mcp-which-path', label: 'Which path do I need?' },
+    ],
+  },
+  {
+    id: 'endpoints',
+    label: 'API Reference',
+    children: [
+      { id: 'ep-jobs', label: 'List jobs' },
+      { id: 'ep-job-detail', label: 'Get a job' },
+      { id: 'ep-prefilter', label: 'Prefilter & score' },
+      { id: 'ep-compile', label: 'Compile resume PDF' },
+    ],
+  },
+  { id: 'errors', label: 'Errors & Rate Limits' },
+];
 
-const CLIENT_DROPDOWN_ITEMS = MCP_CLIENTS.map((client) => ({
-  ...client,
-  group: 'AI agent CLI',
-  icon: client.label.split(' ').map((word) => word[0]).join('').slice(0, 2),
-}));
+const ALL_NAV_IDS = NAV.flatMap((item) => [item.id, ...(item.children?.map((c) => c.id) ?? [])]);
 
-const MODE_DROPDOWN_ITEMS = MCP_MODES.map((mode) => ({
-  ...mode,
-  group: 'Setup path',
-  icon: mode.shortLabel.slice(0, 2),
-}));
+function topLevelIdFor(activeId: string): string {
+  for (const item of NAV) {
+    if (item.id === activeId || item.children?.some((c) => c.id === activeId)) return item.id;
+  }
+  return activeId;
+}
 
 const DocsPage: React.FC = () => {
   const [active, setActive] = useState<string>('overview');
   const [lang, setLang] = useState<Lang>('curl');
   const [mcpClient, setMcpClient] = useState<McpClientId>('codex');
   const [mcpMode, setMcpMode] = useState<McpSetupMode>('uvx');
-  const [copiedSetup, setCopiedSetup] = useState(false);
   const resolvedTheme = useResolvedTheme();
   const origin = currentOrigin();
   const mcpSetup = getMcpSetup(mcpClient, mcpMode, '<YOUR_API_KEY_HERE>', origin);
@@ -506,12 +520,6 @@ const DocsPage: React.FC = () => {
     '--lp-border': resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.10)' : 'rgba(17, 24, 39, 0.12)',
   } as React.CSSProperties;
 
-  const copyMcpSetup = async () => {
-    await navigator.clipboard.writeText(mcpSetup.snippet);
-    setCopiedSetup(true);
-    setTimeout(() => setCopiedSetup(false), 1500);
-  };
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -524,7 +532,7 @@ const DocsPage: React.FC = () => {
       },
       { rootMargin: '-20% 0px -70% 0px' },
     );
-    NAV.forEach(([id]) => {
+    ALL_NAV_IDS.forEach((id) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
@@ -534,21 +542,21 @@ const DocsPage: React.FC = () => {
   return (
     <div className="docs-page min-h-screen bg-bg text-text-primary" style={docsThemeVars}>
       <Header />
-      <div className="max-w-[1100px] mx-auto px-6 py-10 lg:flex lg:gap-12">
+      <div className="max-w-[1280px] mx-auto px-6 py-10 lg:flex lg:gap-12">
         {/* Sidebar */}
         <aside className="hidden lg:block w-56 shrink-0">
           <nav className="sticky top-10">
-            <div className="font-sans text-xs font-semibold uppercase tracking-wide text-text-tertiary mb-3">
+            <div className="font-sans text-[11px] font-semibold uppercase tracking-wide text-text-tertiary mb-3">
               Documentation
             </div>
             <ul className="space-y-0.5 border-l border-lp-border">
-              {NAV.map(([id, label]) => (
+              {NAV.map(({ id, label }) => (
                 <li key={id}>
                   <a
                     href={`#${id}`}
-                    className={`block pl-4 -ml-px py-1.5 font-sans text-[14px] border-l transition-colors ${
-                      active === id
-                        ? 'border-text-primary text-text-primary font-medium'
+                    className={`block pl-4 -ml-px py-1.5 font-sans text-[13.5px] border-l transition-colors ${
+                      topLevelIdFor(active) === id
+                        ? 'border-[var(--docs-accent)] text-[var(--docs-accent)] font-medium'
                         : 'border-transparent text-text-secondary hover:text-text-primary'
                     }`}
                   >
@@ -587,7 +595,7 @@ const DocsPage: React.FC = () => {
               API reference.
             </p>
             <nav className="flex flex-wrap gap-2 mt-6 lg:hidden">
-              {NAV.map(([id, label]) => (
+              {NAV.map(({ id, label }) => (
                 <a
                   key={id}
                   href={`#${id}`}
@@ -607,11 +615,11 @@ const DocsPage: React.FC = () => {
               fresh internship postings, runs mechanical keyword and metadata scoring,
               and — as an opt-in fallback — compiles resume JSON into a single-page PDF.
               It's designed to be driven by an AI agent over the{' '}
-              <a className="text-text-primary underline underline-offset-2 hover:opacity-70" href="https://modelcontextprotocol.io" target="_blank" rel="noreferrer">
+              <a className="docs-link" href="https://modelcontextprotocol.io" target="_blank" rel="noreferrer">
                 Model Context Protocol
               </a>{' '}
               via our open-source{' '}
-              <a className="text-text-primary underline underline-offset-2 hover:opacity-70" href="https://github.com/internship-app1/internship-mcp-server" target="_blank" rel="noreferrer">
+              <a className="docs-link" href="https://github.com/internship-app1/internship-mcp-server" target="_blank" rel="noreferrer">
                 internship-mcp server
               </a>.
             </Para>
@@ -631,7 +639,7 @@ const DocsPage: React.FC = () => {
             <Para>
               Every <InlineCode>/api/v1</InlineCode> request needs a per-user API key in
               the <InlineCode>X-API-Key</InlineCode> header. Generate one on the{' '}
-              <Link to="/developer" className="text-text-primary underline underline-offset-2 hover:opacity-70">
+              <Link to="/developer" className="docs-link">
                 Developer page
               </Link>{' '}
               — it's shown once, looks like <InlineCode>im_live_…</InlineCode>, and can
@@ -657,25 +665,66 @@ const DocsPage: React.FC = () => {
           <section className="mb-14">
             <H2 id="mcp-for-agents">MCP for Agents</H2>
             <Para>
-              MCP lets an AI client call Internship Matcher tools directly. There are
-              two ways to use it. Pick hosted if you are in a normal cloud chat and only
-              want job discovery. Pick the local coding-agent setup if you want the full
-              apply flow with your resume files, encrypted profile, browser prefill, and
-              local application tracker.
+              MCP lets an AI client call Internship Matcher tools directly — no code,
+              just a config entry. There are two ways to connect; pick one below.
             </Para>
+
+            <H3 id="mcp-choose-path">Choose your path</H3>
+            <div className="grid gap-4 sm:grid-cols-2 mb-6 max-w-[680px]">
+              <div className="rounded-lg border border-lp-border p-5">
+                <div className="font-sans text-[15px] font-semibold text-text-primary mb-1">
+                  Hosted <span className="font-normal text-text-tertiary">(remote MCP)</span>
+                </div>
+                <p className="font-sans text-[13.5px] leading-6 text-text-secondary mb-3">
+                  Job discovery in any chat app. Zero install — nothing runs on your
+                  machine.
+                </p>
+                <ul className="space-y-1.5 font-sans text-[13.5px] leading-6 text-text-secondary list-disc pl-4 mb-3">
+                  <li>Works in Claude chat custom connectors and any client that supports remote (Streamable HTTP) MCP</li>
+                  <li>Tools: job search, job details, deterministic fit scoring</li>
+                  <li>Cannot apply, parse resumes, or touch your local files</li>
+                </ul>
+                <span className="inline-block rounded-full border border-[var(--docs-accent)]/40 px-2.5 py-1 font-sans text-[12px] text-[var(--docs-accent)]">
+                  Best for: trying it out, cloud chats
+                </span>
+              </div>
+              <div className="rounded-lg border border-lp-border p-5">
+                <div className="font-sans text-[15px] font-semibold text-text-primary mb-1">
+                  Local agent <span className="font-normal text-text-tertiary">(full apply flow)</span>
+                </div>
+                <p className="font-sans text-[13.5px] leading-6 text-text-secondary mb-3">
+                  The complete pipeline, running on your machine.
+                </p>
+                <ul className="space-y-1.5 font-sans text-[13.5px] leading-6 text-text-secondary list-disc pl-4 mb-3">
+                  <li>Resume parsing and your encrypted applicant profile stay local</li>
+                  <li>Tailored PDFs, application packets, and an application tracker</li>
+                  <li>Prefills forms in your browser via Playwright MCP — you always review and hit submit yourself</li>
+                  <li>Needs a client that can launch commands: Claude Code, Codex, Cursor, Windsurf, or Cline</li>
+                </ul>
+                <span className="inline-block rounded-full border border-[var(--docs-accent)]/40 px-2.5 py-1 font-sans text-[12px] text-[var(--docs-accent)]">
+                  Best for: actually applying
+                </span>
+              </div>
+            </div>
+
+            <H3 id="mcp-setup">Set up your client</H3>
             <StepList
               steps={[
                 <>
                   Sign in and generate an API key on the{' '}
-                  <Link to="/developer" className="text-text-primary underline underline-offset-2 hover:opacity-70">
+                  <Link to="/developer" className="docs-link">
                     Developer page
-                  </Link>.
+                  </Link>{' '}
+                  — it's shown once, so copy it right away.
                 </>,
-                <>Choose your client.</>,
-                <>Choose hosted discovery or full local agent.</>,
-                <>Copy this config.</>,
-                <>Restart your agent.</>,
-                <>Run the smoke prompt.</>,
+                <>Pick your client and path with the two selectors below.</>,
+                <>
+                  Copy the generated config into the file shown above the snippet
+                  (or run the CLI command, where one is shown), replacing{' '}
+                  <InlineCode>&lt;YOUR_API_KEY_HERE&gt;</InlineCode> with your key.
+                </>,
+                <>Restart your client so it picks up the new MCP server.</>,
+                <>Paste the smoke prompt to confirm the tools respond.</>,
               ]}
             />
 
@@ -688,7 +737,7 @@ const DocsPage: React.FC = () => {
                   onChange={setMcpClient}
                 />
                 <McpSetupDropdown
-                  label="Mode"
+                  label="Path"
                   value={mcpMode}
                   items={MODE_DROPDOWN_ITEMS}
                   onChange={setMcpMode}
@@ -697,87 +746,83 @@ const DocsPage: React.FC = () => {
 
               <div className="p-4 border-b border-lp-border">
                 <div className="font-sans text-[13px] font-semibold text-text-primary mb-1">
-                  {selectedMcpClient.label} / {selectedMcpMode.label}
+                  {selectedMcpClient.label} · {selectedMcpMode.label}
                 </div>
-                <p className="font-sans text-[14px] leading-6 text-text-secondary mb-3">
+                <p className="font-sans text-[14px] leading-6 text-text-secondary">
                   {mcpSetup.capability}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {mcpSetup.setupSteps.map((step) => (
-                    <span key={step} className="rounded-full border border-lp-border px-2.5 py-1 font-sans text-[12px] text-text-tertiary">
-                      {step}
-                    </span>
-                  ))}
-                </div>
               </div>
 
-              <div className="relative">
-                <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-lp-border">
-                  <span className="font-mono text-[11px] text-text-tertiary">
-                    {mcpSetup.configPath}
-                  </span>
-                  <button
-                    onClick={copyMcpSetup}
-                    className="border border-lp-border rounded px-3 py-1 font-sans text-[12px] text-text-secondary hover:text-text-primary transition-colors bg-bg"
-                  >
-                    {copiedSetup ? 'Copied' : 'Copy this config'}
-                  </button>
-                </div>
-                <pre className="bg-surface overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed text-text-secondary">
-                  {mcpSetup.snippet}
-                </pre>
-              </div>
+              <CodeSnippet
+                title={mcpSetup.configPath}
+                code={mcpSetup.snippet}
+                language={mcpSetup.snippetLang}
+                className="rounded-none border-0 border-b"
+              />
 
               <div className="p-4 border-t border-lp-border bg-bg">
                 <div className="font-sans text-[13px] font-semibold text-text-primary mb-2">
-                  Run this smoke prompt
+                  Smoke prompt — paste this to verify
                 </div>
-                <pre className="whitespace-pre-wrap font-mono text-[12.5px] leading-relaxed text-text-secondary">
+                <pre className="whitespace-pre-wrap font-mono text-[12.5px] leading-relaxed text-text-secondary mb-3">
                   {mcpSetup.smokePrompt}
                 </pre>
+                <div className="space-y-1 border-t border-lp-border pt-3">
+                  {mcpSetup.notes.map((note) => (
+                    <p key={note} className="font-sans text-[13px] leading-6 text-text-tertiary">
+                      {note}
+                    </p>
+                  ))}
+                  {mcpMode === 'hosted' ? (
+                    <p className="font-sans text-[13px] leading-6 text-text-tertiary">
+                      In Claude chat, look for "custom connector", "remote MCP", or
+                      "Streamable HTTP MCP" and paste the hosted URL. Keep hosted keys
+                      disposable and revoke them when done.
+                    </p>
+                  ) : (
+                    <p className="font-sans text-[13px] leading-6 text-text-tertiary">
+                      The Playwright entry is a separate, official MCP server the agent
+                      uses to prefill application forms in your browser — you always
+                      review and hit submit yourself.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
-            {mcpSetup.notes.map((note) => (
-              <Para key={note}>{note}</Para>
-            ))}
+            <H3 id="mcp-local-tex">Optional: local TeX for unlimited compiles</H3>
             <Para>
-              Hosted Claude chat custom connector guidance is still the hosted path:
-              in Claude chat, look for "custom connector", "remote MCP", or "Streamable
-              HTTP MCP" and paste the hosted URL. Hosted mode only supports discovery
-              and scoring; use the full local agent to apply.
+              The local agent compiles tailored resume PDFs with{' '}
+              <InlineCode>pdflatex</InlineCode>. On first run it asks whether to install
+              TeX locally (unlimited, fully offline compiles) or fall back to our remote
+              compiler, which is capped at 15 compiles/week. If you skip TeX, everything
+              else still works.
             </Para>
-            <Para>
-              Codex users should prefer <InlineCode>~/.codex/config.toml</InlineCode> or{' '}
-              <InlineCode>codex mcp add</InlineCode>. <InlineCode>.mcp.json</InlineCode>{' '}
-              is not the primary Codex setup path.
-            </Para>
-            <CodeBlock title="Optional local TeX install for unlimited compiles">{`# macOS
+            <CodeBlock title="Install TeX" lang="bash">{`# macOS
 brew install --cask basictex && sudo tlmgr update --self && sudo tlmgr install enumitem titlesec parskip microtype
 
 # Debian / Ubuntu
 sudo apt install texlive-latex-extra
 
 # Windows
-Install MiKTeX from https://miktex.org`}</CodeBlock>
+# Install MiKTeX from https://miktex.org`}</CodeBlock>
+
+            <H3 id="mcp-which-path">Which path do I need?</H3>
+            <div className="rounded-lg border border-lp-border divide-y divide-lp-border mb-5 max-w-[680px]">
+              {[
+                ['Cloud chat that supports remote MCP (e.g. Claude chat)', 'Hosted'],
+                ['Coding agent that can run local commands (Claude Code, Codex, Cursor, Windsurf, Cline)', 'Local agent'],
+                ['Platform with no MCP support at all', 'Use the REST API below'],
+              ].map(([scenario, answer]) => (
+                <div key={scenario} className="flex items-center gap-4 px-4 py-3">
+                  <span className="flex-1 font-sans text-[14px] leading-6 text-text-secondary">{scenario}</span>
+                  <span className="shrink-0 font-sans text-[13px] font-semibold text-[var(--docs-accent)]">{answer}</span>
+                </div>
+              ))}
+            </div>
             <Para>
-              On first run the agent asks whether to install TeX locally for unlimited
-              compiles or use the remote fallback capped at 15 compiles/week. If you skip
-              TeX, the rest of the local agent still works.
-            </Para>
-            <Para>
-              The Playwright MCP is a separate, official server your agent uses to
-              prefill application forms in your browser — you always review and hit
-              submit yourself.
-            </Para>
-            <H3>Platform guide</H3>
-            <Para>
-              Cloud chat services that support remote MCP should use Path A. Local coding
-              agents that can launch commands should use Path B. If a platform does not
-              support MCP yet, it cannot connect to these tools directly; use the REST API
-              or switch to a supported MCP client. Browser-only chats also cannot access
-              files on your laptop or your browser session unless they connect to a local
-              MCP process.
+              Browser-only chats cannot reach files on your laptop or your browser
+              session — that always requires the local agent running on your machine.
             </Para>
           </section>
 
@@ -788,12 +833,13 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
               All endpoints live under <InlineCode>/api/v1</InlineCode> and require the{' '}
               <InlineCode>X-API-Key</InlineCode> header. Rate limits are per key. The
               machine-readable contract lives at{' '}
-              <a className="text-text-primary underline underline-offset-2 hover:opacity-70" href="/api/v1/openapi.json" target="_blank" rel="noreferrer">
+              <a className="docs-link" href="/api/v1/openapi.json" target="_blank" rel="noreferrer">
                 /api/v1/openapi.json
               </a>.
             </Para>
 
             {/* ------------------- GET /jobs ------------------------ */}
+            <div id="ep-jobs" className="scroll-mt-24" />
             <Endpoint method="GET" path="/api/v1/jobs" limit="120 / hour">
               <Para>
                 List active internship postings, freshest first. The job pool comes from
@@ -809,6 +855,7 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
             </Endpoint>
 
             {/* ------------------- GET /jobs/{hash} ----------------- */}
+            <div id="ep-job-detail" className="scroll-mt-24" />
             <Endpoint method="GET" path="/api/v1/jobs/{job_hash}" limit="120 / hour">
               <Para>
                 One job by its hash. Returns <InlineCode>404</InlineCode> for an unknown
@@ -821,6 +868,7 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
             </Endpoint>
 
             {/* ------------------- POST /prefilter ------------------ */}
+            <div id="ep-prefilter" className="scroll-mt-24" />
             <Endpoint method="POST" path="/api/v1/jobs/prefilter" limit="120 / hour">
               <Para>
                 Deterministic scoring of the job pool against a small, PII-free profile.
@@ -835,6 +883,7 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
             </Endpoint>
 
             {/* ------------------- POST /compile -------------------- */}
+            <div id="ep-compile" className="scroll-mt-24" />
             <Endpoint method="POST" path="/api/v1/resume/compile" limit="15 / week · 3 concurrent">
               <Para>
                 Fallback PDF compiler for environments without local TeX. The full uvx
@@ -876,6 +925,8 @@ Install MiKTeX from https://miktex.org`}</CodeBlock>
             </Para>
           </section>
         </main>
+
+        <OnThisPage items={NAV} activeId={active} />
       </div>
     </div>
   );

@@ -5,12 +5,11 @@ import CodeSnippet from '../components/CodeSnippet';
 import McpSetupDropdown from '../components/McpSetupDropdown';
 import { API_BASE_URL } from '../lib/api';
 import { useUsage } from '../hooks/useUsage';
+import { CLIENT_DROPDOWN_ITEMS, MODE_DROPDOWN_ITEMS } from '../lib/mcpDropdownItems';
 import {
   getMcpClient,
   getMcpMode,
   getMcpSetup,
-  MCP_CLIENTS,
-  MCP_MODES,
   McpClientId,
   McpSetupMode,
 } from '../data/mcpSetup';
@@ -36,17 +35,12 @@ function formatDate(iso: string | null): string {
   });
 }
 
-const CLIENT_DROPDOWN_ITEMS = MCP_CLIENTS.map((client) => ({
-  ...client,
-  group: 'AI agent CLI',
-  icon: client.label.split(' ').map((word) => word[0]).join('').slice(0, 2),
-}));
-
-const MODE_DROPDOWN_ITEMS = MCP_MODES.map((mode) => ({
-  ...mode,
-  group: 'Setup path',
-  icon: mode.shortLabel.slice(0, 2),
-}));
+const SectionHeading: React.FC<{ title: string; blurb?: string }> = ({ title, blurb }) => (
+  <div className="mb-4">
+    <h2 className="font-sans text-[18px] font-semibold text-text-primary">{title}</h2>
+    {blurb && <p className="font-sans text-[14px] leading-6 text-text-tertiary mt-1">{blurb}</p>}
+  </div>
+);
 
 const DeveloperPage: React.FC = () => {
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -150,7 +144,7 @@ const DeveloperPage: React.FC = () => {
           <h2 className="font-serif text-3xl text-text-primary mb-3">
             Sign in to manage API keys.
           </h2>
-          <p className="font-mono text-xs text-text-tertiary mb-8 max-w-sm">
+          <p className="font-sans text-[15px] leading-7 text-text-secondary mb-8 max-w-sm">
             API keys connect the internship MCP server to your account.
           </p>
           <SignInButton mode="modal">
@@ -179,8 +173,8 @@ const DeveloperPage: React.FC = () => {
               Account / Developer
             </span>
           </div>
-          <h1 className="font-serif text-3xl text-text-primary">API keys.</h1>
-          <p className="font-mono text-xs text-text-tertiary mt-2 max-w-lg">
+          <h1 className="font-sans text-[28px] font-semibold tracking-[-0.01em] text-text-primary">API keys</h1>
+          <p className="font-sans text-[15px] leading-7 text-text-secondary mt-2 max-w-lg">
             Connect any MCP agent — Claude Code, Cursor, Codex, Windsurf, Cline — to the
             apply agent. Your agent does the thinking; these keys only fetch jobs, run
             deterministic scoring, and (optionally) compile PDFs.
@@ -188,27 +182,28 @@ const DeveloperPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="border border-red-500/40 bg-red-500/5 px-4 py-3 mb-8 font-mono text-xs text-red-500">
+          <div className="border border-red-500/40 bg-red-500/5 px-4 py-3 mb-8 font-sans text-[14px] text-red-500">
             {error}
           </div>
         )}
 
         {/* Create key */}
         <section className="mb-12">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-            Create a key
-          </div>
+          <SectionHeading
+            title="Create a key"
+            blurb="Name it after where it lives — keys are shown once and can be revoked any time."
+          />
           <div className="flex gap-3">
             <input
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
               placeholder="Key name (optional, e.g. “laptop / cursor”)"
-              className="flex-1 bg-surface border border-lp-border px-4 py-2.5 font-mono text-xs text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
+              className="flex-1 bg-surface border border-lp-border px-4 py-2.5 font-sans text-[14px] text-text-primary placeholder:text-text-tertiary focus:outline-none focus-visible:ring-1 focus-visible:ring-text-primary"
             />
             <button
               onClick={createKey}
               disabled={creating}
-              className="bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity disabled:opacity-40"
+              className="bg-text-primary text-bg px-5 py-2.5 font-sans text-[14px] font-medium hover:opacity-80 transition-opacity disabled:opacity-40"
             >
               {creating ? 'Creating…' : 'Generate key →'}
             </button>
@@ -216,7 +211,7 @@ const DeveloperPage: React.FC = () => {
 
           {freshKey && (
             <div className="mt-4 border border-lp-border bg-surface p-4">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
+              <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-text-tertiary mb-2">
                 Your new key — shown once, copy it now
               </div>
               <div className="flex items-center gap-3">
@@ -236,27 +231,25 @@ const DeveloperPage: React.FC = () => {
 
         {/* Key list */}
         <section className="mb-12">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-            Active keys
-          </div>
+          <SectionHeading title="Active keys" />
           {loading ? (
             <div className="flex items-center justify-center h-24">
               <div className="h-6 w-6 border-2 border-text-primary border-t-transparent animate-spin" />
             </div>
           ) : keys.length === 0 ? (
-            <p className="font-mono text-xs text-text-tertiary">No keys yet.</p>
+            <p className="font-sans text-[14px] text-text-tertiary">No keys yet.</p>
           ) : (
             <div className="border border-lp-border divide-y divide-lp-border">
               {keys.map((k) => (
                 <div key={k.id} className="flex items-center gap-4 px-4 py-3">
                   <code className="font-mono text-xs text-text-primary">{k.key_prefix}…</code>
-                  <span className="font-mono text-xs text-text-secondary flex-1 truncate">
+                  <span className="font-sans text-[14px] text-text-secondary flex-1 truncate">
                     {k.name || 'unnamed'}
                   </span>
-                  <span className="font-mono text-[10px] text-text-tertiary hidden sm:block">
+                  <span className="font-sans text-[12px] text-text-tertiary hidden sm:block">
                     created {formatDate(k.created_at)}
                   </span>
-                  <span className="font-mono text-[10px] text-text-tertiary hidden sm:block">
+                  <span className="font-sans text-[12px] text-text-tertiary hidden sm:block">
                     last used {formatDate(k.last_used)}
                   </span>
                   <button
@@ -274,9 +267,10 @@ const DeveloperPage: React.FC = () => {
         {/* Remote compile usage (API-key quota) */}
         {usage?.remote_compile && (
           <section className="mb-12">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-              Remote compile usage
-            </div>
+            <SectionHeading
+              title="Remote compile usage"
+              blurb="Resume compiles your API keys run on our servers when the local agent has no TeX install."
+            />
             <div className="border border-lp-border bg-surface p-5">
               <div className="flex items-baseline gap-1.5 mb-3">
                 <span className={`font-serif text-3xl leading-none ${
@@ -296,10 +290,9 @@ const DeveloperPage: React.FC = () => {
                   style={{ width: `${Math.min((usage.remote_compile.used / usage.remote_compile.limit) * 100, 100)}%` }}
                 />
               </div>
-              <p className="font-mono text-[11px] leading-relaxed text-text-tertiary">
-                Counts resume compiles your <span className="text-text-secondary">API keys</span> run
-                on our servers when the full agent falls back to remote compile. Installing TeX locally
-                makes compiles unlimited and keeps them off our servers. Also shown on the{' '}
+              <p className="font-sans text-[14px] leading-6 text-text-tertiary">
+                Installing TeX locally makes compiles unlimited and keeps them off our
+                servers. Also shown on the{' '}
                 <a href="/usage" className="underline hover:text-text-primary">Usage page</a>.
               </p>
             </div>
@@ -308,9 +301,10 @@ const DeveloperPage: React.FC = () => {
 
         {/* Config snippets */}
         <section className="mb-12">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-4">
-            Connect your agent
-          </div>
+          <SectionHeading
+            title="Connect your agent"
+            blurb="Pick your client and setup path, then copy the generated config."
+          />
 
           <div className="flex flex-wrap gap-3 mb-4">
             <McpSetupDropdown
@@ -327,54 +321,39 @@ const DeveloperPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {MCP_MODES.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMode(m.id)}
-                className={`px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest border transition-colors ${
-                  mode === m.id
-                    ? 'border-text-primary text-text-primary'
-                    : 'border-lp-border text-text-tertiary hover:text-text-secondary'
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-
           <div className="border border-lp-border bg-surface p-4 mb-3">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-2">
-              {selectedClient.label} / {selectedMode.label}
+            <div className="font-sans text-[13px] font-semibold text-text-primary mb-1">
+              {selectedClient.label} · {selectedMode.label}
             </div>
-            <p className="font-mono text-[11px] leading-relaxed text-text-secondary mb-2">
+            <p className="font-sans text-[14px] leading-6 text-text-secondary mb-2">
               {setup.capability}
             </p>
-            <p className="font-mono text-[10px] text-text-tertiary">
+            <p className="font-sans text-[13px] text-text-tertiary">
               {mode === 'hosted' ? 'Use this command or config in your client.' : (
-                <>Save to <span className="text-text-secondary">{setup.configPath}</span>.</>
+                <>Save to <span className="font-mono text-[12px] text-text-secondary">{setup.configPath}</span>.</>
               )}
             </p>
           </div>
 
-          <p className="font-mono text-[10px] text-text-tertiary mb-2">
+          <p className="font-sans text-[13px] leading-6 text-text-tertiary mb-2">
             {setup.notes.join(' ')}
           </p>
 
           <CodeSnippet
-            title={client === 'codex' ? '~/.codex/config.toml' : 'MCP configuration'}
+            title={setup.configPath}
             subtitle={selectedMode.label}
             code={setup.snippet}
+            language={setup.snippetLang}
             copyText={setup.snippet}
             className="mb-3"
           />
           {!freshKey && (
-            <p className="font-mono text-[10px] text-text-tertiary mt-2">
+            <p className="font-sans text-[13px] leading-6 text-text-tertiary mt-2">
               Generate a key above and it will be filled into the snippet automatically.
             </p>
           )}
           {client === 'codex' && mode !== 'hosted' && (
-            <p className="font-mono text-[10px] text-text-tertiary mt-2">
+            <p className="font-sans text-[13px] leading-6 text-text-tertiary mt-2">
               Codex uses <code className="code-inline text-text-secondary">~/.codex/config.toml</code>,
               not a project <code className="code-inline text-text-secondary">.mcp.json</code>. Restart
               Codex after saving, or use <code className="code-inline text-text-secondary">codex mcp add</code>
@@ -382,7 +361,7 @@ const DeveloperPage: React.FC = () => {
             </p>
           )}
           {mode === 'hosted' && (
-            <p className="font-mono text-[10px] text-text-tertiary mt-2">
+            <p className="font-sans text-[13px] leading-6 text-text-tertiary mt-2">
               Keep hosted keys disposable. If your connector supports headers, prefer
               <code className="code-inline text-text-secondary"> X-API-Key</code>; otherwise use the URL
               key for testing and revoke it when done.
@@ -392,10 +371,8 @@ const DeveloperPage: React.FC = () => {
 
         {/* Disclaimer */}
         <section className="pt-6 border-t border-lp-border">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-3">
-            Terms of use
-          </div>
-          <p className="font-mono text-[11px] leading-relaxed text-text-tertiary max-w-2xl">
+          <SectionHeading title="Terms of use" />
+          <p className="font-sans text-[14px] leading-6 text-text-tertiary max-w-2xl">
             The apply agent assists with applications you direct. You are responsible for
             reviewing every application before submission, for the truthfulness of all
             answers, and for complying with each job board's terms of service. Automated
