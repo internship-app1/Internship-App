@@ -127,14 +127,25 @@ class TestV1Endpoints:
         r = client.get("/api/v1/jobs/" + "f" * 64, headers={"X-API-Key": api_key})
         assert r.status_code == 404
 
-    def test_prefilter_validates_experience_level(self, client, api_key):
+    def test_prefilter_normalizes_experience_level(self, client, api_key):
+        # Common LLM variants should be accepted and normalized, not rejected.
+        for variant in ("junior", "recent_graduate", "mid", "intern", "senior"):
+            r = client.post(
+                "/api/v1/jobs/prefilter",
+                headers={"X-API-Key": api_key},
+                json={"resume_profile": {"skills": ["python"],
+                                         "experience_level": variant}},
+            )
+            assert r.status_code == 200, f"expected 200 for variant {variant!r}, got {r.status_code}"
+
+    def test_prefilter_rejects_unknown_experience_level(self, client, api_key):
         r = client.post(
             "/api/v1/jobs/prefilter",
             headers={"X-API-Key": api_key},
             json={"resume_profile": {"skills": ["python"],
-                                     "experience_level": "recent_graduate"}},
+                                     "experience_level": "wizard"}},
         )
-        assert r.status_code == 422  # enum is exactly student|entry_level|experienced
+        assert r.status_code == 422
 
     def test_prefilter_happy_path(self, client, api_key):
         r = client.post(

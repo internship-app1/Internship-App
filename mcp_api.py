@@ -21,7 +21,7 @@ import os
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -107,15 +107,42 @@ class JobDetail(BaseModel):
     job_requirements: Optional[str] = None
 
 
+_EXPERIENCE_LEVEL_NORMALIZATION: Dict[str, str] = {
+    "student": "student",
+    "intern": "student",
+    "undergraduate": "student",
+    "entry_level": "entry_level",
+    "entry": "entry_level",
+    "junior": "entry_level",
+    "recent_graduate": "entry_level",
+    "new_grad": "entry_level",
+    "experienced": "experienced",
+    "mid": "experienced",
+    "mid_level": "experienced",
+    "senior": "experienced",
+}
+
+
 class ResumeProfile(BaseModel):
     """Small PII-free profile object — the ONLY resume-derived data allowed
     across the wire on the prefilter path."""
     skills: List[str]
-    experience_level: str = Field(pattern="^(student|entry_level|experienced)$")
+    experience_level: str = "student"
     years_of_experience: int = 0
     location: Optional[str] = None
     willing_to_relocate: bool = False
     remote_ok: bool = False
+
+    @field_validator("experience_level", mode="before")
+    @classmethod
+    def normalize_experience_level(cls, v: str) -> str:
+        normalized = _EXPERIENCE_LEVEL_NORMALIZATION.get(str(v).lower().strip())
+        if normalized is None:
+            raise ValueError(
+                f"experience_level must be one of: student, entry_level, experienced "
+                f"(got: {v!r})"
+            )
+        return normalized
 
 
 class PrefilterFilters(BaseModel):

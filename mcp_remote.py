@@ -124,12 +124,22 @@ def jobs_prefilter(
     text anywhere. Treat combined_score as a prefilter; your judgment over the
     full descriptions (job_get) is the real ranking."""
     _require_user(ctx)
-    valid_levels = {"student", "entry_level", "experienced"}
-    if resume_profile.get("experience_level") not in valid_levels:
+    _LEVEL_NORM = {
+        "student": "student", "intern": "student", "undergraduate": "student",
+        "entry_level": "entry_level", "entry": "entry_level", "junior": "entry_level",
+        "recent_graduate": "entry_level", "new_grad": "entry_level",
+        "experienced": "experienced", "mid": "experienced", "mid_level": "experienced",
+        "senior": "experienced",
+    }
+    raw_level = str(resume_profile.get("experience_level") or "").lower().strip()
+    normalized = _LEVEL_NORM.get(raw_level)
+    if normalized is None:
         raise ValueError(
-            f"resume_profile.experience_level must be one of {sorted(valid_levels)}; "
+            f"resume_profile.experience_level must be one of "
+            f"{sorted({'student', 'entry_level', 'experienced'})}; "
             f"got {resume_profile.get('experience_level')!r}"
         )
+    resume_profile = {**resume_profile, "experience_level": normalized}
     f = filters or {}
     jobs = _fetch_jobs(
         f.get("since_hours"), f.get("max_days_old", 30), f.get("location"), f.get("q")
