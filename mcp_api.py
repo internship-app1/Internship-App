@@ -156,6 +156,7 @@ class PrefilterRequest(BaseModel):
     resume_profile: ResumeProfile
     filters: Optional[PrefilterFilters] = None
     target_count: int = 40
+    exclude_hashes: Optional[List[str]] = None
 
 
 class PrefilterCandidate(BaseModel):
@@ -308,6 +309,9 @@ async def v1_prefilter(
     jobs = await asyncio.to_thread(
         _fetch_jobs, f.since_hours, f.max_days_old, f.location, f.q
     )
+    if body.exclude_hashes:
+        excluded = set(body.exclude_hashes)
+        jobs = [j for j in jobs if j.get("job_hash") not in excluded]
     scored = await asyncio.to_thread(
         prefilter_and_score, body.resume_profile.model_dump(), jobs
     )

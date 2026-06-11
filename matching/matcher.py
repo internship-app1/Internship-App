@@ -1524,6 +1524,19 @@ def fuzzy_skill_match(resume_skill, job_skill):
         'azure': ['azure', 'microsoft azure'],
         'docker': ['docker', 'containerization'],
         'kubernetes': ['kubernetes', 'k8s'],
+        # AI/ML tier — JDs often say "AI/ML" or "machine learning" for roles
+        # that require LLM/RAG skills; group them so AI-engineering experience
+        # surfaces against those postings during the deterministic prefilter.
+        'ai_ml': [
+            'ai', 'ml', 'machine learning', 'artificial intelligence', 'ai/ml',
+            'llm', 'large language model', 'language model',
+            'rag', 'retrieval augmented generation', 'retrieval-augmented generation',
+            'nlp', 'natural language processing',
+            'generative ai', 'gen ai', 'genai',
+            'deep learning', 'neural network',
+        ],
+        'fastapi': ['fastapi', 'fast api'],
+        'websockets': ['websockets', 'websocket', 'web socket', 'ws'],
     }
 
     # Check if either skill is in a variation group
@@ -2023,6 +2036,11 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
     for job in jobs:
         keyword_score = simple_keyword_scoring(job, skills)
         job_metadata = extract_job_metadata(job)
+        # extract_job_metadata parses location from description text via regex,
+        # but scraped jobs store the authoritative location in the DB field.
+        # Override so location scoring actually differentiates jobs.
+        if job.get("location"):
+            job_metadata["location"] = job["location"]
         metadata_score, _desc = calculate_metadata_match_score(resume_metadata, job_metadata)
         combined_score = round(keyword_score * 0.7 + metadata_score * 0.3)
 
