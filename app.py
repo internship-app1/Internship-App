@@ -39,7 +39,7 @@ from matching.metadata_matcher import extract_resume_metadata
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
-from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db
+from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db, save_user_attribution
 from auth import require_user
 
 # Base directory of this file (used for templates/static/uploads paths)
@@ -756,6 +756,17 @@ async def check_resume_cache(request: Request, resume_hash: str, user_id: str = 
 async def get_user_history(request: Request, user_id: str = Depends(require_user)):
     entries = get_user_resume_history(user_id)
     return JSONResponse(entries)
+
+
+@app.post("/api/track-attribution")
+async def track_attribution(request: Request, user_id: str = Depends(require_user)):
+    """Record first-touch UTM attribution for a signed-in user. Idempotent."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    save_user_attribution(user_id, body)
+    return JSONResponse({"ok": True})
 
 
 @app.post("/api/match-stream")
