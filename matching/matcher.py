@@ -9,6 +9,39 @@ from typing import List, Dict, Any
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
+# Skill vocabulary for deterministic text scanning (used by prefilter)
+# ---------------------------------------------------------------------------
+
+KNOWN_SKILLS_VOCAB = [
+    'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Rust',
+    'React', 'Next.js', 'Vue', 'Angular', 'Node.js',
+    'FastAPI', 'Django', 'Flask', 'Spring',
+    'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis',
+    'GraphQL', 'REST APIs', 'gRPC',
+    'AWS', 'GCP', 'Azure', 'Docker', 'Kubernetes',
+    'Machine Learning', 'Deep Learning', 'LLM', 'RAG', 'NLP',
+    'PyTorch', 'TensorFlow', 'scikit-learn',
+    'Vector Databases', 'Langchain', 'Hugging Face',
+    'TailwindCSS', 'CSS', 'HTML', 'Linux', 'Git', 'CI/CD',
+    # Compound AI/LLM stack terms found in real JD required_skills after lazy fetch
+    'Agent Development', 'Agentic Systems', 'Multi-Agent Systems',
+    'LLM Applications', 'LLM Engineering', 'LLM Systems',
+    'Workflow Orchestration', 'Pipeline Orchestration',
+    'API Integration', 'API Development',
+    'Evaluation Systems', 'Model Evaluation', 'LLM Evaluation',
+    'Prompt Engineering', 'Fine-tuning', 'RLHF',
+    'Model Context Protocol', 'MCP',
+]
+
+def extract_skills_from_text(text: str) -> List[str]:
+    """Deterministic vocabulary scan — returns skills found verbatim in text.
+    Word-boundary matched so 'Go' doesn't false-positive inside 'Django'."""
+    text_lower = text.lower()
+    return [s for s in KNOWN_SKILLS_VOCAB
+            if re.search(r'\b' + re.escape(s.lower()) + r'\b', text_lower)]
+
+
+# ---------------------------------------------------------------------------
 # Module-level prompt constants (injectable for evals)
 # ---------------------------------------------------------------------------
 
@@ -425,15 +458,6 @@ def analyze_job_requirements(job_title, job_description, required_skills):
     }
 
 
-def extract_skills_from_text(text):
-    """Extract skills from text using LLM-based analysis instead of hardcoded keywords."""
-    from matching.llm_skill_extractor import extract_job_skills_with_llm
-    
-    # Use LLM to extract skills from the text
-    # Treat the text as a job description for skill extraction
-    skills = extract_job_skills_with_llm("", text, "")
-    
-    return skills
 
 def generate_llm_based_description(job, llm_analysis, resume_skills):
     """
@@ -1537,6 +1561,36 @@ def fuzzy_skill_match(resume_skill, job_skill):
         ],
         'fastapi': ['fastapi', 'fast api'],
         'websockets': ['websockets', 'websocket', 'web socket', 'ws'],
+        'next.js': ['next.js', 'nextjs', 'next js'],
+        'mongodb': ['mongodb', 'mongo', 'nosql', 'document database'],
+        'redis': ['redis', 'memcached', 'caching', 'in-memory database'],
+        'graphql': ['graphql', 'graph ql'],
+        'tailwindcss': ['tailwindcss', 'tailwind', 'tailwind css'],
+        'agent_development': [
+            'agent development', 'agentic', 'agentic systems', 'autonomous agent',
+            'ai agent', 'agent framework', 'multi-agent', 'multi-agent systems',
+            'mcp', 'model context protocol', 'langchain', 'langgraph',
+            'crewai', 'autogen', 'swarm',
+        ],
+        'workflow_orchestration': [
+            'workflow orchestration', 'workflow automation', 'pipeline orchestration',
+            'langchain', 'langgraph', 'crewai', 'dspy', 'prefect', 'temporal',
+        ],
+        'api_development': [
+            'api integration', 'api development', 'api design',
+            'rest api', 'rest apis', 'restful', 'restful api', 'web services',
+            'fastapi', 'flask', 'express',
+        ],
+        'llm_applications': [
+            'llm applications', 'llm engineering', 'llm systems', 'llm development',
+            'llm', 'large language model', 'language model',
+            'prompt engineering', 'fine-tuning', 'rlhf',
+        ],
+        'evaluation_systems': [
+            'evaluation systems', 'model evaluation', 'ai evaluation', 'llm evaluation',
+            'benchmarking', 'evals', 'rag evaluation',
+            'rag', 'ragas', 'trulens', 'langsmith',
+        ],
     }
 
     # Check if either skill is in a variation group
@@ -1596,6 +1650,21 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
     # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers)
     if skill_match_count == 0 and job_skills:
         return 0
+
+    # 1b. Description text scan — bonus for specialized user skills (RAG, Claude,
+    # MCP, FastAPI, etc.) that rarely appear in structured required_skills but DO
+    # appear in JD body text. Capped at 12 pts so it can't override the primary signal.
+    if job_description and resume_skills:
+        already_matched_lower = {s.lower() for s in matched_skills}
+        desc_bonus = 0
+        for skill in resume_skills:
+            s = skill.lower().strip()
+            if s in already_matched_lower:
+                continue
+            # word-boundary check to avoid "js" matching "adjustments", etc.
+            if re.search(r'\b' + re.escape(s) + r'\b', job_description):
+                desc_bonus += 4
+        score += min(desc_bonus, 12)
 
     # 2. Title bonus (10 points max) - Only if we have skill matches
     # Rewards when matched skills appear prominently in the title
@@ -2026,10 +2095,10 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
         "location_preferences": (
             [resume_profile["location"]] if resume_profile.get("location") else []
         ),
-        "industry_preferences": [],
+        "industry_preferences": resume_profile.get("industry_preferences") or [],
         "remote_preference": bool(resume_profile.get("remote_ok", False)),
         "relocation_willingness": bool(resume_profile.get("willing_to_relocate", False)),
-        "citizenship": "unknown",
+        "citizenship": resume_profile.get("citizenship") or "unknown",
     }
 
     results = []
@@ -2044,12 +2113,31 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
         metadata_score, _desc = calculate_metadata_match_score(resume_metadata, job_metadata)
         combined_score = round(keyword_score * 0.7 + metadata_score * 0.3)
 
-        job_skills = job.get("required_skills", []) or []
+        # Supplement DB required_skills with a deterministic vocabulary scan
+        # of stored text. Real JD text (after lazy job_get fetch) gives precise
+        # results; synthetic descriptions still surface "Machine Learning" etc.
+        db_skills = set(job.get("required_skills") or [])
+        desc = job.get("description") or ""
+        scan_text = (job.get("title") or "") + (" " + desc if desc else "")
+        job_skills = list(db_skills | set(extract_skills_from_text(scan_text)))
+
         skill_matches = [
             js for js in job_skills
             if any(fuzzy_skill_match(rs, js) for rs in skills)
         ]
         skill_gaps = [js for js in job_skills if js not in skill_matches]
+
+        # Surface user skills found in description text but not in required_skills.
+        # Lets the agent see which differentiators (RAG, Claude, FastAPI, MCP) are
+        # relevant to each JD even when not listed as structured requirements.
+        import re as _re
+        desc_lower = (job.get("description") or "").lower()
+        matched_req_lower = {s.lower() for s in skill_matches}
+        desc_skill_matches = [
+            s for s in skills
+            if s.lower() not in matched_req_lower
+            and _re.search(r'\b' + _re.escape(s.lower()) + r'\b', desc_lower)
+        ]
 
         results.append({
             "job_hash": job.get("job_hash"),
@@ -2062,6 +2150,7 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
             "combined_score": combined_score,
             "skill_matches": skill_matches,
             "skill_gaps": skill_gaps,
+            "desc_skill_matches": desc_skill_matches,
             "hard_filter_passed": _passes_hard_filters(job, experience_level, years),
             "description_preview": (job.get("description") or "")[:500],
         })
