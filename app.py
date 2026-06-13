@@ -39,7 +39,7 @@ from matching.metadata_matcher import extract_resume_metadata
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
-from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db
+from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db, save_user_attribution
 from auth import require_user
 
 # Base directory of this file (used for templates/static/uploads paths)
@@ -106,13 +106,13 @@ async def lifespan(app: FastAPI):
                 should_refresh = True
                 logger.info("No cached jobs found — initializing cache...")
         else:
-            # Production: always scrape on startup so every deploy gets fresh data.
-            # The scrape runs in the background — server is available immediately.
+            # production AND staging: always scrape on startup so every deploy gets
+            # fresh data. The scrape runs in the background — server available immediately.
             should_refresh = True
             if cached_jobs:
-                logger.info(f"Production startup: {len(cached_jobs)} cached jobs available, scraping for fresh data...")
+                logger.info(f"{environment.capitalize()} startup: {len(cached_jobs)} cached jobs available, scraping for fresh data...")
             else:
-                logger.info("Production startup: no cached jobs — initializing cache...")
+                logger.info(f"{environment.capitalize()} startup: no cached jobs — initializing cache...")
 
         if should_refresh and os.getenv("SKIP_STARTUP_SCRAPE", "").lower() in ("1", "true", "yes"):
             logger.info("SKIP_STARTUP_SCRAPE is set — skipping startup scrape")
@@ -202,6 +202,7 @@ def _get_rate_limit_key(request: Request) -> str:
 
 
 _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+_ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 # enabled=TRACK_USAGE — when usage tracking is off, every @limiter.limit(...)
 # decorator becomes a no-op, removing all rate limiting / waiting times.
 limiter = Limiter(key_func=_get_rate_limit_key, storage_uri=_REDIS_URL, enabled=TRACK_USAGE)
@@ -228,20 +229,23 @@ def _log_rate_limit_exceeded(request: Request, exc: RateLimitExceeded):
 app.add_exception_handler(RateLimitExceeded, _log_rate_limit_exceeded)
 
 # Add CORS middleware for React frontend
+_CORS_ORIGINS = [
+    "https://internship-app-production.up.railway.app",
+    "https://internshipmatcher.com",
+    "https://www.internshipmatcher.com",
+    "http://internshipmatcher.com",
+    "http://www.internshipmatcher.com",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+if _ENVIRONMENT == "staging":
+    _CORS_ORIGINS.append("https://internship-app-staging.up.railway.app")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://internship-app-production.up.railway.app",
-        "http://internshipmatcher.com",
-        "http://www.internshipmatcher.com",
-        "https://internshipmatcher.com",
-        "https://www.internshipmatcher.com",
-        "http://3.149.255.34",
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ],  # Domain, EC2, and local dev
+    allow_origins=_CORS_ORIGINS,
 
     allow_credentials=True,
     allow_methods=["*"],
@@ -756,6 +760,17 @@ async def check_resume_cache(request: Request, resume_hash: str, user_id: str = 
 async def get_user_history(request: Request, user_id: str = Depends(require_user)):
     entries = get_user_resume_history(user_id)
     return JSONResponse(entries)
+
+
+@app.post("/api/track-attribution")
+async def track_attribution(request: Request, user_id: str = Depends(require_user)):
+    """Record first-touch UTM attribution for a signed-in user. Idempotent."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    save_user_attribution(user_id, body)
+    return JSONResponse({"ok": True})
 
 
 @app.post("/api/match-stream")

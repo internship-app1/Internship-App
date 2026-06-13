@@ -125,6 +125,19 @@ class RemoteCompileLog(Base):
     __table_args__ = (Index('idx_remote_compile_user_time', 'user_id', 'requested_at'),)
 
 
+class UserAttribution(Base):
+    """First-touch UTM attribution per user. One row per Clerk user_id — never updated."""
+    __tablename__ = "user_attribution"
+    user_id      = Column(String(255), primary_key=True)
+    utm_source   = Column(String(255), nullable=True)
+    utm_medium   = Column(String(255), nullable=True)
+    utm_campaign = Column(String(255), nullable=True)
+    utm_content  = Column(String(255), nullable=True)
+    utm_term     = Column(String(255), nullable=True)
+    first_seen_at = Column(DateTime, nullable=True)   # when the browser first landed
+    attributed_at = Column(DateTime, default=_utcnow, nullable=False)  # when this row was written
+
+
 class ApiKey(Base):
     """Per-user API keys for the MCP /api/v1 surface (issued from /developer).
 
@@ -266,6 +279,39 @@ def get_db() -> Session:
 def close_db(db: Session):
     """Close database session"""
     db.close()
+
+
+def save_user_attribution(user_id: str, utm_data: dict) -> bool:
+    """Record first-touch UTM attribution for a user. Idempotent — silently no-ops if already stored."""
+    db = get_db()
+    try:
+        if db.query(UserAttribution).filter_by(user_id=user_id).first():
+            return False
+        first_seen = None
+        raw_ts = utm_data.get("first_seen_at")
+        if raw_ts:
+            try:
+                from datetime import timezone as _tz
+                first_seen = datetime.fromisoformat(raw_ts.replace("Z", "+00:00")).astimezone(_tz.utc).replace(tzinfo=None)
+            except Exception:
+                pass
+        db.add(UserAttribution(
+            user_id=user_id,
+            utm_source=utm_data.get("utm_source"),
+            utm_medium=utm_data.get("utm_medium"),
+            utm_campaign=utm_data.get("utm_campaign"),
+            utm_content=utm_data.get("utm_content"),
+            utm_term=utm_data.get("utm_term"),
+            first_seen_at=first_seen,
+        ))
+        db.commit()
+        return True
+    except Exception:
+        db.rollback()
+        return False
+    finally:
+        close_db(db)
+
 
 def generate_job_hash(company: str, title: str, location: str, apply_link: str) -> str:
     """
@@ -633,6 +679,29 @@ def get_job_by_hash(job_hash: str, db: Optional[Session] = None) -> Optional[Dic
     finally:
         if should_close:
             close_db(db)
+
+
+def update_job_jd(job_hash: str, description: str, job_requirements: str, required_skills: List[str]) -> bool:
+    """Persist real JD text and skills fetched lazily from the apply_link.
+    Called once on first job_get when the stored description is synthetic boilerplate.
+    """
+    db = get_db()
+    try:
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        if not job:
+            return False
+        job.description = description
+        job.job_requirements = job_requirements
+        if required_skills:
+            job.required_skills = json.dumps(required_skills)
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error("Error updating JD for %s: %s", job_hash[:12], e)
+        db.rollback()
+        return False
+    finally:
+        close_db(db)
 
 
 def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
