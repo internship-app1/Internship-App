@@ -767,9 +767,11 @@ async def track_attribution(request: Request, user_id: str = Depends(require_use
     """Record first-touch UTM attribution for a signed-in user. Idempotent."""
     try:
         body = await request.json()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Attribution: could not parse request body for user={user_id} — {e}")
         body = {}
-    save_user_attribution(user_id, body)
+    saved = save_user_attribution(user_id, body)
+    logger.info(f"Attribution: track-attribution user={user_id} saved={saved}")
     return JSONResponse({"ok": True})
 
 

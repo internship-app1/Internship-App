@@ -282,10 +282,12 @@ def close_db(db: Session):
 
 
 def save_user_attribution(user_id: str, utm_data: dict) -> bool:
-    """Record first-touch UTM attribution for a user. Idempotent — silently no-ops if already stored."""
+    """Record first-touch UTM attribution for a user. Idempotent — no-ops if already stored."""
+    logger.info(f"Attribution: recording for user={user_id} utm_data={utm_data}")
     db = get_db()
     try:
         if db.query(UserAttribution).filter_by(user_id=user_id).first():
+            logger.info(f"Attribution: user={user_id} already attributed — skipping")
             return False
         first_seen = None
         raw_ts = utm_data.get("first_seen_at")
@@ -293,8 +295,8 @@ def save_user_attribution(user_id: str, utm_data: dict) -> bool:
             try:
                 from datetime import timezone as _tz
                 first_seen = datetime.fromisoformat(raw_ts.replace("Z", "+00:00")).astimezone(_tz.utc).replace(tzinfo=None)
-            except Exception:
-                pass
+            except Exception as ts_err:
+                logger.warning(f"Attribution: could not parse first_seen_at={raw_ts!r} — {ts_err}")
         db.add(UserAttribution(
             user_id=user_id,
             utm_source=utm_data.get("utm_source"),
@@ -305,8 +307,10 @@ def save_user_attribution(user_id: str, utm_data: dict) -> bool:
             first_seen_at=first_seen,
         ))
         db.commit()
+        logger.info(f"Attribution: saved user={user_id} source={utm_data.get('utm_source')!r}")
         return True
-    except Exception:
+    except Exception as e:
+        logger.error(f"Attribution: DB write failed for user={user_id} — {e}", exc_info=True)
         db.rollback()
         return False
     finally:
