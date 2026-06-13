@@ -7,7 +7,8 @@ export function HonestStats() {
     fetch('/api/database-stats')
       .then((r) => r.json())
       .then((data) => {
-        const count = data.total_jobs ?? data.active_jobs ?? data.job_count ?? null;
+        const stats = data.database_stats ?? data;
+        const count = stats.active_jobs ?? stats.total_jobs ?? stats.job_count ?? null;
         if (typeof count === 'number') setLiveCount(count);
       })
       .catch(() => {});
