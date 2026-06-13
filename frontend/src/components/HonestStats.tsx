@@ -1,20 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
-export function HonestStats() {
-  const [liveCount, setLiveCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch('/api/database-stats')
-      .then((r) => r.json())
-      .then((data) => {
-        const stats = data.database_stats ?? data;
-        const count = stats.active_jobs ?? stats.total_jobs ?? stats.job_count ?? null;
-        if (typeof count === 'number') setLiveCount(count);
-      })
-      .catch(() => {});
-  }, []);
-
-  const displayCount = (liveCount ?? 847).toLocaleString();
+export function HonestStats({ activeJobs }: { activeJobs: number | null }) {
+  const displayCount = (activeJobs ?? 847).toLocaleString();
 
   return (
     <section className="py-12 border-b border-lp-border">

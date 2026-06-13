@@ -495,7 +495,7 @@ const FindPage: React.FC = () => {
                 ) : selectedFile && !isSignedIn ? (
                   'Sign in to analyze →'
                 ) : (
-                  'Find Matches →'
+                  'See My Matches →'
                 )}
               </button>
             </form>
