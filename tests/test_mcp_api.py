@@ -281,6 +281,67 @@ class TestPrefilterAndScore:
         assert prefilter_and_score(self.PROFILE, SAMPLE_JOBS) == \
             prefilter_and_score(self.PROFILE, SAMPLE_JOBS)
 
+    def test_location_differentiates_scores(self):
+        """metadata_score must differ between a job in the profile's city and one abroad."""
+        sf_profile = {**self.PROFILE, "location": "San Francisco, CA", "remote_ok": False}
+        sf_job = {**SAMPLE_JOBS[0], "job_hash": "c" * 64, "location": "San Francisco, CA"}
+        london_job = {**SAMPLE_JOBS[0], "job_hash": "d" * 64, "location": "London, UK"}
+        out = {r["job_hash"]: r for r in prefilter_and_score(sf_profile, [sf_job, london_job])}
+        assert out["c" * 64]["metadata_score"] > out["d" * 64]["metadata_score"], (
+            "SF job should outscore London job on metadata when profile location is SF"
+        )
+
+    def test_ai_skill_synonyms_match(self):
+        """LLM/RAG in profile must match Machine Learning / AI/ML in job required_skills."""
+        ai_profile = {**self.PROFILE, "skills": ["LLM", "RAG", "Python"]}
+        ai_job = {
+            "job_hash": "e" * 64,
+            "company": "AI Co",
+            "title": "AI Engineer Intern",
+            "location": "San Francisco, CA",
+            "apply_link": "",
+            "description": "Machine learning internship.",
+            "required_skills": ["Machine Learning", "Python", "AI/ML"],
+        }
+        out = prefilter_and_score(ai_profile, [ai_job])
+        assert "Machine Learning" in out[0]["skill_matches"] or "AI/ML" in out[0]["skill_matches"], (
+            "LLM/RAG in profile should match Machine Learning or AI/ML in job skills"
+        )
+
+    def test_exclude_hashes_filters_jobs(self):
+        """Jobs whose hashes are in exclude_hashes must not appear in results."""
+        profile = self.PROFILE
+        jobs = SAMPLE_JOBS
+        without_exclude = prefilter_and_score(profile, jobs)
+        assert len(without_exclude) == 2
+
+        # Pass exclude_hashes through the REST endpoint
+        # (prefilter_and_score itself doesn't take exclude_hashes — filtering
+        # is done at the API layer before calling it, so we test via the API)
+
+
+# ---------------------------------------------------------------------------
+# exclude_hashes filtering (API layer)
+# ---------------------------------------------------------------------------
+
+class TestPrefilterExcludeHashes:
+    def test_exclude_hashes_via_rest(self, client, api_key):
+        """exclude_hashes in the request body must remove matching jobs from candidates."""
+        resp = client.post(
+            "/api/v1/jobs/prefilter",
+            headers={"X-API-Key": api_key},
+            json={
+                "resume_profile": {
+                    "skills": ["Python", "React"],
+                    "experience_level": "student",
+                },
+                "exclude_hashes": ["a" * 64],
+            },
+        )
+        assert resp.status_code == 200
+        hashes = [c["job_hash"] for c in resp.json()["candidates"]]
+        assert "a" * 64 not in hashes
+
 
 # ---------------------------------------------------------------------------
 # Hosted MCP mount (/mcp) — guarded for Python < 3.10
