@@ -73,7 +73,8 @@ const steps = [
   },
 ];
 
-export function HowItActuallyWorks() {
+export function HowItActuallyWorks({ activeJobs }: { activeJobs: number | null }) {
+  const jobCount = (activeJobs ?? 847).toLocaleString();
   return (
     <section className="py-14 border-b border-lp-border" id="how-it-works">
       {/* Kicker */}
@@ -86,7 +87,7 @@ export function HowItActuallyWorks() {
 
       <h2 className="font-serif text-3xl text-text-primary mb-4">How it actually works.</h2>
       <p className="text-sm text-text-secondary leading-relaxed max-w-xl mb-10">
-        It reads your resume like a person would, then scores all 847 live postings against
+        It reads your resume like a person would, then scores all {jobCount} live postings against
         your skills. You read the top ten and apply.
       </p>
 

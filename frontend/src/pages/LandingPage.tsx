@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import Logo from '../components/Logo';
 import { Hero } from '../components/ui/animated-hero';
@@ -37,13 +37,26 @@ function Footer() {
 }
 
 const LandingPage: React.FC = () => {
+  const [activeJobs, setActiveJobs] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/database-stats')
+      .then((r) => r.json())
+      .then((data) => {
+        const stats = data.database_stats ?? data;
+        const count = stats.active_jobs ?? stats.total_jobs ?? null;
+        if (typeof count === 'number') setActiveJobs(count);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-bg text-text-primary">
       <Header />
       <main className="max-w-[860px] mx-auto px-6">
         <Hero />
-        <HonestStats />
-        <HowItActuallyWorks />
+        <HonestStats activeJobs={activeJobs} />
+        <HowItActuallyWorks activeJobs={activeJobs} />
         <BuilderBlock />
         <ClosingCTA />
       </main>
