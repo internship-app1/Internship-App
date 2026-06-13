@@ -24,9 +24,7 @@ export function BuilderBlock() {
           </div>
 
           <p className="font-serif text-xl text-text-primary leading-[1.55] mb-6 max-w-xl">
-            I built this because I was sick of randomly applying to jobs without knowing whether or not I was a good fit.
-            Beyond applying to jobs that I saw were best fit, it's also important to tailor your resume to pass the ATS, so 
-            we even added a tailor resume feature to help you get the best results!
+            I built this because I was tired of firing off 50 applications a week with no clue if I had a shot. Now I know before I hit apply.
           </p>
 
           <div className="font-mono text-[11px] text-text-secondary mb-4 leading-relaxed">

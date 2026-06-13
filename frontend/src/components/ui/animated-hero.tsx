@@ -21,11 +21,11 @@ function Hero() {
           <h1 className="font-serif text-[2.6rem] md:text-5xl text-text-primary leading-[1.1] mb-5">
             Upload your resume.
             <br />
-            Get <em className="italic">thirty internships</em> that actually fit.
+            See your <em className="italic">30 best-fit</em> internships in 30 seconds.
           </h1>
 
           <p className="text-sm text-text-secondary leading-relaxed max-w-md mb-8">
-            Free tool, built by a CS student at SJSU. It reads the skills, frameworks, and
+            Free, built by a CS student at SJSU. It reads the skills, frameworks, and
             experience levels in your résumé, then ranks every live posting against your profile.
             No keyword roulette. No recruiter middleware. No ads.
           </p>
@@ -35,7 +35,7 @@ function Hero() {
               to="/find"
               className="inline-block bg-text-primary text-bg px-5 py-2.5 font-mono text-xs tracking-wide hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             >
-              Upload résumé →
+              Upload My Résumé
             </Link>
             <span className="font-mono text-[11px] text-text-tertiary">~30s</span>
           </div>

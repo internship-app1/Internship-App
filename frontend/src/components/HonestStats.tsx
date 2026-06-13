@@ -1,23 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
-export function HonestStats() {
-  const [liveCount, setLiveCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch('/api/database-stats')
-      .then((r) => r.json())
-      .then((data) => {
-        const count = data.total_jobs ?? data.active_jobs ?? data.job_count ?? null;
-        if (typeof count === 'number') setLiveCount(count);
-      })
-      .catch(() => {});
-  }, []);
-
-  const displayCount = (liveCount ?? 847).toLocaleString();
+export function HonestStats({ activeJobs }: { activeJobs: number | null }) {
+  const displayCount = (activeJobs ?? 847).toLocaleString();
 
   return (
     <section className="py-12 border-b border-lp-border">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-8">
+      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-text-tertiary mb-8">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+        </span>
         By the numbers · pulled from the running index
       </div>
 

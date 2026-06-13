@@ -264,7 +264,7 @@ const HomePage: React.FC = () => {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      Find Matches
+                      See My Matches
                     </>
                   )}
                 </Button>

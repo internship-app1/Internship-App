@@ -1382,8 +1382,8 @@ async def refresh_cache_incremental(request: Request, max_days_old: int = 30,
 
 @app.get("/api/database-stats")
 @limiter.limit("10/minute")
-async def database_stats(request: Request, _: None = Depends(require_api_key)):
-    """Get detailed database statistics"""
+async def database_stats(request: Request):
+    """Get database statistics — public endpoint used by the landing page job counter."""
     try:
         from job_database import get_database_stats
         stats = get_database_stats()
