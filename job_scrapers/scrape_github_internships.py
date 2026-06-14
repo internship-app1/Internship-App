@@ -1244,16 +1244,40 @@ def parse_internship_table(content, max_results):
     
     # Find all tables
     tables = soup.find_all('table')
-    
+
     if not tables:
         logger.error("[GitHub] No tables found in content")
         return jobs
-    
-    # Look for the software engineering table (should be the first one after the header)
-    table = tables[0]  # Assume first table is the software engineering table
-    
-    rows = table.find_all('tr')
-    logger.info(f"[GitHub] Found table with {len(rows)} rows")
+
+    # Collect all job tables — any table whose header row contains "company" and "role".
+    # The repo splits jobs across multiple tables (SWE, PM, Data Science, etc.); hardcoding
+    # tables[0] was silently dropping all but the first section.
+    JOB_TABLE_REQUIRED_HEADERS = {'company', 'role'}
+    job_tables = []
+    for tbl in tables:
+        header_row = tbl.find('tr')
+        if not header_row:
+            continue
+        hdrs = {cell.get_text(strip=True).lower() for cell in header_row.find_all(['th', 'td'])}
+        if JOB_TABLE_REQUIRED_HEADERS.issubset(hdrs):
+            job_tables.append(tbl)
+
+    if not job_tables:
+        logger.error("[GitHub] No job tables found (expected headers: company, role)")
+        return jobs
+
+    logger.info(f"[GitHub] Found {len(job_tables)} job table(s)")
+
+    # Parse every job table and accumulate rows into a single list.
+    all_rows_by_table = []
+    for tbl in job_tables:
+        tbl_rows = tbl.find_all('tr')
+        all_rows_by_table.append(tbl_rows)
+
+    # Use the first table's header to set up column indices, then process all tables.
+    rows = all_rows_by_table[0]
+    total_rows = sum(len(r) for r in all_rows_by_table)
+    logger.info(f"[GitHub] Found table with {total_rows} rows")
 
     # Parse header to determine column indices
     header_row = rows[0] if rows else None
@@ -1274,8 +1298,12 @@ def parse_internship_table(content, max_results):
     _skill_failures = 0
     _parse_errors = 0
 
-    # Skip header row
-    for row in rows[1:]:  # Skip the header row
+    # Build a flat list of data rows across all job tables (skip each table's header row).
+    all_data_rows = []
+    for tbl_rows in all_rows_by_table:
+        all_data_rows.extend(tbl_rows[1:])
+
+    for row in all_data_rows:
         if len(jobs) >= max_results:
             break
             
