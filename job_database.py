@@ -87,6 +87,64 @@ class ResumeCache(Base):
     expires_at = Column(DateTime, nullable=False)
     __table_args__ = (Index('idx_user_hash', 'user_id', 'resume_hash'),)
 
+
+class SavedJob(Base):
+    """Per-user saved job and application status tracker."""
+    __tablename__ = "saved_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    job_hash = Column(String(64), nullable=False, index=True)
+    status = Column(String(40), default="saved", nullable=False, index=True)
+    notes = Column(Text, default="", nullable=False)
+    deadline = Column(String(40), nullable=True)
+    applied_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_saved_user_job', 'user_id', 'job_hash', unique=True),
+        Index('idx_saved_user_status', 'user_id', 'status'),
+    )
+
+
+SAVED_JOB_STATUSES = {"saved", "interested", "applied", "interviewing", "rejected", "offer"}
+
+
+def _job_row_to_dict(job: Optional["Job"]) -> Optional[Dict]:
+    if not job:
+        return None
+    return {
+        'id': job.id,
+        'job_hash': job.job_hash,
+        'company': job.company,
+        'title': job.title,
+        'location': job.location,
+        'apply_link': job.apply_link,
+        'description': job.description,
+        'required_skills': json.loads(job.required_skills) if job.required_skills else [],
+        'job_requirements': job.job_requirements,
+        'source': job.source,
+        'metadata': json.loads(job.job_metadata) if job.job_metadata else {},
+        'first_seen': job.first_seen.isoformat() if job.first_seen else None,
+        'last_seen': job.last_seen.isoformat() if job.last_seen else None,
+        'is_active': bool(job.is_active),
+    }
+
+
+def _saved_job_to_dict(row: "SavedJob", job: Optional["Job"] = None) -> Dict:
+    return {
+        "id": row.id,
+        "job_hash": row.job_hash,
+        "status": row.status,
+        "notes": row.notes or "",
+        "deadline": row.deadline,
+        "applied_at": row.applied_at.isoformat() if row.applied_at else None,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "job": _job_row_to_dict(job),
+    }
+
 def _utcnow() -> datetime:
     """Naive UTC datetime — matches the DateTime column type used by both quota tables."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -917,6 +975,127 @@ def set_resume_cache(user_id: str, resume_hash: str, results: list, skills: list
         logger.warning(f"Failed to save resume cache: {e}")
     finally:
         db.close()
+
+
+def list_saved_jobs(user_id: str) -> List[Dict]:
+    """Return a user's saved jobs newest first, including job details when present."""
+    db = get_db()
+    try:
+        rows = db.query(SavedJob, Job).outerjoin(
+            Job, SavedJob.job_hash == Job.job_hash
+        ).filter(
+            SavedJob.user_id == user_id
+        ).order_by(SavedJob.updated_at.desc()).all()
+        return [_saved_job_to_dict(saved, job) for saved, job in rows]
+    finally:
+        close_db(db)
+
+
+def get_saved_job_hashes(user_id: str) -> List[str]:
+    """Return only the hashes a user has saved for lightweight UI state."""
+    db = get_db()
+    try:
+        return [
+            h for (h,) in db.query(SavedJob.job_hash)
+            .filter(SavedJob.user_id == user_id)
+            .order_by(SavedJob.updated_at.desc())
+            .all()
+        ]
+    finally:
+        close_db(db)
+
+
+def upsert_saved_job(
+    user_id: str,
+    job_hash: str,
+    status: str = "saved",
+    notes: str = "",
+    deadline: Optional[str] = None,
+) -> Dict:
+    """Create or update a saved job row owned by user_id."""
+    if status not in SAVED_JOB_STATUSES:
+        raise ValueError(f"Invalid status: {status}")
+    db = get_db()
+    try:
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        if not job:
+            raise LookupError("Job not found")
+        row = db.query(SavedJob).filter(
+            SavedJob.user_id == user_id,
+            SavedJob.job_hash == job_hash,
+        ).first()
+        now = datetime.utcnow()
+        if not row:
+            row = SavedJob(user_id=user_id, job_hash=job_hash)
+            db.add(row)
+        row.status = status
+        row.notes = notes or ""
+        row.deadline = deadline or None
+        row.applied_at = now if status == "applied" and row.applied_at is None else row.applied_at
+        row.updated_at = now
+        db.commit()
+        db.refresh(row)
+        return _saved_job_to_dict(row, job)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
+
+
+def update_saved_job(
+    user_id: str,
+    job_hash: str,
+    status: Optional[str] = None,
+    notes: Optional[str] = None,
+    deadline: Optional[str] = None,
+) -> Optional[Dict]:
+    """Update an existing saved job. Returns None when it is not saved."""
+    if status is not None and status not in SAVED_JOB_STATUSES:
+        raise ValueError(f"Invalid status: {status}")
+    db = get_db()
+    try:
+        row = db.query(SavedJob).filter(
+            SavedJob.user_id == user_id,
+            SavedJob.job_hash == job_hash,
+        ).first()
+        if not row:
+            return None
+        if status is not None:
+            row.status = status
+            if status == "applied" and row.applied_at is None:
+                row.applied_at = datetime.utcnow()
+        if notes is not None:
+            row.notes = notes
+        if deadline is not None:
+            row.deadline = deadline or None
+        row.updated_at = datetime.utcnow()
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        db.commit()
+        db.refresh(row)
+        return _saved_job_to_dict(row, job)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
+
+
+def delete_saved_job(user_id: str, job_hash: str) -> bool:
+    """Remove a saved job owned by the user."""
+    db = get_db()
+    try:
+        deleted = db.query(SavedJob).filter(
+            SavedJob.user_id == user_id,
+            SavedJob.job_hash == job_hash,
+        ).delete()
+        db.commit()
+        return deleted > 0
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
 
 # Initialize database on import
 if __name__ == "__main__":

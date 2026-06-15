@@ -20,10 +20,15 @@ from job_database import (
     generate_job_hash,
     get_active_jobs,
     get_job_by_hash,
+    delete_saved_job,
     get_database_stats,
     get_resume_cache,
+    get_saved_job_hashes,
     mark_old_jobs_inactive,
+    list_saved_jobs,
     set_resume_cache,
+    update_saved_job,
+    upsert_saved_job,
 )
 
 
@@ -251,6 +256,60 @@ class TestGetJobByHash:
         result = get_job_by_hash(h)
         assert result is not None
         assert result["company"] == "Datadog"
+
+
+# ---------------------------------------------------------------------------
+# saved_jobs — per-user application tracker
+# ---------------------------------------------------------------------------
+
+class TestSavedJobs:
+    def test_user_can_save_and_list_job(self):
+        job = _job(company="Linear", n=12)
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+
+        saved = upsert_saved_job("user_1", h, status="interested", notes="Apply this week")
+        assert saved["job_hash"] == h
+        assert saved["status"] == "interested"
+        assert saved["job"]["company"] == "Linear"
+
+        rows = list_saved_jobs("user_1")
+        assert len(rows) == 1
+        assert rows[0]["notes"] == "Apply this week"
+        assert get_saved_job_hashes("user_1") == [h]
+
+    def test_saved_jobs_are_scoped_by_user(self):
+        job = _job(company="Figma", n=13)
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+
+        upsert_saved_job("user_1", h)
+
+        assert len(list_saved_jobs("user_1")) == 1
+        assert list_saved_jobs("user_2") == []
+
+    def test_update_saved_job_status_and_notes(self):
+        job = _job(company="Stripe", n=14)
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+
+        upsert_saved_job("user_1", h)
+        updated = update_saved_job("user_1", h, status="applied", notes="Submitted via portal")
+
+        assert updated["status"] == "applied"
+        assert updated["notes"] == "Submitted via portal"
+        assert updated["applied_at"] is not None
+
+    def test_delete_saved_job(self):
+        job = _job(company="Ramp", n=15)
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+
+        upsert_saved_job("user_1", h)
+
+        assert delete_saved_job("user_1", h) is True
+        assert delete_saved_job("user_1", h) is False
+        assert list_saved_jobs("user_1") == []
 
 
 # ---------------------------------------------------------------------------
