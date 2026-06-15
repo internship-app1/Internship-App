@@ -138,6 +138,29 @@ class UserAttribution(Base):
     attributed_at = Column(DateTime, default=_utcnow, nullable=False)  # when this row was written
 
 
+class CompanyRegistry(Base):
+    """Registry of companies and which ATS they use, for the universal crawler."""
+    __tablename__ = "company_registry"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(String(255), unique=True, nullable=False)
+    display_name = Column(String(500), nullable=False)
+    ats_type = Column(String(50), nullable=False)
+    ats_board_id = Column(String(500), nullable=False)
+    careers_url = Column(Text, nullable=True)
+    industry = Column(String(100), nullable=True)
+    company_size = Column(String(50), nullable=True)
+    last_crawled = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    crawl_priority = Column(Integer, default=2, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_ats_type', 'ats_type'),
+        Index('idx_active_priority', 'is_active', 'crawl_priority', 'last_crawled'),
+    )
+
+
 class ApiKey(Base):
     """Per-user API keys for the MCP /api/v1 surface (issued from /developer).
 
