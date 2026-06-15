@@ -88,7 +88,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
           Authorization: `Bearer ${authToken}`,
           ...(isSaved ? {} : { 'Content-Type': 'application/json' }),
         },
-        body: isSaved ? undefined : JSON.stringify({ job_hash: job.job_hash }),
+        body: isSaved ? undefined : JSON.stringify({ job_hash: job.job_hash, job_snapshot: job }),
       });
       if (!response.ok) {
         throw new Error(isSaved ? 'Could not remove saved job.' : 'Could not save job.');

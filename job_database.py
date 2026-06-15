@@ -98,6 +98,7 @@ class SavedJob(Base):
     status = Column(String(40), default="saved", nullable=False, index=True)
     notes = Column(Text, default="", nullable=False)
     deadline = Column(String(40), nullable=True)
+    job_snapshot = Column(Text, nullable=True)
     applied_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -133,6 +134,12 @@ def _job_row_to_dict(job: Optional["Job"]) -> Optional[Dict]:
 
 
 def _saved_job_to_dict(row: "SavedJob", job: Optional["Job"] = None) -> Dict:
+    snapshot = None
+    if row.job_snapshot:
+        try:
+            snapshot = json.loads(row.job_snapshot)
+        except (json.JSONDecodeError, TypeError):
+            snapshot = None
     return {
         "id": row.id,
         "job_hash": row.job_hash,
@@ -142,8 +149,38 @@ def _saved_job_to_dict(row: "SavedJob", job: Optional["Job"] = None) -> Dict:
         "applied_at": row.applied_at.isoformat() if row.applied_at else None,
         "created_at": row.created_at.isoformat() if row.created_at else None,
         "updated_at": row.updated_at.isoformat() if row.updated_at else None,
-        "job": _job_row_to_dict(job),
+        "job": _job_row_to_dict(job) or snapshot,
     }
+
+
+def _normalize_job_snapshot(snapshot: Optional[Dict]) -> Optional[Dict]:
+    if not snapshot:
+        return None
+    allowed_keys = {
+        "job_hash", "company", "title", "location", "apply_link", "description",
+        "required_skills", "job_requirements", "source", "first_seen", "last_seen",
+        "match_score", "score", "match_description", "ai_reasoning",
+    }
+    normalized = {k: snapshot.get(k) for k in allowed_keys if snapshot.get(k) is not None}
+    if not normalized.get("job_hash"):
+        return None
+    return normalized
+
+
+def _ensure_saved_jobs_schema():
+    """Best-effort compatibility for create_all(), which does not add columns."""
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        if "saved_jobs" not in inspector.get_table_names():
+            return
+        columns = {c["name"] for c in inspector.get_columns("saved_jobs")}
+        if "job_snapshot" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE saved_jobs ADD COLUMN job_snapshot TEXT"))
+            logger.info("Added missing saved_jobs.job_snapshot column")
+    except Exception as e:
+        logger.warning(f"Could not verify saved_jobs schema compatibility: {e}")
 
 def _utcnow() -> datetime:
     """Naive UTC datetime — matches the DateTime column type used by both quota tables."""
@@ -320,6 +357,7 @@ def init_database():
     """Initialize database tables"""
     try:
         Base.metadata.create_all(bind=engine)
+        _ensure_saved_jobs_schema()
         logger.info("Database initialized successfully")
         return True
     except Exception as e:
@@ -1011,15 +1049,17 @@ def upsert_saved_job(
     status: str = "saved",
     notes: str = "",
     deadline: Optional[str] = None,
+    job_snapshot: Optional[Dict] = None,
 ) -> Dict:
     """Create or update a saved job row owned by user_id."""
     if status not in SAVED_JOB_STATUSES:
         raise ValueError(f"Invalid status: {status}")
+    normalized_snapshot = _normalize_job_snapshot(job_snapshot)
     db = get_db()
     try:
         job = db.query(Job).filter(Job.job_hash == job_hash).first()
-        if not job:
-            raise LookupError("Job not found")
+        if not job and not normalized_snapshot:
+            normalized_snapshot = {"job_hash": job_hash}
         row = db.query(SavedJob).filter(
             SavedJob.user_id == user_id,
             SavedJob.job_hash == job_hash,
@@ -1031,6 +1071,8 @@ def upsert_saved_job(
         row.status = status
         row.notes = notes or ""
         row.deadline = deadline or None
+        if normalized_snapshot:
+            row.job_snapshot = json.dumps(normalized_snapshot)
         row.applied_at = now if status == "applied" and row.applied_at is None else row.applied_at
         row.updated_at = now
         db.commit()

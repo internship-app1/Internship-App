@@ -799,9 +799,8 @@ async def api_save_job(request: Request, user_id: str = Depends(require_user)):
             status=body.get("status") or "saved",
             notes=body.get("notes") or "",
             deadline=body.get("deadline") or None,
+            job_snapshot=body.get("job_snapshot") or body.get("job") or None,
         )
-    except LookupError:
-        raise HTTPException(status_code=404, detail="Job not found")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return JSONResponse(saved, status_code=201)

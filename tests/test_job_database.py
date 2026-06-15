@@ -311,6 +311,25 @@ class TestSavedJobs:
         assert delete_saved_job("user_1", h) is False
         assert list_saved_jobs("user_1") == []
 
+    def test_can_save_job_snapshot_when_job_row_is_missing(self):
+        snapshot = {
+            "job_hash": "abc123",
+            "company": "Cache Only Co",
+            "title": "Software Engineering Intern",
+            "location": "Remote",
+            "apply_link": "https://example.com/apply",
+            "match_score": 91,
+        }
+
+        saved = upsert_saved_job("user_1", "abc123", job_snapshot=snapshot)
+
+        assert saved["job_hash"] == "abc123"
+        assert saved["job"]["company"] == "Cache Only Co"
+        assert saved["job"]["match_score"] == 91
+
+        rows = list_saved_jobs("user_1")
+        assert rows[0]["job"]["title"] == "Software Engineering Intern"
+
 
 # ---------------------------------------------------------------------------
 # generate_job_hash — path-widening regression
