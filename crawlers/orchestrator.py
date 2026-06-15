@@ -77,6 +77,9 @@ class CrawlOrchestrator:
         if companies:
             self.registry.update_last_crawled(companies)
 
+        # Auto-discover new Greenhouse companies from apply_link referrals
+        asyncio.create_task(self._discover_from_apply_links())
+
         duration_ms = int((datetime.utcnow() - start).total_seconds() * 1000)
         return {
             "companies_crawled": len(companies),
@@ -128,3 +131,48 @@ class CrawlOrchestrator:
         """
         from crawlers.bootstrap import run_bootstrap
         return await run_bootstrap(registry=self.registry, incremental=True)
+
+    async def _discover_from_apply_links(self) -> int:
+        """
+        After each crawl batch, extract Greenhouse board tokens embedded in
+        apply_links of existing jobs that are not yet in the registry, probe
+        them, and auto-enqueue for the next cycle.
+
+        Called at the end of _crawl_batch; returns count of new companies added.
+        """
+        import httpx
+
+        new_tokens = self.registry.get_unregistered_apply_link_tokens(ats_type="greenhouse")
+        if not new_tokens:
+            return 0
+
+        added = 0
+        semaphore = asyncio.Semaphore(20)
+
+        async def _probe(token: str) -> bool:
+            async with semaphore:
+                try:
+                    async with httpx.AsyncClient(timeout=10) as client:
+                        resp = await client.get(
+                            f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs",
+                            params={"limit": 1},
+                        )
+                        if resp.status_code == 200:
+                            self.registry.upsert({
+                                "company_id": token,
+                                "display_name": token.replace("-", " ").title(),
+                                "ats_type": "greenhouse",
+                                "ats_board_id": token,
+                                "careers_url": f"https://boards.greenhouse.io/{token}",
+                            })
+                            return True
+                except Exception:
+                    pass
+            return False
+
+        tasks = [_probe(t) for t in new_tokens[:500]]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        added = sum(1 for r in results if r is True)
+        if added:
+            logger.info("apply_link discovery: added %d new Greenhouse companies", added)
+        return added
