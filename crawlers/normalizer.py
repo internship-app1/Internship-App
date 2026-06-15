@@ -13,16 +13,26 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
-INTERN_KEYWORDS = {
-    "intern", "internship", "co-op", "coop", "co op",
-    "summer analyst", "summer associate", "summer program",
-    "student", "graduate trainee", "apprentice",
-}
+# Word-boundary matching is essential: plain substring "intern" matches "Internal"
+# and "International", which flooded results with non-internships. Boundaries are
+# (?<![a-z]) / (?![a-z]) rather than \b so hyphenated forms like "co-op" still match.
+_INTERN_TITLE_RE = re.compile(
+    r"(?<![a-z])("
+    r"intern(?:ship)?"
+    r"|co[-\s]?op"
+    r"|summer\s+(?:analyst|associate|program)"
+    r"|graduate\s+trainee"
+    r"|apprentice(?:ship)?"
+    r"|student"
+    r")(?![a-z])",
+    re.I,
+)
 
 
 def is_intern_posting(title: str, employment_type: str = "") -> bool:
-    title_lower = title.lower()
-    return any(kw in title_lower for kw in INTERN_KEYWORDS) or "intern" in employment_type.lower()
+    return bool(_INTERN_TITLE_RE.search(title or "")) or bool(
+        _INTERN_TITLE_RE.search(employment_type or "")
+    )
 
 
 def strip_html(raw_html: str) -> str:
