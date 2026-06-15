@@ -8,7 +8,7 @@ on:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Trigger full ATS crawl
         run: |
@@ -16,4 +16,5 @@ jobs:
             -H "X-Api-Key: ${{ secrets.INTERNSHIP_MATCHER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{}' \
+            --max-time 3300 --retry 3 --retry-delay 15 --retry-connrefused \
             --fail-with-body

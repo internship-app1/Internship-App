@@ -107,8 +107,15 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
 
     enriched = []
     for item, detail in zip(all_listings, details):
-        if isinstance(detail, dict) and detail:
-            item.update(detail)
+        if isinstance(detail, Exception):
+            logger.warning(
+                "SR detail fetch failed for %s/%s: %s — using list-level fields only",
+                identifier, item.get("id"), detail,
+            )
+        elif isinstance(detail, dict) and detail:
+            # Fill only keys absent from the list response so the experienceLevel
+            # that admitted this job is never clobbered by the detail payload.
+            item.update({k: v for k, v in detail.items() if k not in item})
         item["_title"] = item.get("name", "")
         # Let orchestrator's is_intern_posting check use the ATS-assigned level
         item["_employment_type"] = item.get("experienceLevel", {}).get("id", "")

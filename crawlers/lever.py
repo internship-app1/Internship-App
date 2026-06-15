@@ -67,7 +67,11 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
                 break
 
             for j in page:
-                if j.get("state") != "published":
+                # The public /v0/postings endpoint only ever returns published, public
+                # postings and omits the "state" field entirely (it exists only on the
+                # authenticated API). Only enforce the filter when the field is present,
+                # otherwise every posting is dropped.
+                if "state" in j and j["state"] != "published":
                     continue
                 dist = j.get("distributionChannels", [])
                 if dist and "public" not in dist:

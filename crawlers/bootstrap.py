@@ -127,7 +127,7 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
                 known = set(registry.get_all_ids(ats_type="greenhouse", active_only=True))
                 tokens = [t for t in tokens if t not in known]
             logger.info("Bootstrap: probing %d Greenhouse tokens", len(tokens))
-            tasks = [_probe_greenhouse(client, t, registry, semaphore) for t in tokens[:10000]]
+            tasks = [_probe_greenhouse(client, t, registry, semaphore) for t in tokens]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             return sum(1 for r in results if r is True)
         except Exception as e:
@@ -145,7 +145,7 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
                 known = set(registry.get_all_ids(ats_type="lever", active_only=True))
                 slugs = [s for s in slugs if f"lever_{s}" not in known]
             logger.info("Bootstrap: probing %d Lever slugs", len(slugs))
-            tasks = [_probe_lever(client, s, registry, semaphore) for s in slugs[:3000]]
+            tasks = [_probe_lever(client, s, registry, semaphore) for s in slugs]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             return sum(1 for r in results if r is True)
         except Exception as e:
@@ -163,7 +163,7 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
                 known = set(registry.get_all_ids(ats_type="ashby", active_only=True))
                 slugs = [s for s in slugs if f"ashby_{s}" not in known]
             logger.info("Bootstrap: probing %d Ashby slugs", len(slugs))
-            tasks = [_probe_ashby(client, s, registry, semaphore) for s in slugs[:2000]]
+            tasks = [_probe_ashby(client, s, registry, semaphore) for s in slugs]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             return sum(1 for r in results if r is True)
         except Exception as e:

@@ -24,31 +24,57 @@ logger = logging.getLogger(__name__)
 RATE_LIMIT_DELAY = 0.5
 SITEMAP_TIMEOUT = 15
 PAGE_TIMEOUT = 20
+MAX_CHILD_SITEMAPS = 50
 
-INTERN_SLUG_KEYWORDS = {
-    "intern", "internship", "co-op", "coop", "summer", "apprentice",
-}
+# Word-boundary match so "international"/"cooperate" don't false-positive.
+_INTERN_SLUG_RE = re.compile(
+    r"(?<![a-z])(intern(?:ship)?|co-?op|summer|apprentice)(?![a-z])", re.I
+)
 
 
 def _slug_is_intern(url: str) -> bool:
-    url_lower = url.lower()
-    return any(kw in url_lower for kw in INTERN_SLUG_KEYWORDS)
+    return bool(_INTERN_SLUG_RE.search(url.lower()))
 
 
-def _parse_sitemap(xml_text: str) -> List[dict]:
-    """Return list of {loc, lastmod} dicts from sitemap XML."""
-    entries = []
+def _local(tag: str) -> str:
+    """Strip an XML namespace from a tag: '{ns}url' -> 'url'."""
+    return tag.rsplit("}", 1)[-1]
+
+
+def _child_text(el, name: str) -> str:
+    for child in el:
+        if _local(child.tag) == name:
+            return (child.text or "").strip()
+    return ""
+
+
+def _parse_sitemap(xml_text: str) -> dict:
+    """
+    Parse a sitemap document namespace-agnostically.
+
+    Returns {"entries": [{loc, lastmod}, ...], "child_sitemaps": [loc, ...]}.
+    Handles both <urlset> (job entries) and <sitemapindex> (child sitemap refs),
+    and tolerates documents that omit the sitemap namespace declaration.
+    """
+    entries: List[dict] = []
+    child_sitemaps: List[str] = []
     try:
         root = ElementTree.fromstring(xml_text)
-        ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
-        for url_el in root.findall("sm:url", ns):
-            loc = url_el.findtext("sm:loc", default="", namespaces=ns)
-            lastmod = url_el.findtext("sm:lastmod", default="", namespaces=ns)
-            if loc:
-                entries.append({"loc": loc, "lastmod": lastmod})
     except Exception as e:
         logger.warning("Failed to parse iCIMS sitemap: %s", e)
-    return entries
+        return {"entries": entries, "child_sitemaps": child_sitemaps}
+
+    for el in root:
+        tag = _local(el.tag)
+        if tag == "url":
+            loc = _child_text(el, "loc")
+            if loc:
+                entries.append({"loc": loc, "lastmod": _child_text(el, "lastmod")})
+        elif tag == "sitemap":
+            loc = _child_text(el, "loc")
+            if loc:
+                child_sitemaps.append(loc)
+    return {"entries": entries, "child_sitemaps": child_sitemaps}
 
 
 def _is_job_url(loc: str) -> bool:
@@ -117,7 +143,17 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
             logger.warning("iCIMS sitemap network error for %s: %s", tenant, e)
             return []
 
-        entries = _parse_sitemap(resp.text)
+        parsed = _parse_sitemap(resp.text)
+        entries = parsed["entries"]
+        # If the root is a <sitemapindex>, fetch its child sitemaps and merge their
+        # url entries (bounded so a pathological index can't fan out unboundedly).
+        for child_url in parsed["child_sitemaps"][:MAX_CHILD_SITEMAPS]:
+            try:
+                child_resp = await client.get(child_url)
+                if child_resp.status_code == 200:
+                    entries.extend(_parse_sitemap(child_resp.text)["entries"])
+            except httpx.RequestError as e:
+                logger.debug("iCIMS child sitemap fetch error %s: %s", child_url, e)
 
         job_entries = []
         for e in entries:
@@ -128,7 +164,11 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
                 continue
             if since_dt is not None and e.get("lastmod"):
                 try:
-                    lm = datetime.fromisoformat(e["lastmod"].replace("Z", "+00:00")).replace(tzinfo=None)
+                    lm = datetime.fromisoformat(e["lastmod"].replace("Z", "+00:00"))
+                    # Normalize offset-aware timestamps to UTC before comparing against
+                    # the naive UTC cutoff; leave already-naive values untouched.
+                    if lm.tzinfo is not None:
+                        lm = lm.astimezone(timezone.utc).replace(tzinfo=None)
                     if lm < since_dt:
                         continue
                 except Exception:

@@ -8,7 +8,7 @@ on:
 jobs:
   discover:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Trigger company registry refresh
         run: |
@@ -16,4 +16,5 @@ jobs:
             -H "X-Api-Key: ${{ secrets.INTERNSHIP_MATCHER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{}' \
+            --max-time 7000 --retry 3 --retry-delay 15 --retry-connrefused \
             --fail-with-body

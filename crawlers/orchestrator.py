@@ -134,7 +134,10 @@ class CrawlOrchestrator:
         and delegating to the bootstrap module.
         """
         from crawlers.bootstrap import run_bootstrap
-        return await run_bootstrap(registry=self.registry, incremental=True)
+        # incremental=False matches the weekly full-refresh intent of the
+        # /api/crawl/discover-companies endpoint (re-probe all slugs, reactivating
+        # any that came back online); keep the two call sites consistent.
+        return await run_bootstrap(registry=self.registry, incremental=False)
 
     async def _discover_from_apply_links(self) -> int:
         """

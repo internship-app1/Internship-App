@@ -55,10 +55,34 @@ async def _discover_tenant_url(client: httpx.AsyncClient, company: str) -> Optio
                 if resp.status_code == 200:
                     return url
                 if resp.status_code == 422:
-                    logger.debug("Workday %s: 422 (Cloudflare) on %s — marking cloudflare_protected", company, url)
-                    return None
+                    # Cloudflare on THIS cluster/site only — another combination may still
+                    # work, so keep probing instead of declaring the whole tenant dead.
+                    logger.debug("Workday %s: 422 (Cloudflare) on %s — trying next combination", company, url)
+                    continue
             except httpx.RequestError:
                 continue
+    return None
+
+
+# "Posted Today", "Posted Yesterday", "Posted 5 Days Ago", "Posted 30+ Days Ago"
+_POSTED_DAYS_RE = re.compile(r"(\d+)\s*\+?\s*days?\s*ago", re.I)
+
+
+def _posted_on_age_hours(posted_on: str) -> Optional[float]:
+    """
+    Best-effort age in hours from Workday's human-readable postedOn string.
+    Returns None when the string can't be parsed (caller should fail open).
+    """
+    if not posted_on:
+        return None
+    s = posted_on.lower()
+    if "today" in s:
+        return 0.0
+    if "yesterday" in s:
+        return 24.0
+    m = _POSTED_DAYS_RE.search(s)
+    if m:
+        return int(m.group(1)) * 24.0
     return None
 
 
@@ -110,12 +134,19 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
                 total = data.get("total", 0)
 
             postings = data.get("jobPostings", [])
+            base_host = tenant_url.split("/wday/")[0]
             for p in postings:
                 p["_title"] = p.get("title", "")
                 external_path = p.get("externalPath", "")
-                base_host = tenant_url.split("/wday/")[0]
                 p["_apply_link"] = f"{base_host}{external_path}"
-            all_jobs.extend(postings)
+                # Best-effort incremental filter: Workday's list API only exposes a
+                # human-readable postedOn ("Posted 5 Days Ago"), not a timestamp. Drop
+                # postings older than the cutoff; keep anything we can't parse (fail open).
+                if since_hours is not None:
+                    age = _posted_on_age_hours(p.get("postedOn", ""))
+                    if age is not None and age > since_hours:
+                        continue
+                all_jobs.append(p)
 
             await asyncio.sleep(RATE_LIMIT_DELAY)
 

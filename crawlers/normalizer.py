@@ -5,7 +5,6 @@ All ATS crawlers return a raw dict plus a "_title" convenience key so the
 orchestrator can apply the intern filter before normalizing.
 """
 import html as _html
-import json
 import logging
 import re
 from datetime import datetime, timezone
@@ -92,7 +91,16 @@ def _extract_apply_link(raw: dict, ats_type: str, company) -> str:
         board_id = company.ats_board_id if company else ""
         return raw.get("_apply_link", "") or f"https://{board_id}{path}"
     if ats_type == "smartrecruiters":
-        return raw.get("applyUrl") or raw.get("postingUrl", "")
+        url = raw.get("applyUrl") or raw.get("postingUrl")
+        if url:
+            return url
+        # applyUrl/postingUrl exist only in the detail response; fall back to the
+        # canonical careers URL so a failed detail fetch never yields an empty link.
+        board_id = company.ats_board_id if company else ""
+        job_id = raw.get("id", "")
+        if board_id and job_id:
+            return f"https://jobs.smartrecruiters.com/{board_id}/{job_id}"
+        return ""
     if ats_type == "icims":
         return raw.get("apply_link", "")
     return ""
@@ -182,8 +190,11 @@ def _extract_employment_type(raw: dict, ats_type: str) -> str:
     if ats_type == "ashby":
         return raw.get("employmentType", "")
     if ats_type == "smartrecruiters":
-        t = raw.get("typeOfEmployment", {}) or {}
-        return t.get("label", "")
+        # Derive from experienceLevel (the field that admitted the job) so the stored
+        # value can't contradict the internship filter; typeOfEmployment.label can be
+        # "Permanent" even for an experienceLevel.id == "internship" posting.
+        exp = raw.get("experienceLevel", {}) or {}
+        return exp.get("label") or exp.get("id", "")
     return ""
 
 
@@ -277,7 +288,11 @@ def normalize_job(raw: dict, ats_type: str, company) -> dict:
         "days_since_posted": days_since,
         "date_posted": posted_date,
         "date_posted_raw": raw.get("updated_at") or raw.get("publishedAt") or raw.get("releasedDate") or "",
-        "job_metadata": json.dumps({
+        # Rich ATS metadata lives under "metadata" (the existing scraper contract):
+        # bulk_insert_jobs merges date_posted* fields in, json.dumps it into the
+        # job_metadata column, and refreshes it on conflict. A separate pre-serialized
+        # "job_metadata" key would be silently ignored by bulk_insert_jobs.
+        "metadata": {
             "days_since_posted": days_since,
             "date_posted": posted_date,
             "date_posted_raw": raw.get("updated_at") or raw.get("publishedAt") or raw.get("releasedDate") or "",
@@ -289,9 +304,5 @@ def normalize_job(raw: dict, ats_type: str, company) -> dict:
             "compensation": _extract_compensation(raw, ats_type),
             "remote_type": _extract_remote_type(raw, ats_type),
             "application_questions": [],
-        }),
-        "metadata": {
-            "days_since_posted": days_since,
-            "date_posted": posted_date,
         },
     }

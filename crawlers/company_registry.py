@@ -44,19 +44,35 @@ class CompanyRegistryStore:
     def upsert(self, data: Dict) -> bool:
         db = get_db()
         try:
-            row = db.query(_ORMCompanyRegistry).filter_by(
-                company_id=data["company_id"]
-            ).first()
-            if row:
-                for k, v in data.items():
-                    if hasattr(row, k) and v is not None:
-                        setattr(row, k, v)
+            # Dialect-aware atomic upsert (same pattern as bulk_insert_jobs) — avoids the
+            # SELECT-then-INSERT TOCTOU race that silently drops one writer's update when
+            # two bootstrap probes hit the same company_id concurrently.
+            values = {
+                k: v for k, v in data.items()
+                if v is not None and hasattr(_ORMCompanyRegistry, k)
+            }
+            dialect = db.bind.dialect.name
+            if dialect == "postgresql":
+                from sqlalchemy.dialects.postgresql import insert as _insert
             else:
-                row = _ORMCompanyRegistry(**{
-                    k: v for k, v in data.items()
-                    if hasattr(_ORMCompanyRegistry, k)
-                })
-                db.add(row)
+                from sqlalchemy.dialects.sqlite import insert as _insert
+
+            stmt = _insert(_ORMCompanyRegistry.__table__).values(**values)
+            # On conflict, refresh everything supplied except the immutable identity/creation
+            # columns so a re-probe can reactivate or update a known company.
+            update_cols = {
+                k: getattr(stmt.excluded, k)
+                for k in values
+                if k not in ("company_id", "created_at")
+            }
+            if update_cols:
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["company_id"],
+                    set_=update_cols,
+                )
+            else:
+                stmt = stmt.on_conflict_do_nothing(index_elements=["company_id"])
+            db.execute(stmt)
             db.commit()
             return True
         except Exception as e:
@@ -117,7 +133,7 @@ class CompanyRegistryStore:
         finally:
             close_db(db)
 
-    def get_all_ids(self, ats_type: Optional[str] = None, active_only: bool = False) -> List[str]:
+    def get_all_ids(self, ats_type: Optional[str] = None, active_only: bool = True) -> List[str]:
         db = get_db()
         try:
             q = db.query(_ORMCompanyRegistry.company_id)
@@ -144,17 +160,26 @@ class CompanyRegistryStore:
             known = {r[0] for r in known_rows}
 
             if ats_type == "greenhouse":
-                pattern = "boards.greenhouse.io/%"
+                # Leading % is required — real apply_links start with https://, so an
+                # anchored "boards.greenhouse.io/%" pattern would never match.
+                pattern = "%boards.greenhouse.io/%"
                 rows = db.execute(
                     text("SELECT DISTINCT apply_link FROM jobs WHERE apply_link LIKE :p"),
                     {"p": pattern},
                 ).fetchall()
+                # Path segments that are part of the embed/JS widget URL, not board tokens.
+                denylist = {"embed", "job_board", "js", "jobs", "job_app", "embed_job_board"}
                 tokens = set()
                 for (url,) in rows:
                     parts = url.split("boards.greenhouse.io/")
                     if len(parts) > 1:
-                        token = parts[1].split("/")[0]
-                        if token and token not in known:
+                        # Strip query string/fragment before isolating the first path segment.
+                        token = parts[1].split("?")[0].split("#")[0].split("/")[0]
+                        if (
+                            token
+                            and token not in known
+                            and token.lower() not in denylist
+                        ):
                             tokens.add(token)
                 return list(tokens)
             return []
