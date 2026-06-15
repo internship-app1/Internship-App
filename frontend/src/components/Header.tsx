@@ -12,11 +12,25 @@ const Header: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
+    if (typeof window.matchMedia !== 'function') {
+      setIsDark(theme === 'dark');
+      return;
+    }
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (!mq) {
+      setIsDark(theme === 'dark');
+      return;
+    }
     const update = () => setIsDark(theme === 'dark' || (theme === 'system' && mq.matches));
     update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', update);
+      return () => mq.removeEventListener('change', update);
+    }
+    if (typeof mq.addListener === 'function') {
+      mq.addListener(update);
+      return () => mq.removeListener(update);
+    }
   }, [theme]);
 
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
