@@ -1,0 +1,19 @@
+name: Crawl Incremental
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Trigger incremental ATS crawl
+        run: |
+          curl -sS -X POST "${{ secrets.API_URL }}/api/crawl/incremental" \
+            -H "X-Api-Key: ${{ secrets.INTERNSHIP_MATCHER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"max_age_hours": 1}' \
+            --fail-with-body
