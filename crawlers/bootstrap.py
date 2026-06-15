@@ -2,26 +2,32 @@
 Bootstrap script — seeds company_registry from curated community datasets.
 
 Sources (all public, no auth required):
-  Greenhouse: https://raw.githubusercontent.com/tramcar/greenhouse-tokens/main/tokens.txt
-  Lever:      https://raw.githubusercontent.com/nicholasgriffen/lever-companies/main/companies.json
-  Ashby:      https://jobs.ashbyhq.com/sitemap.xml
+  Greenhouse: Feashliaa/job-board-aggregator greenhouse_companies.json
+              https://raw.githubusercontent.com/Feashliaa/job-board-aggregator/main/data/greenhouse_companies.json
+              JSON array of board token strings (~10,000+ entries, CC BY-NC 4.0)
+
+  Lever:      Feashliaa/job-board-aggregator lever_companies.json
+              https://raw.githubusercontent.com/Feashliaa/job-board-aggregator/main/data/lever_companies.json
+              JSON array of company slug strings (~3,000+ entries)
+
+  Ashby:      Feashliaa/job-board-aggregator ashby_companies.json
+              https://raw.githubusercontent.com/Feashliaa/job-board-aggregator/main/data/ashby_companies.json
+              JSON array of org slug strings (~2,000+ entries)
+
+Live-verified 2026-06-15: all three files return JSON arrays of lowercase string slugs/tokens.
 """
 import asyncio
 import logging
-import re
 from typing import Optional
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
-GREENHOUSE_TOKENS_URL = (
-    "https://raw.githubusercontent.com/tramcar/greenhouse-tokens/main/tokens.txt"
-)
-LEVER_SLUGS_URL = (
-    "https://raw.githubusercontent.com/nicholasgriffen/lever-companies/main/companies.json"
-)
-ASHBY_SITEMAP_URL = "https://jobs.ashbyhq.com/sitemap.xml"
+_BASE = "https://raw.githubusercontent.com/Feashliaa/job-board-aggregator/main/data"
+GREENHOUSE_TOKENS_URL = f"{_BASE}/greenhouse_companies.json"
+LEVER_SLUGS_URL = f"{_BASE}/lever_companies.json"
+ASHBY_SLUGS_URL = f"{_BASE}/ashby_companies.json"
 
 CONCURRENCY = 30
 PROBE_TIMEOUT = 10
@@ -58,14 +64,16 @@ async def _probe_lever(client: httpx.AsyncClient, slug: str, registry, semaphore
                 timeout=PROBE_TIMEOUT,
             )
             if resp.status_code == 200:
-                registry.upsert({
-                    "company_id": f"lever_{slug}",
-                    "display_name": slug.replace("-", " ").title(),
-                    "ats_type": "lever",
-                    "ats_board_id": slug,
-                    "careers_url": f"https://jobs.lever.co/{slug}",
-                })
-                return True
+                data = resp.json()
+                if isinstance(data, list):
+                    registry.upsert({
+                        "company_id": f"lever_{slug}",
+                        "display_name": slug.replace("-", " ").title(),
+                        "ats_type": "lever",
+                        "ats_board_id": slug,
+                        "careers_url": f"https://jobs.lever.co/{slug}",
+                    })
+                    return True
         except Exception:
             pass
         return False
@@ -92,25 +100,16 @@ async def _probe_ashby(client: httpx.AsyncClient, slug: str, registry, semaphore
         return False
 
 
-def _extract_ashby_slugs(sitemap_xml: str) -> list:
-    matches = re.findall(r"https://jobs\.ashbyhq\.com/([^/<\s]+)", sitemap_xml)
-    seen = set()
-    slugs = []
-    for m in matches:
-        if m and m not in seen:
-            seen.add(m)
-            slugs.append(m)
-    return slugs
-
-
 async def run_bootstrap(registry, incremental: bool = False) -> dict:
     """
-    Probe curated community datasets and upsert valid companies into company_registry.
+    Probe curated company slug datasets and upsert valid companies into company_registry.
+
+    All datasets are JSON arrays of lowercase string slugs from:
+    github.com/Feashliaa/job-board-aggregator (CC BY-NC 4.0, verified 2026-06-15)
 
     Args:
         registry: CompanyRegistryStore instance
-        incremental: If True, only probe tokens/slugs not already in registry.
-                     If False, probe all (one-time full bootstrap).
+        incremental: If True, skip slugs already in the registry.
 
     Returns:
         dict with new_companies and total_active counts.
@@ -127,12 +126,14 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
         try:
             resp = await client.get(GREENHOUSE_TOKENS_URL, timeout=30)
             resp.raise_for_status()
-            tokens = [t.strip() for t in resp.text.splitlines() if t.strip()]
+            tokens = resp.json()
+            if not isinstance(tokens, list):
+                raise ValueError("Unexpected format: expected JSON array")
             if incremental:
                 known = set(registry.get_all_ids(ats_type="greenhouse"))
                 tokens = [t for t in tokens if t not in known]
             logger.info("Bootstrap: probing %d Greenhouse tokens", len(tokens))
-            tasks = [_probe_greenhouse(client, t, registry, semaphore) for t in tokens[:8000]]
+            tasks = [_probe_greenhouse(client, t, registry, semaphore) for t in tokens[:10000]]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             new_companies += sum(1 for r in results if r is True)
         except Exception as e:
@@ -142,8 +143,9 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
         try:
             resp = await client.get(LEVER_SLUGS_URL, timeout=30)
             resp.raise_for_status()
-            data = resp.json()
-            slugs = data if isinstance(data, list) else list(data.keys())
+            slugs = resp.json()
+            if not isinstance(slugs, list):
+                raise ValueError("Unexpected format: expected JSON array")
             if incremental:
                 known = set(registry.get_all_ids(ats_type="lever"))
                 slugs = [s for s in slugs if f"lever_{s}" not in known]
@@ -154,11 +156,13 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
         except Exception as e:
             logger.warning("Lever bootstrap failed: %s", e)
 
-        # --- Ashby (via sitemap) ---
+        # --- Ashby ---
         try:
-            resp = await client.get(ASHBY_SITEMAP_URL, timeout=30)
+            resp = await client.get(ASHBY_SLUGS_URL, timeout=30)
             resp.raise_for_status()
-            slugs = _extract_ashby_slugs(resp.text)
+            slugs = resp.json()
+            if not isinstance(slugs, list):
+                raise ValueError("Unexpected format: expected JSON array")
             if incremental:
                 known = set(registry.get_all_ids(ats_type="ashby"))
                 slugs = [s for s in slugs if f"ashby_{s}" not in known]
