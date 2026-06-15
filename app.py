@@ -1672,6 +1672,120 @@ async def serve_react(full_path: str):
     return JSONResponse({"error": "Frontend not built"}, status_code=404)
 
 
+# ---------------------------------------------------------------------------
+# Universal ATS Crawler endpoints  (admin-gated via require_api_key)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/crawl/incremental")
+async def crawl_incremental(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger an incremental ATS crawl (jobs updated in last N hours).
+    Designed to run every 15 minutes via GitHub Actions.
+
+    Body (JSON, optional):
+      max_age_hours: int = 1
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    max_age_hours = int(body.get("max_age_hours", 1))
+    ats_types = body.get("ats_types") or []
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    orchestrator = CrawlOrchestrator()
+    result = await orchestrator.run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
+    return JSONResponse({"success": True, **result})
+
+
+@app.post("/api/crawl/full")
+async def crawl_full(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger a full ATS crawl (all companies, no time filter).
+    Designed to run nightly via GitHub Actions.
+
+    Body (JSON, optional):
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    ats_types = body.get("ats_types") or []
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    orchestrator = CrawlOrchestrator()
+    result = await orchestrator.run_full(ats_types=ats_types)
+    return JSONResponse({"success": True, **result})
+
+
+@app.post("/api/crawl/discover-companies")
+async def crawl_discover_companies(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Probe community datasets (Greenhouse tokens, Lever slugs, Ashby sitemap)
+    and upsert newly discovered companies into the company_registry.
+    Designed to run weekly via GitHub Actions.
+    """
+    from crawlers.bootstrap import run_bootstrap
+    from crawlers.company_registry import CompanyRegistryStore
+    result = await run_bootstrap(registry=CompanyRegistryStore(), incremental=False)
+    return JSONResponse({"success": True, **result})
+
+
+@app.get("/api/crawl/status")
+async def crawl_status(request: Request):
+    """
+    Return crawl health: last incremental/full timestamps, company counts by
+    ATS type, and jobs added in last 24h / 7d.
+
+    Public endpoint (no auth) — matches the pattern of /api/database-stats.
+    """
+    from job_database import get_db, close_db, Job, CacheMetadata
+    from crawlers.company_registry import CompanyRegistryStore
+    from datetime import timedelta
+
+    db = get_db()
+    try:
+        now = datetime.utcnow()
+        jobs_24h = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(hours=24)
+        ).count()
+        jobs_7d = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(days=7)
+        ).count()
+
+        last_incremental = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_incremental"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+        last_full = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_full"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+    finally:
+        close_db(db)
+
+    registry_stats = CompanyRegistryStore().get_stats()
+
+    return JSONResponse({
+        "success": True,
+        "last_incremental": last_incremental.last_updated.isoformat() if last_incremental else None,
+        "last_full": last_full.last_updated.isoformat() if last_full else None,
+        "total_companies": registry_stats.get("total_active", 0),
+        "companies_by_ats": registry_stats.get("by_ats", {}),
+        "jobs_added_24h": jobs_24h,
+        "jobs_added_7d": jobs_7d,
+    })
+
+
 if __name__ == "__main__":
     uvicorn.run(
         "app:app",
