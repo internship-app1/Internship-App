@@ -115,14 +115,8 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
         dict with new_companies and total_active counts.
     """
     semaphore = asyncio.Semaphore(CONCURRENCY)
-    new_companies = 0
 
-    async with httpx.AsyncClient(
-        headers={"User-Agent": "internship-matcher-crawler/1.0"},
-        follow_redirects=True,
-    ) as client:
-
-        # --- Greenhouse ---
+    async def _run_greenhouse(client: httpx.AsyncClient) -> int:
         try:
             resp = await client.get(GREENHOUSE_TOKENS_URL, timeout=30)
             resp.raise_for_status()
@@ -130,16 +124,17 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
             if not isinstance(tokens, list):
                 raise ValueError("Unexpected format: expected JSON array")
             if incremental:
-                known = set(registry.get_all_ids(ats_type="greenhouse"))
+                known = set(registry.get_all_ids(ats_type="greenhouse", active_only=True))
                 tokens = [t for t in tokens if t not in known]
             logger.info("Bootstrap: probing %d Greenhouse tokens", len(tokens))
             tasks = [_probe_greenhouse(client, t, registry, semaphore) for t in tokens[:10000]]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            new_companies += sum(1 for r in results if r is True)
+            return sum(1 for r in results if r is True)
         except Exception as e:
             logger.warning("Greenhouse bootstrap failed: %s", e)
+            return 0
 
-        # --- Lever ---
+    async def _run_lever(client: httpx.AsyncClient) -> int:
         try:
             resp = await client.get(LEVER_SLUGS_URL, timeout=30)
             resp.raise_for_status()
@@ -147,16 +142,17 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
             if not isinstance(slugs, list):
                 raise ValueError("Unexpected format: expected JSON array")
             if incremental:
-                known = set(registry.get_all_ids(ats_type="lever"))
+                known = set(registry.get_all_ids(ats_type="lever", active_only=True))
                 slugs = [s for s in slugs if f"lever_{s}" not in known]
             logger.info("Bootstrap: probing %d Lever slugs", len(slugs))
             tasks = [_probe_lever(client, s, registry, semaphore) for s in slugs[:3000]]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            new_companies += sum(1 for r in results if r is True)
+            return sum(1 for r in results if r is True)
         except Exception as e:
             logger.warning("Lever bootstrap failed: %s", e)
+            return 0
 
-        # --- Ashby ---
+    async def _run_ashby(client: httpx.AsyncClient) -> int:
         try:
             resp = await client.get(ASHBY_SLUGS_URL, timeout=30)
             resp.raise_for_status()
@@ -164,14 +160,26 @@ async def run_bootstrap(registry, incremental: bool = False) -> dict:
             if not isinstance(slugs, list):
                 raise ValueError("Unexpected format: expected JSON array")
             if incremental:
-                known = set(registry.get_all_ids(ats_type="ashby"))
+                known = set(registry.get_all_ids(ats_type="ashby", active_only=True))
                 slugs = [s for s in slugs if f"ashby_{s}" not in known]
             logger.info("Bootstrap: probing %d Ashby slugs", len(slugs))
             tasks = [_probe_ashby(client, s, registry, semaphore) for s in slugs[:2000]]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            new_companies += sum(1 for r in results if r is True)
+            return sum(1 for r in results if r is True)
         except Exception as e:
             logger.warning("Ashby bootstrap failed: %s", e)
+            return 0
+
+    async with httpx.AsyncClient(
+        headers={"User-Agent": "internship-matcher-crawler/1.0"},
+        follow_redirects=True,
+    ) as client:
+        counts = await asyncio.gather(
+            _run_greenhouse(client),
+            _run_lever(client),
+            _run_ashby(client),
+        )
+        new_companies = sum(counts)
 
     stats = registry.get_stats()
     logger.info("Bootstrap complete: %d new companies, %d total active", new_companies, stats.get("total_active", 0))

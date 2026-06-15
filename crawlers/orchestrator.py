@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from crawlers.company_registry import CompanyRegistryStore, CompanyRecord
+from crawlers.greenhouse import CompanyNotFound, RateLimitError
 from crawlers.normalizer import is_intern_posting, normalize_job
 from job_database import bulk_insert_jobs
 
@@ -78,7 +79,7 @@ class CrawlOrchestrator:
             self.registry.update_last_crawled(companies)
 
         # Auto-discover new Greenhouse companies from apply_link referrals
-        asyncio.create_task(self._discover_from_apply_links())
+        self._discovery_task = asyncio.create_task(self._discover_from_apply_links())
 
         duration_ms = int((datetime.utcnow() - start).total_seconds() * 1000)
         return {
@@ -94,34 +95,37 @@ class CrawlOrchestrator:
         since_hours: Optional[int],
         semaphore: asyncio.Semaphore,
     ) -> List[dict]:
-        async with semaphore:
-            module = _get_crawler(company.ats_type)
-            if module is None:
-                logger.warning("No crawler for ats_type=%s", company.ats_type)
-                return []
+        module = _get_crawler(company.ats_type)
+        if module is None:
+            logger.warning("No crawler for ats_type=%s", company.ats_type)
+            return []
 
-            for attempt in range(MAX_RETRIES):
+        for attempt in range(MAX_RETRIES):
+            rate_limited = False
+            async with semaphore:
                 try:
                     raw_jobs = await module.fetch_jobs(company, since_hours=since_hours)
                     intern_jobs = [j for j in raw_jobs if is_intern_posting(j.get("_title", ""))]
                     return [normalize_job(j, company.ats_type, company) for j in intern_jobs]
+                except CompanyNotFound:
+                    self.registry.mark_inactive(company.company_id)
+                    return []
+                except RateLimitError:
+                    rate_limited = True
                 except Exception as exc:
-                    cls_name = type(exc).__name__
-                    if "CompanyNotFound" in cls_name:
-                        self.registry.mark_inactive(company.company_id)
-                        return []
-                    if "RateLimitError" in cls_name:
-                        wait = BACKOFF_ON_429 * (attempt + 1)
-                        logger.info("Rate limit for %s — sleeping %ds", company.company_id, wait)
-                        await asyncio.sleep(wait)
-                        if attempt == MAX_RETRIES - 1:
-                            return []
-                    else:
-                        logger.error(
-                            "Crawl error for %s (%s): %s",
-                            company.company_id, company.ats_type, exc,
-                        )
-                        return []
+                    logger.error(
+                        "Crawl error for %s (%s): %s",
+                        company.company_id, company.ats_type, exc,
+                    )
+                    return []
+
+            if rate_limited:
+                if attempt == MAX_RETRIES - 1:
+                    return []
+                wait = BACKOFF_ON_429 * (attempt + 1)
+                logger.info("Rate limit for %s — sleeping %ds", company.company_id, wait)
+                await asyncio.sleep(wait)
+
         return []
 
     async def discover_new_companies(self) -> dict:

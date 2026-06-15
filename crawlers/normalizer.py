@@ -4,6 +4,7 @@ Normalizer — converts ATS-specific raw job dicts into the internal Job schema.
 All ATS crawlers return a raw dict plus a "_title" convenience key so the
 orchestrator can apply the intern filter before normalizing.
 """
+import html as _html
 import json
 import logging
 import re
@@ -25,15 +26,11 @@ def is_intern_posting(title: str, employment_type: str = "") -> bool:
     return any(kw in title_lower for kw in INTERN_KEYWORDS) or "intern" in employment_type.lower()
 
 
-def strip_html(html: str) -> str:
-    if not html:
+def strip_html(raw_html: str) -> str:
+    if not raw_html:
         return ""
-    clean = re.sub(r"<[^>]+>", " ", html)
-    clean = re.sub(r"&nbsp;", " ", clean)
-    clean = re.sub(r"&amp;", "&", clean)
-    clean = re.sub(r"&lt;", "<", clean)
-    clean = re.sub(r"&gt;", ">", clean)
-    clean = re.sub(r"&quot;", '"', clean)
+    clean = re.sub(r"<[^>]+>", " ", raw_html)
+    clean = _html.unescape(clean)
     clean = re.sub(r"\s+", " ", clean)
     return clean.strip()
 
@@ -283,7 +280,7 @@ def normalize_job(raw: dict, ats_type: str, company) -> dict:
         "job_metadata": json.dumps({
             "days_since_posted": days_since,
             "date_posted": posted_date,
-            "date_posted_raw": raw.get("updated_at") or raw.get("publishedAt") or "",
+            "date_posted_raw": raw.get("updated_at") or raw.get("publishedAt") or raw.get("releasedDate") or "",
             "ats_type": ats_type,
             "ats_job_id": _extract_ats_job_id(raw, ats_type),
             "ats_board_id": company.ats_board_id,

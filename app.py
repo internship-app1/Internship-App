@@ -1697,8 +1697,10 @@ async def crawl_incremental(
     ats_types = body.get("ats_types") or []
 
     from crawlers.orchestrator import CrawlOrchestrator
+    from job_database import record_cache_operation
     orchestrator = CrawlOrchestrator()
     result = await orchestrator.run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
+    record_cache_operation("ats_incremental", result.get("jobs_found", 0), result.get("new_jobs", 0))
     return JSONResponse({"success": True, **result})
 
 
@@ -1721,8 +1723,10 @@ async def crawl_full(
     ats_types = body.get("ats_types") or []
 
     from crawlers.orchestrator import CrawlOrchestrator
+    from job_database import record_cache_operation
     orchestrator = CrawlOrchestrator()
     result = await orchestrator.run_full(ats_types=ats_types)
+    record_cache_operation("ats_full", result.get("jobs_found", 0), result.get("new_jobs", 0))
     return JSONResponse({"success": True, **result})
 
 

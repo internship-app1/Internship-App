@@ -117,12 +117,14 @@ class CompanyRegistryStore:
         finally:
             close_db(db)
 
-    def get_all_ids(self, ats_type: Optional[str] = None) -> List[str]:
+    def get_all_ids(self, ats_type: Optional[str] = None, active_only: bool = False) -> List[str]:
         db = get_db()
         try:
             q = db.query(_ORMCompanyRegistry.company_id)
             if ats_type:
                 q = q.filter_by(ats_type=ats_type)
+            if active_only:
+                q = q.filter_by(is_active=True)
             return [r[0] for r in q.all()]
         finally:
             close_db(db)
@@ -136,7 +138,11 @@ class CompanyRegistryStore:
         from sqlalchemy import text
         db = get_db()
         try:
-            known = set(self.get_all_ids(ats_type=ats_type))
+            known_rows = db.query(_ORMCompanyRegistry.company_id).filter_by(
+                ats_type=ats_type
+            ).all()
+            known = {r[0] for r in known_rows}
+
             if ats_type == "greenhouse":
                 pattern = "boards.greenhouse.io/%"
                 rows = db.execute(

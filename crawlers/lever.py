@@ -73,8 +73,8 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
                 if dist and "public" not in dist:
                     continue
                 if since_ms is not None:
-                    created_at = j.get("createdAt", 0)
-                    if created_at and created_at < since_ms:
+                    updated_at = j.get("updatedAt") or j.get("createdAt", 0)
+                    if updated_at and updated_at < since_ms:
                         continue
                 j["_title"] = j.get("text", "")
                 all_jobs.append(j)
