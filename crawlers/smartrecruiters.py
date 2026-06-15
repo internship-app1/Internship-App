@@ -45,7 +45,6 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
     """
     identifier = company.ats_board_id
     params: dict = {
-        "q": "intern",
         "limit": 100,
         "offset": 0,
         "destination": "PUBLIC",
@@ -111,6 +110,8 @@ async def fetch_jobs(company, since_hours: Optional[int] = None) -> List[dict]:
         if isinstance(detail, dict) and detail:
             item.update(detail)
         item["_title"] = item.get("name", "")
+        # Let orchestrator's is_intern_posting check use the ATS-assigned level
+        item["_employment_type"] = item.get("experienceLevel", {}).get("id", "")
         enriched.append(item)
 
     return enriched

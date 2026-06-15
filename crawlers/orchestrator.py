@@ -105,7 +105,7 @@ class CrawlOrchestrator:
             async with semaphore:
                 try:
                     raw_jobs = await module.fetch_jobs(company, since_hours=since_hours)
-                    intern_jobs = [j for j in raw_jobs if is_intern_posting(j.get("_title", ""))]
+                    intern_jobs = [j for j in raw_jobs if is_intern_posting(j.get("_title", ""), j.get("_employment_type", ""))]
                     return [normalize_job(j, company.ats_type, company) for j in intern_jobs]
                 except CompanyNotFound:
                     self.registry.mark_inactive(company.company_id)
