@@ -87,6 +87,102 @@ class ResumeCache(Base):
     expires_at = Column(DateTime, nullable=False)
     __table_args__ = (Index('idx_user_hash', 'user_id', 'resume_hash'),)
 
+
+class SavedJob(Base):
+    """Per-user saved job and application status tracker."""
+    __tablename__ = "saved_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    job_hash = Column(String(64), nullable=False, index=True)
+    status = Column(String(40), default="saved", nullable=False, index=True)
+    notes = Column(Text, default="", nullable=False)
+    deadline = Column(String(40), nullable=True)
+    job_snapshot = Column(Text, nullable=True)
+    applied_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_saved_user_job', 'user_id', 'job_hash', unique=True),
+        Index('idx_saved_user_status', 'user_id', 'status'),
+    )
+
+
+SAVED_JOB_STATUSES = {"saved", "interested", "applied", "interviewing", "rejected", "offer", "ghosted"}
+
+
+def _job_row_to_dict(job: Optional["Job"]) -> Optional[Dict]:
+    if not job:
+        return None
+    return {
+        'id': job.id,
+        'job_hash': job.job_hash,
+        'company': job.company,
+        'title': job.title,
+        'location': job.location,
+        'apply_link': job.apply_link,
+        'description': job.description,
+        'required_skills': json.loads(job.required_skills) if job.required_skills else [],
+        'job_requirements': job.job_requirements,
+        'source': job.source,
+        'metadata': json.loads(job.job_metadata) if job.job_metadata else {},
+        'first_seen': job.first_seen.isoformat() if job.first_seen else None,
+        'last_seen': job.last_seen.isoformat() if job.last_seen else None,
+        'is_active': bool(job.is_active),
+    }
+
+
+def _saved_job_to_dict(row: "SavedJob", job: Optional["Job"] = None) -> Dict:
+    snapshot = None
+    if row.job_snapshot:
+        try:
+            snapshot = json.loads(row.job_snapshot)
+        except (json.JSONDecodeError, TypeError):
+            snapshot = None
+    return {
+        "id": row.id,
+        "job_hash": row.job_hash,
+        "status": row.status,
+        "notes": row.notes or "",
+        "deadline": row.deadline,
+        "applied_at": row.applied_at.isoformat() if row.applied_at else None,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "job": _job_row_to_dict(job) or snapshot,
+    }
+
+
+def _normalize_job_snapshot(snapshot: Optional[Dict]) -> Optional[Dict]:
+    if not snapshot:
+        return None
+    allowed_keys = {
+        "job_hash", "company", "title", "location", "apply_link", "description",
+        "required_skills", "job_requirements", "source", "first_seen", "last_seen",
+        "match_score", "score", "match_description", "ai_reasoning",
+    }
+    normalized = {k: snapshot.get(k) for k in allowed_keys if snapshot.get(k) is not None}
+    if not normalized.get("job_hash"):
+        return None
+    return normalized
+
+
+def _ensure_saved_jobs_schema():
+    """Best-effort compatibility for create_all(), which does not add columns."""
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        if "saved_jobs" not in inspector.get_table_names():
+            return
+        columns = {c["name"] for c in inspector.get_columns("saved_jobs")}
+        if "job_snapshot" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE saved_jobs ADD COLUMN job_snapshot TEXT"))
+            logger.info("Added missing saved_jobs.job_snapshot column")
+    except Exception as e:
+        logger.warning(f"Could not verify saved_jobs schema compatibility: {e}")
+
+
 def _utcnow() -> datetime:
     """Naive UTC datetime — matches the DateTime column type used by both quota tables."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
