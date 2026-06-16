@@ -66,6 +66,7 @@ const FindPage: React.FC = () => {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [pendingAnalysis, setPendingAnalysis] = useState(false);
+  const [savedJobHashes, setSavedJobHashes] = useState<string[]>([]);
 
   // Auto-submit after sign-in — handles both paths:
   //   A) In-page modal (no redirect): isSignedIn flips true while pendingAnalysis is set
@@ -155,6 +156,31 @@ const FindPage: React.FC = () => {
     return `${file.name}-${file.size}-${file.lastModified}`;
   };
 
+  const loadSavedJobHashes = async (token: string | null) => {
+    if (!token) {
+      setSavedJobHashes([]);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/saved-jobs?hashes_only=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSavedJobHashes(Array.isArray(data.job_hashes) ? data.job_hashes : []);
+    } catch {
+      // Saved-state failure should not block matching.
+    }
+  };
+
+  const handleSavedChange = (jobHash: string, saved: boolean) => {
+    setSavedJobHashes(prev => {
+      if (saved && !prev.includes(jobHash)) return [...prev, jobHash];
+      if (!saved) return prev.filter(h => h !== jobHash);
+      return prev;
+    });
+  };
+
   const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean, categoriesOverride?: string[]) => {
     const useThinkDeeper = thinkDeeperOverride ?? thinkDeeper;
     // Department selection is part of the cache identity: a different selection
@@ -165,6 +191,7 @@ const FindPage: React.FC = () => {
 
     const token = await getToken();
     setAuthToken(token);
+    await loadSavedJobHashes(token);
 
     if (token) {
       try {
@@ -685,6 +712,8 @@ const FindPage: React.FC = () => {
                       resumeFile={selectedFile}
                       apiBaseUrl={API_BASE_URL}
                       authToken={authToken}
+                      isSaved={!!job.job_hash && savedJobHashes.includes(job.job_hash)}
+                      onSavedChange={handleSavedChange}
                     />
                   </div>
                 ))
