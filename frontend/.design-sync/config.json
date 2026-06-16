@@ -1,0 +1,32 @@
+{
+  "projectId": "d194c49f-5f69-4a35-94e8-6f5dd917c161",
+  "pkg": "frontend",
+  "globalName": "InternshipMatcher",
+  "shape": "package",
+  "srcDir": "src/components",
+  "cssEntry": "src/.tailwind.compiled.css",
+  "tsconfig": "tsconfig.json",
+  "runtimeFontPrefixes": ["Source Sans 3", "Source Serif 4", "JetBrains Mono", "Inter"],
+  "overrides": {
+    "Card": { "cardMode": "column" },
+    "JobCard": { "cardMode": "column" }
+  },
+  "provider": {
+    "component": "ThemeProvider",
+    "props": { "defaultTheme": "light", "storageKey": "ds-preview-theme" }
+  },
+  "componentSrcMap": {
+    "Button": "src/components/ui/button.tsx",
+    "Badge": "src/components/ui/badge.tsx",
+    "Card": "src/components/ui/card.tsx",
+    "Progress": "src/components/ui/progress.tsx",
+    "ThinkDeeperToggle": "src/components/ui/think-deeper-toggle.tsx",
+    "ThemeProvider": "src/components/theme-provider.tsx",
+    "ThemeToggle": "src/components/theme-toggle.tsx",
+    "JobCard": "src/components/JobCard.tsx",
+    "LoadingSpinner": "src/components/LoadingSpinner.tsx",
+    "ErrorMessage": "src/components/ErrorMessage.tsx",
+    "CodeSnippet": "src/components/CodeSnippet.tsx",
+    "Logo": "src/components/Logo.tsx"
+  }
+}
