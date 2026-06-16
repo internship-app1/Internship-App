@@ -4,10 +4,21 @@ on:
   schedule:
     - cron: '0 6 * * 0'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target backend environment'
+        type: choice
+        options:
+          - production
+          - staging
+        default: production
 
 jobs:
   discover:
     runs-on: ubuntu-latest
+    # Scheduled runs carry no input -> default to production. Manual dispatch can
+    # target staging. The environment scopes which API_URL secret is injected.
+    environment: ${{ github.event.inputs.environment || 'production' }}
     timeout-minutes: 120
     steps:
       - name: Trigger company registry refresh
