@@ -9,7 +9,12 @@ from HTML headings (Greenhouse/Workday/iCIMS/Ashby), Lever's structured
 """
 from types import SimpleNamespace
 
-from crawlers.normalizer import normalize_job, _extract_requirements, _extract_remote_type
+from crawlers.normalizer import (
+    normalize_job,
+    _extract_requirements,
+    _extract_remote_type,
+    _extract_skills_from_text,
+)
 
 
 def _company(slug="acme", ats="greenhouse"):
@@ -117,3 +122,35 @@ def test_no_requirements_section_returns_empty_not_error():
     # the rest of the row is still well-formed
     assert job["title"] == "Workshop"
     assert job["source"] == "ats_greenhouse"
+
+
+def test_skill_extraction_does_not_substring_match_single_letters():
+    # Regression: the single-letter skill "r" used to match every description
+    # containing the letter r (a raw `"r" in text` test), so non-technical
+    # jobs were tagged with "r". Skills must match as whole tokens.
+    text = (
+        "Support manufacturing operations and improve production throughput. "
+        "Strong communication and a great work ethic are required."
+    )
+    assert _extract_skills_from_text(text) == []
+
+
+def test_skill_extraction_matches_genuine_token_mentions():
+    # Real mentions still match, including the short ones, regardless of
+    # surrounding punctuation.
+    assert "r" in _extract_skills_from_text("Proficiency in R or Python.")
+    assert set(_extract_skills_from_text("Experience with R, SQL and Go.")) == {
+        "r", "sql", "go",
+    }
+
+
+def test_skill_extraction_ignores_substrings_inside_other_words():
+    # "go" must not fire on "good"/"category"; "php" must not fire on "graph";
+    # "r" must not fire on "react" alone; "c"/"node" must not bleed from
+    # "c++"/"node.js".
+    assert _extract_skills_from_text("A good candidate for this category.") == []
+    assert _extract_skills_from_text("Knowledge of graphing tools.") == []
+    assert _extract_skills_from_text("Build UIs with React.") == ["react"]
+    assert _extract_skills_from_text("Systems work in C++ and Node.js.") == [
+        "node.js", "c++",
+    ]

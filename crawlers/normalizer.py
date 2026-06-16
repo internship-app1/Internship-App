@@ -281,7 +281,20 @@ def _extract_skills_from_text(text: str) -> list:
         "postgresql", "mysql", "mongodb", "redis",
     ]
     text_lower = text.lower()
-    return [s for s in COMMON_SKILLS if s in text_lower]
+    # Match each skill as a whole token, not a raw substring. A plain
+    # `skill in text_lower` test is catastrophic for short skills: "r" matched
+    # every description containing the letter r, and "go"/"php" matched inside
+    # ordinary words ("good", "category", "graph", ...). We require the skill to
+    # be bounded by characters that can't continue a skill token. The bounding
+    # class includes + and # so variants like "c++"/"c#" stay distinct, but NOT
+    # "." — a trailing period is a sentence boundary ("React.", "R."), and a
+    # dotted skill like "node.js" carries its own dot inside the escaped token.
+    found = []
+    for s in COMMON_SKILLS:
+        pattern = r"(?<![a-z0-9+#])" + re.escape(s) + r"(?![a-z0-9+#])"
+        if re.search(pattern, text_lower):
+            found.append(s)
+    return found
 
 
 # Headings that introduce a requirements/qualifications block in a JD.
