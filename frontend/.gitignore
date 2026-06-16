@@ -25,3 +25,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 test_cache_local.py
+
+# design-sync artifacts (regenerated; durable set in .design-sync/ IS committed)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+src/.tailwind.compiled.css
