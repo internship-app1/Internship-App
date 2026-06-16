@@ -34,20 +34,6 @@ export interface Job {
   last_seen?: string;
 }
 
-export type SavedJobStatus = 'saved' | 'interested' | 'applied' | 'interviewing' | 'rejected' | 'offer' | 'ghosted';
-
-export interface SavedJob {
-  id: number;
-  job_hash: string;
-  status: SavedJobStatus;
-  notes: string;
-  deadline?: string | null;
-  applied_at?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  job?: Job | null;
-}
-
 export interface MatchResults {
   jobs: Job[];
   error?: string;

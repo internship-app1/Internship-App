@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Job } from '../types';
-import { ExternalLink, ChevronDown, ChevronUp, AlertTriangle, Target, CheckCircle2, Bookmark, BookmarkCheck } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronUp, AlertTriangle, Target, CheckCircle2 } from 'lucide-react';
 
 interface JobCardProps {
   job: Job;
@@ -8,16 +8,12 @@ interface JobCardProps {
   resumeFile?: File | null;
   apiBaseUrl?: string;
   authToken?: string | null;
-  isSaved?: boolean;
-  onSavedChange?: (jobHash: string, saved: boolean) => void;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile, apiBaseUrl = '', authToken, isSaved = false, onSavedChange }) => {
+const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile, apiBaseUrl = '', authToken }) => {
   const [showReasoning, setShowReasoning] = useState(false);
   const [isTailoring, setIsTailoring] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [tailorError, setTailorError] = useState('');
-  const [saveError, setSaveError] = useState('');
 
   const formatRelativeReset = (date: Date): string => {
     const diffMs = date.getTime() - Date.now();
@@ -74,30 +70,6 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
       setTailorError(err.message || 'Failed to tailor resume. Please try again.');
     } finally {
       setIsTailoring(false);
-    }
-  };
-
-  const handleSaveToggle = async () => {
-    if (!job.job_hash || !authToken || !onSavedChange) return;
-    setIsSaving(true);
-    setSaveError('');
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/saved-jobs${isSaved ? `/${job.job_hash}` : ''}`, {
-        method: isSaved ? 'DELETE' : 'POST',
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          ...(isSaved ? {} : { 'Content-Type': 'application/json' }),
-        },
-        body: isSaved ? undefined : JSON.stringify({ job_hash: job.job_hash, job_snapshot: job }),
-      });
-      if (!response.ok) {
-        throw new Error(isSaved ? 'Could not remove saved job.' : 'Could not save job.');
-      }
-      onSavedChange(job.job_hash, !isSaved);
-    } catch (err: any) {
-      setSaveError(err.message || 'Could not update saved job.');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -319,18 +291,8 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
       )}
 
       {/* Actions */}
-      {((job.apply_link || job.url) || resumeFile || (authToken && onSavedChange && job.job_hash)) && (
+      {((job.apply_link || job.url) || resumeFile) && (
         <div className="mt-4 pt-4 border-t border-lp-border flex flex-wrap gap-3 items-center">
-          {authToken && onSavedChange && job.job_hash && (
-            <button
-              onClick={handleSaveToggle}
-              disabled={isSaving}
-              className="inline-flex items-center gap-1.5 border border-lp-border px-3 py-1.5 text-xs font-mono text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-            >
-              {isSaved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-              {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
-            </button>
-          )}
           {(job.apply_link || job.url) && (
             <button
               onClick={() => window.open(job.apply_link || job.url, '_blank', 'noopener,noreferrer')}
@@ -354,11 +316,6 @@ const JobCard: React.FC<JobCardProps> = ({ job, isNewResult = false, resumeFile,
                 <p className="font-mono text-xs text-red-500">{tailorError}</p>
               </div>
             )}
-          {saveError && (
-            <div className="w-full border border-red-500/40 bg-red-500/5 px-3 py-2">
-              <p className="font-mono text-xs text-red-500">{saveError}</p>
-            </div>
-          )}
         </div>
       )}
     </div>
