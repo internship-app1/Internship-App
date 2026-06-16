@@ -999,7 +999,16 @@ def infer_skills_from_title_aggressive(job_title):
     }
     
     for keyword, tech in tech_map.items():
-        if keyword in title_lower:
+        # Match as a whole token, not a raw substring. Plain `keyword in title`
+        # mis-tagged titles badly: "go" fired on "Google"/"Category", and
+        # "java" fired inside "JavaScript" (so JS roles were tagged Java).
+        # Boundaries exclude chars that continue a skill token ([a-z0-9+#]); the
+        # leading-dot ".net" needs no left boundary so "ASP.NET" still matches.
+        if keyword.startswith('.'):
+            pattern = re.escape(keyword) + r"(?![a-z0-9+#])"
+        else:
+            pattern = r"(?<![a-z0-9+#])" + re.escape(keyword) + r"(?![a-z0-9+#])"
+        if re.search(pattern, title_lower):
             skills.append(tech)
     
     # Role-based skill inference (order matters - check specific before generic)
