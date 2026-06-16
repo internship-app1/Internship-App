@@ -106,15 +106,26 @@ CODE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/api/crawl/full" 
 if [ "$CODE" = "401" ]; then ok "no-key request -> 401"; else bad "expected 401, got $CODE"; fi
 
 echo ""
-echo "=== Test 3: POST /api/crawl/full crawls + inserts ==="
+echo "=== Test 3: POST /api/crawl/full triggers async crawl (202) ==="
+# Crawls now run as fire-and-forget background tasks (Railway's proxy kills any
+# request at ~300s), so the endpoint returns 202 {"status":"started"} immediately
+# instead of the old synchronous {"companies_crawled":...} payload.
 FULL_BODY="$(curl -fsS -X POST "${BASE}/api/crawl/full" \
   -H "X-Api-Key: ${KEY}" -H 'Content-Type: application/json' -d '{}')"
 echo "    $FULL_BODY"
-if echo "$FULL_BODY" | grep -q '"companies_crawled"'; then
-  ok "full crawl returned a result payload"
+if echo "$FULL_BODY" | grep -qE '"status" *: *"(started|already_running)"'; then
+  ok "full crawl accepted (async)"
 else
-  bad "full crawl payload missing companies_crawled"
+  bad "full crawl did not return status started/already_running"
 fi
+
+# Poll status until the background run clears (or give up after ~60s).
+echo "    polling /api/crawl/status for completion..."
+for _ in $(seq 1 30); do
+  POLL="$(curl -fsS "${BASE}/api/crawl/status")"
+  echo "$POLL" | grep -oE '"running" *:[^}]*}' | grep -q '"full" *: *true' || { ok "crawl finished (running.full=false)"; break; }
+  sleep 2
+done
 
 echo ""
 echo "=== Test 4: overlap guard — two concurrent full crawls ==="

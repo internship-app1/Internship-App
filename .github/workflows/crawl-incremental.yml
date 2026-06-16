@@ -22,10 +22,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Trigger incremental ATS crawl
+        # Async background task -> 202 immediately. See crawl-full.yml for why we
+        # no longer hold the connection. Progress: GET /api/crawl/status.
         run: |
           curl -sS -X POST "${{ secrets.API_URL }}/api/crawl/incremental" \
             -H "X-Api-Key: ${{ secrets.INTERNSHIP_MATCHER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{"max_age_hours": 1}' \
-            --max-time 540 --retry 3 --retry-delay 15 --retry-connrefused \
+            --max-time 120 --retry 3 --retry-delay 15 --retry-connrefused \
             --fail-with-body
