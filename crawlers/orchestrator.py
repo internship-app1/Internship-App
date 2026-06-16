@@ -134,10 +134,12 @@ class CrawlOrchestrator:
         and delegating to the bootstrap module.
         """
         from crawlers.bootstrap import run_bootstrap
-        # incremental=False matches the weekly full-refresh intent of the
-        # /api/crawl/discover-companies endpoint (re-probe all slugs, reactivating
-        # any that came back online); keep the two call sites consistent.
-        return await run_bootstrap(registry=self.registry, incremental=False)
+        # incremental=True: skip slugs already registered as active companies so
+        # discovery spends compute on net-new / not-yet-registered boards rather
+        # than re-probing the thousands already known. The /api/crawl/discover-
+        # companies endpoint mirrors this default and exposes rescan_all to force
+        # a full re-probe when a registry rebuild is wanted.
+        return await run_bootstrap(registry=self.registry, incremental=True)
 
     async def _discover_from_apply_links(self) -> int:
         """

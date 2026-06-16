@@ -1763,7 +1763,21 @@ async def crawl_discover_companies(
     Probe community datasets (Greenhouse tokens, Lever slugs, Ashby sitemap)
     and upsert newly discovered companies into the company_registry.
     Designed to run weekly via GitHub Actions.
+
+    By default (incremental) it skips slugs already registered as ACTIVE companies,
+    so it spends compute discovering net-new / not-yet-registered boards instead of
+    re-probing the thousands already known. Pass {"rescan_all": true} to force a
+    full re-probe of every slug in the datasets (occasional registry rebuild).
+
+    Body (JSON, optional):
+      rescan_all: bool = false
     """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    rescan_all = bool(body.get("rescan_all", False))
+
     lock = _crawl_lock("discover")
     if lock.locked():
         return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "discover"})
@@ -1771,7 +1785,9 @@ async def crawl_discover_companies(
     from crawlers.bootstrap import run_bootstrap
     from crawlers.company_registry import CompanyRegistryStore
     async with lock:
-        result = await run_bootstrap(registry=CompanyRegistryStore(), incremental=False)
+        result = await run_bootstrap(
+            registry=CompanyRegistryStore(), incremental=not rescan_all
+        )
     return JSONResponse({"success": True, **result})
 
 
