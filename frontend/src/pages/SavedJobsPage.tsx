@@ -297,7 +297,7 @@ function TrackerCard({ row, token, onUpdate }: TrackerCardProps) {
   };
 
   return (
-    <div className="sj-card-enter" style={{ position: 'relative', display: 'flex', background: '#1E293B', border: '1px solid rgba(148,163,184,0.15)', borderRadius: 16 }}>
+    <div className="sj-card-enter" style={{ position: 'relative', display: 'flex', background: '#1E293B', border: '1px solid rgba(148,163,184,0.15)', borderRadius: 16, zIndex: dlOpen ? 10 : 'auto' }}>
       {/* Status spine */}
       <div style={{
         position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
