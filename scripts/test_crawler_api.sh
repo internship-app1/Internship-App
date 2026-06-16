@@ -22,6 +22,17 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Prefer the backend venv python (has slowapi/fastapi/etc.) over system python3,
+# so the script works whether or not the venv is activated.
+if [ -x "venv/bin/python" ]; then
+  PYBIN="venv/bin/python"
+elif [ -x ".venv/bin/python" ]; then
+  PYBIN=".venv/bin/python"
+else
+  PYBIN="python3"
+fi
+echo "==> Using python: ${PYBIN} ($($PYBIN --version 2>&1))"
+
 PORT=8077
 DB_FILE="$(pwd)/_crawler_api_test.db"
 BASE="http://127.0.0.1:${PORT}"
@@ -46,7 +57,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "==> Booting uvicorn on :${PORT} (throwaway SQLite DB)..."
-python3 -m uvicorn app:app --host 127.0.0.1 --port "$PORT" --no-access-log \
+$PYBIN -m uvicorn app:app --host 127.0.0.1 --port "$PORT" --no-access-log \
   >"$LOG" 2>&1 &
 SERVER_PID=$!
 
@@ -65,7 +76,7 @@ fi
 echo "    up."
 
 echo "==> Seeding 3 live companies into the registry..."
-python3 - <<'PY'
+$PYBIN - <<'PY'
 import os, sys; sys.path.insert(0, '.')
 from job_database import Base, engine
 Base.metadata.create_all(bind=engine)
