@@ -136,18 +136,27 @@ def test_skill_extraction_does_not_substring_match_single_letters():
 
 
 def test_skill_extraction_matches_genuine_token_mentions():
-    # Real mentions still match, including the short ones, regardless of
+    # Real mentions still match, including short ones, regardless of
     # surrounding punctuation.
-    assert "r" in _extract_skills_from_text("Proficiency in R or Python.")
-    assert set(_extract_skills_from_text("Experience with R, SQL and Go.")) == {
-        "r", "sql", "go",
+    assert "python" in _extract_skills_from_text("Proficiency in R or Python.")
+    assert set(_extract_skills_from_text("Experience with SQL and Go.")) == {
+        "sql", "go",
     }
+
+
+def test_bare_r_is_never_extracted():
+    # Bare "r" is intentionally not in COMMON_SKILLS: even token-bounded it
+    # matches "R&D"/"R&B"/bullet "R." far more than the R language, so it is
+    # dropped entirely (aligned with matcher.KNOWN_SKILLS_VOCAB). It must never
+    # appear, even for genuine R-language mentions or "R&D".
+    assert "r" not in _extract_skills_from_text("Proficiency in R or Python.")
+    assert "r" not in _extract_skills_from_text("5+ years of empirical R&D.")
+    assert "r" not in _extract_skills_from_text("Skills: Python, R, and SQL.")
 
 
 def test_skill_extraction_ignores_substrings_inside_other_words():
     # "go" must not fire on "good"/"category"; "php" must not fire on "graph";
-    # "r" must not fire on "react" alone; "c"/"node" must not bleed from
-    # "c++"/"node.js".
+    # "c"/"node" must not bleed from "c++"/"node.js".
     assert _extract_skills_from_text("A good candidate for this category.") == []
     assert _extract_skills_from_text("Knowledge of graphing tools.") == []
     assert _extract_skills_from_text("Build UIs with React.") == ["react"]
