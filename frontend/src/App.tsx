@@ -7,6 +7,7 @@ import { API_BASE_URL } from './lib/api';
 import LandingPage from './pages/LandingPage';
 import FindPage from './pages/FindPage';
 import HistoryPage from './pages/HistoryPage';
+import SavedJobsPage from './pages/SavedJobsPage';
 import UsagePage from './pages/UsagePage';
 import DeveloperPage from './pages/DeveloperPage';
 import DocsPage from './pages/DocsPage';
@@ -85,6 +86,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/find" element={<FindPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/saved" element={<SavedJobsPage />} />
               <Route path="/usage" element={<UsagePage />} />
               <Route path="/developer" element={<DeveloperPage />} />
               <Route path="/docs" element={<DocsPage />} />

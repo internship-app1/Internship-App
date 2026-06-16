@@ -50,7 +50,19 @@ def _parse_categories(raw: str):
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
-from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db, save_user_attribution
+from job_database import (
+    get_resume_cache,
+    set_resume_cache,
+    get_user_resume_history,
+    get_db,
+    close_db,
+    save_user_attribution,
+    list_saved_jobs,
+    get_saved_job_hashes,
+    upsert_saved_job,
+    update_saved_job,
+    delete_saved_job,
+)
 from auth import require_user
 
 # Base directory of this file (used for templates/static/uploads paths)
@@ -785,6 +797,69 @@ async def check_resume_cache(request: Request, resume_hash: str, user_id: str = 
 async def get_user_history(request: Request, user_id: str = Depends(require_user)):
     entries = get_user_resume_history(user_id)
     return JSONResponse(entries)
+
+
+@app.get("/api/saved-jobs")
+@limiter.limit("60/minute")
+async def api_list_saved_jobs(request: Request, hashes_only: bool = Query(False), user_id: str = Depends(require_user)):
+    if hashes_only:
+        return JSONResponse({"job_hashes": get_saved_job_hashes(user_id)})
+    return JSONResponse(list_saved_jobs(user_id))
+
+
+@app.post("/api/saved-jobs")
+@limiter.limit("60/minute")
+async def api_save_job(request: Request, user_id: str = Depends(require_user)):
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    job_hash = (body.get("job_hash") or "").strip()
+    if not job_hash:
+        raise HTTPException(status_code=400, detail="job_hash is required")
+    try:
+        saved = upsert_saved_job(
+            user_id=user_id,
+            job_hash=job_hash,
+            status=body.get("status") or "saved",
+            notes=body.get("notes") or "",
+            deadline=body.get("deadline") or None,
+            job_snapshot=body.get("job_snapshot") or body.get("job") or None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return JSONResponse(saved, status_code=201)
+
+
+@app.patch("/api/saved-jobs/{job_hash}")
+@limiter.limit("60/minute")
+async def api_update_saved_job(job_hash: str, request: Request, user_id: str = Depends(require_user)):
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    try:
+        saved = update_saved_job(
+            user_id=user_id,
+            job_hash=job_hash,
+            status=body.get("status"),
+            notes=body.get("notes"),
+            deadline=body.get("deadline"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not saved:
+        raise HTTPException(status_code=404, detail="Saved job not found")
+    return JSONResponse(saved)
+
+
+@app.delete("/api/saved-jobs/{job_hash}")
+@limiter.limit("60/minute")
+async def api_delete_saved_job(job_hash: str, request: Request, user_id: str = Depends(require_user)):
+    deleted = delete_saved_job(user_id, job_hash)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Saved job not found")
+    return JSONResponse({"ok": True})
 
 
 @app.post("/api/track-attribution")
