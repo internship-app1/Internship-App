@@ -271,9 +271,15 @@ def _extract_skills_from_text(text: str) -> list:
     Reuses the same approach as the existing scraper — returns a list of skill strings.
     For ATS jobs the MCP agent will do full extraction; this is a best-effort bootstrap.
     """
+    # NOTE: bare "r" (the language) is deliberately NOT in this list. Even with
+    # token-boundary matching it is hopelessly ambiguous — it matches "R&D",
+    # "R&B", bullet "R.", and "r=" URL params far more often than the R
+    # language. The sibling vocabulary `matcher.KNOWN_SKILLS_VOCAB` omits it for
+    # the same reason; deep R extraction is left to the agent/LLM. Keep these
+    # two lists aligned on single-letter skills.
     COMMON_SKILLS = [
         "python", "java", "javascript", "typescript", "react", "node.js", "sql",
-        "c++", "c#", "go", "rust", "swift", "kotlin", "ruby", "php", "r",
+        "c++", "c#", "go", "rust", "swift", "kotlin", "ruby", "php",
         "machine learning", "deep learning", "tensorflow", "pytorch",
         "aws", "gcp", "azure", "docker", "kubernetes", "git",
         "data analysis", "pandas", "numpy", "spark", "hadoop",
@@ -282,13 +288,13 @@ def _extract_skills_from_text(text: str) -> list:
     ]
     text_lower = text.lower()
     # Match each skill as a whole token, not a raw substring. A plain
-    # `skill in text_lower` test is catastrophic for short skills: "r" matched
-    # every description containing the letter r, and "go"/"php" matched inside
-    # ordinary words ("good", "category", "graph", ...). We require the skill to
-    # be bounded by characters that can't continue a skill token. The bounding
-    # class includes + and # so variants like "c++"/"c#" stay distinct, but NOT
-    # "." — a trailing period is a sentence boundary ("React.", "R."), and a
-    # dotted skill like "node.js" carries its own dot inside the escaped token.
+    # `skill in text_lower` test is catastrophic for short skills: it matched
+    # "go"/"php" inside ordinary words ("good", "category", "graph", ...). We
+    # require the skill to be bounded by characters that can't continue a skill
+    # token. The bounding class includes + and # so variants like "c++"/"c#"
+    # stay distinct, but NOT "." — a trailing period is a sentence boundary
+    # ("React."), and a dotted skill like "node.js" carries its own dot inside
+    # the escaped token.
     found = []
     for s in COMMON_SKILLS:
         pattern = r"(?<![a-z0-9+#])" + re.escape(s) + r"(?![a-z0-9+#])"
