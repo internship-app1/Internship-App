@@ -278,6 +278,95 @@ def _extract_skills_from_text(text: str) -> list:
     return [s for s in COMMON_SKILLS if s in text_lower]
 
 
+# Headings that introduce a requirements/qualifications block in a JD.
+_REQ_SECTION_KEYWORDS = (
+    "requirement", "qualification", "what you", "what we're looking",
+    "who you are", "you'll need", "you will need", "you have", "about you",
+    "minimum", "preferred", "basic qualification", "skills and experience",
+    "profile", "who we're looking",  # Lever boards label the section "Profile"
+)
+
+
+def _looks_like_req_heading(text: str) -> bool:
+    t = (text or "").strip().lower()
+    return bool(t) and len(t) <= 80 and any(k in t for k in _REQ_SECTION_KEYWORDS)
+
+
+def _description_html(raw: dict, ats_type: str) -> str:
+    """Return the richest HTML description available for the ATS type."""
+    if ats_type == "greenhouse":
+        return raw.get("content", "")
+    if ats_type == "lever":
+        return raw.get("description", "")
+    if ats_type == "ashby":
+        return raw.get("descriptionHtml", "")
+    if ats_type == "workday":
+        return (raw.get("jobPostingInfo") or {}).get("jobDescription", "")
+    if ats_type == "icims":
+        return raw.get("description", "")
+    return ""
+
+
+def _requirements_from_html(raw_html: str) -> str:
+    """
+    Parse a JD's HTML and pull out the requirement/qualification sections:
+    for each matching heading, capture the list items / paragraphs that follow
+    until the next heading. Returns a readable bullet block, or "" if none found.
+    """
+    if not raw_html:
+        return ""
+    html = _html.unescape(raw_html)  # greenhouse double-escapes its HTML
+    try:
+        from bs4 import BeautifulSoup
+    except Exception:
+        return ""
+    soup = BeautifulSoup(html, "html.parser")
+    out = []
+    for heading in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "strong", "b", "p"]):
+        if not _looks_like_req_heading(heading.get_text()):
+            continue
+        items, nxt, steps = [], heading.find_next_sibling(), 0
+        while nxt is not None and steps < 8 and nxt.name not in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            if nxt.name in ("ul", "ol"):
+                for li in nxt.find_all("li"):
+                    txt = li.get_text(" ", strip=True)
+                    if len(txt) > 8:
+                        items.append(f"• {txt}")
+            elif nxt.name in ("p", "div"):
+                txt = nxt.get_text(" ", strip=True)
+                if len(txt) > 8:
+                    items.append(txt)
+            nxt, steps = nxt.find_next_sibling(), steps + 1
+        if items:
+            out.append(f"{heading.get_text(' ', strip=True)}:")
+            out.extend(items[:8])
+            out.append("")
+    return "\n".join(out).strip()
+
+
+def _extract_requirements(raw: dict, ats_type: str) -> str:
+    """
+    Best-effort deterministic requirements extraction from a JD — the ATS analog
+    of the GitHub scraper's extract_detailed_requirements. SmartRecruiters and
+    Lever expose the section as structured data; the rest are parsed from HTML.
+    """
+    if ats_type == "smartrecruiters":
+        secs = ((raw.get("jobAd") or {}).get("sections") or {})
+        qual = (secs.get("qualifications") or {}).get("text", "")
+        if qual:
+            return strip_html(qual)
+    if ats_type == "lever":
+        parts = []
+        for lst in raw.get("lists", []) or []:
+            if _looks_like_req_heading(lst.get("text", "")):
+                body = strip_html(lst.get("content", ""))
+                if body:
+                    parts.append(f"{lst['text'].strip()}: {body}")
+        if parts:
+            return "\n".join(parts)
+    return _requirements_from_html(_description_html(raw, ats_type))
+
+
 def normalize_job(raw: dict, ats_type: str, company) -> dict:
     """Convert ATS-specific raw job dict to internal Job schema."""
     title = _extract_title(raw, ats_type)
@@ -293,7 +382,7 @@ def normalize_job(raw: dict, ats_type: str, company) -> dict:
         "apply_link": apply_link,
         "description": description,
         "required_skills": _extract_skills_from_text(description),
-        "job_requirements": "",
+        "job_requirements": _extract_requirements(raw, ats_type),
         "source": f"ats_{ats_type}",
         "days_since_posted": days_since,
         "date_posted": posted_date,

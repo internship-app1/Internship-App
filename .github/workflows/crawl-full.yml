@@ -22,10 +22,14 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Trigger full ATS crawl
+        # The endpoint runs the crawl as a fire-and-forget background task and
+        # returns 202 immediately (Railway's edge proxy aborts any request at
+        # ~300s, so we must NOT hold the connection for the whole crawl). Progress
+        # is observable via GET /api/crawl/status (running / last_run fields).
         run: |
           curl -sS -X POST "${{ secrets.API_URL }}/api/crawl/full" \
             -H "X-Api-Key: ${{ secrets.INTERNSHIP_MATCHER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{}' \
-            --max-time 3300 --retry 3 --retry-delay 15 --retry-connrefused \
+            --max-time 120 --retry 3 --retry-delay 15 --retry-connrefused \
             --fail-with-body

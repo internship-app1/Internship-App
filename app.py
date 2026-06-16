@@ -1672,23 +1672,61 @@ async def get_usage(request: Request, user_id: str = Depends(require_user)):
 # shadowed and returns index.html instead of the status payload.
 # ---------------------------------------------------------------------------
 
-# Per-type in-process locks prevent overlapping crawls: the GitHub Actions cron
-# can fire a new run while a previous (delayed or long-running) crawl of the same
-# type is still executing on this server. The non-blocking .locked() pre-check is
-# atomic on the event loop (no await between check and acquire), so a duplicate
-# request is rejected immediately instead of starting a second concurrent crawl.
-# Locks are created lazily inside the request so asyncio.Lock() binds to the
-# running loop (required on Python <3.10). Single-process scope suffices —
-# Railway runs one instance.
-_CRAWL_LOCKS: dict = {}
+# Crawls run FIRE-AND-FORGET, not inline. Railway's
+# edge proxy aborts any HTTP request at ~300s, but a full crawl / discover (which
+# probes ~15k boards) routinely runs longer. Awaiting inline returned a 502 to the
+# client at 5 min even though the work succeeded server-side, and made the GitHub
+# Actions step (curl --fail-with-body --retry) go red and retry. So each endpoint
+# schedules the crawl on the event loop and returns 202 immediately; progress is
+# polled via GET /api/crawl/status.
+_CRAWL_RUNNING: dict = {}          # crawl_type -> bool (a run is in flight)
+_CRAWL_LAST: dict = {}             # crawl_type -> summary of the last finished run
+_CRAWL_TASKS: set = set()          # strong refs so tasks aren't GC'd mid-flight
 
 
-def _crawl_lock(name: str) -> asyncio.Lock:
-    lock = _CRAWL_LOCKS.get(name)
-    if lock is None:
-        lock = asyncio.Lock()
-        _CRAWL_LOCKS[name] = lock
-    return lock
+async def _run_crawl_task(crawl_type, coro, cache_key=None):
+    """Await a crawl coroutine in the background, record the outcome, clear the flag."""
+    started = datetime.utcnow()
+    try:
+        result = await coro
+        if cache_key:
+            from job_database import record_cache_operation
+            record_cache_operation(cache_key, result.get("jobs_found", 0), result.get("new_jobs", 0))
+        _CRAWL_LAST[crawl_type] = {
+            "ok": True,
+            "started_at": started.isoformat(),
+            "finished_at": datetime.utcnow().isoformat(),
+            **result,
+        }
+        logger.info("[crawl:%s] complete: %s", crawl_type, result)
+    except Exception as exc:  # a background crash must never vanish silently
+        _CRAWL_LAST[crawl_type] = {
+            "ok": False,
+            "started_at": started.isoformat(),
+            "finished_at": datetime.utcnow().isoformat(),
+            "error": str(exc),
+        }
+        logger.exception("[crawl:%s] failed", crawl_type)
+    finally:
+        _CRAWL_RUNNING[crawl_type] = False
+
+
+def _start_crawl(crawl_type, coro, cache_key=None) -> bool:
+    """
+    Atomically claim the crawl slot and schedule the background task. Returns
+    False (and closes the un-awaited coroutine) if a crawl of this type is
+    already running. The flag is set BEFORE scheduling, with no await in between,
+    so the claim is atomic on the single event loop.
+    """
+    if _CRAWL_RUNNING.get(crawl_type):
+        coro.close()  # avoid 'coroutine was never awaited' warning
+        return False
+    _CRAWL_RUNNING[crawl_type] = True
+    task = asyncio.create_task(_run_crawl_task(crawl_type, coro, cache_key))
+    _CRAWL_TASKS.add(task)
+    task.add_done_callback(_CRAWL_TASKS.discard)
+    return True
+
 
 @app.post("/api/crawl/incremental")
 async def crawl_incremental(
@@ -1710,17 +1748,14 @@ async def crawl_incremental(
     max_age_hours = int(body.get("max_age_hours", 1))
     ats_types = body.get("ats_types") or []
 
-    lock = _crawl_lock("incremental")
-    if lock.locked():
-        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "incremental"})
-
     from crawlers.orchestrator import CrawlOrchestrator
-    from job_database import record_cache_operation
-    async with lock:
-        orchestrator = CrawlOrchestrator()
-        result = await orchestrator.run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
-        record_cache_operation("ats_incremental", result.get("jobs_found", 0), result.get("new_jobs", 0))
-    return JSONResponse({"success": True, **result})
+    coro = CrawlOrchestrator().run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
+    if not _start_crawl("incremental", coro, "ats_incremental"):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "incremental"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "incremental"},
+        status_code=202,
+    )
 
 
 @app.post("/api/crawl/full")
@@ -1741,17 +1776,14 @@ async def crawl_full(
         body = {}
     ats_types = body.get("ats_types") or []
 
-    lock = _crawl_lock("full")
-    if lock.locked():
-        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "full"})
-
     from crawlers.orchestrator import CrawlOrchestrator
-    from job_database import record_cache_operation
-    async with lock:
-        orchestrator = CrawlOrchestrator()
-        result = await orchestrator.run_full(ats_types=ats_types)
-        record_cache_operation("ats_full", result.get("jobs_found", 0), result.get("new_jobs", 0))
-    return JSONResponse({"success": True, **result})
+    coro = CrawlOrchestrator().run_full(ats_types=ats_types)
+    if not _start_crawl("full", coro, "ats_full"):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "full"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "full"},
+        status_code=202,
+    )
 
 
 @app.post("/api/crawl/discover-companies")
@@ -1778,17 +1810,16 @@ async def crawl_discover_companies(
         body = {}
     rescan_all = bool(body.get("rescan_all", False))
 
-    lock = _crawl_lock("discover")
-    if lock.locked():
-        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "discover"})
-
     from crawlers.bootstrap import run_bootstrap
     from crawlers.company_registry import CompanyRegistryStore
-    async with lock:
-        result = await run_bootstrap(
-            registry=CompanyRegistryStore(), incremental=not rescan_all
-        )
-    return JSONResponse({"success": True, **result})
+    coro = run_bootstrap(registry=CompanyRegistryStore(), incremental=not rescan_all)
+    # discover seeds the company_registry, not the jobs cache -> no cache_key
+    if not _start_crawl("discover", coro):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "discover"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "discover"},
+        status_code=202,
+    )
 
 
 @app.get("/api/crawl/status")
@@ -1832,6 +1863,11 @@ async def crawl_status(request: Request):
         "companies_by_ats": registry_stats.get("by_ats", {}),
         "jobs_added_24h": jobs_24h,
         "jobs_added_7d": jobs_7d,
+        # Live state of the fire-and-forget background crawls (see _start_crawl):
+        # `running` shows what's in flight right now; `last_run` carries the
+        # summary/error of each type's most recent completed run this process.
+        "running": {k: bool(v) for k, v in _CRAWL_RUNNING.items()},
+        "last_run": _CRAWL_LAST,
     })
 
 
