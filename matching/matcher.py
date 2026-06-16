@@ -871,6 +871,30 @@ def _passes_hard_filters(job, experience_level, years_experience) -> bool:
     return True
 
 
+def _passes_category_filter(job, selected_ids) -> bool:
+    """Hard filter: keep a job only if its canonical category is selected.
+
+    Empty/None selection => no filtering (all jobs pass). Jobs missing a
+    category (e.g. not-yet-backfilled rows) are treated as 'other'.
+    See job_categories.categorize_job — category is stamped at insert time.
+    """
+    if not selected_ids:
+        return True
+    cat = (job.get('metadata') or {}).get('category') or 'other'
+    return cat in selected_ids
+
+
+def _filter_by_categories(jobs, categories, progress_callback=None):
+    """Apply the department/category hard filter up front (before any LLM work)."""
+    if not categories:
+        return jobs
+    selected = set(categories)
+    filtered = [j for j in jobs if _passes_category_filter(j, selected)]
+    if progress_callback and not filtered:
+        progress_callback("No jobs found in the selected departments.")
+    return filtered
+
+
 def batch_analyze_jobs_with_llm(filtered_jobs, resume_skills, resume_text, resume_metadata, max_jobs_per_batch=None, use_parallel=True, model="claude-sonnet-4-5-20250929", enable_caching=True, progress_callback=None):
     """
     Comprehensive batch LLM analysis of pre-filtered jobs.
@@ -1750,7 +1774,7 @@ def create_keyword_match_description(job, score, matched_skills_count, total_req
     return opening + skill_info + location_section + score_section + note
 
 
-def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=None):
+def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=None, categories=None):
     """
     Improved fast keyword-based matching with better descriptions.
     Used when LLM is disabled or unavailable.
@@ -1764,6 +1788,9 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     Returns jobs with keyword match scores and descriptions.
     """
     matched_jobs = []
+
+    # Department/category hard filter (no-op when categories is empty/None).
+    jobs = _filter_by_categories(jobs, categories, progress_callback)
 
     # Send progress: Starting keyword matching
     if progress_callback:
@@ -1868,7 +1895,7 @@ def _prefilter_jobs_with_profile(profile: dict, jobs: List[Dict], target_count: 
     return [job for _, job in scored_jobs][:target_count]
 
 
-def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None, system_prompt=None, temperature=None):
+def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None, system_prompt=None, temperature=None, categories=None):
     """
     Combined resume analysis + job matching in a SINGLE Claude Sonnet call.
     Uses Haiku for pre-filtering and XML prompting to prevent attention dilution.
@@ -1879,6 +1906,12 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
       - enhanced_jobs: list of job dicts with match_score and ai_reasoning
     """
     if not resume_text.strip():
+        return [], {}, []
+
+    # Department/category hard filter BEFORE any LLM work so we never pay Haiku/
+    # Sonnet cost on filtered-out jobs (no-op when categories is empty/None).
+    jobs = _filter_by_categories(jobs, categories, progress_callback)
+    if not jobs:
         return [], {}, []
 
     if progress_callback:
@@ -1991,7 +2024,7 @@ def _score_jobs_with_prompt(resume_text: str, jobs_xml: str, system_prompt=None,
     return json.loads(raw)
 
 
-def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, progress_callback=None):
+def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, progress_callback=None, categories=None):
     """
     Intelligent job matching system with optional LLM analysis.
 
@@ -2001,6 +2034,8 @@ def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, prog
         resume_text: Full resume text for context
         use_llm: If True, uses AI analysis. If False, uses keyword matching.
         progress_callback: Optional callback function to report progress (takes message string)
+        categories: Optional list of canonical department-category ids to filter to
+                    (job_categories.CATEGORY_IDS); empty/None => no filtering.
 
     Returns:
         List of matched jobs with scores and descriptions
@@ -2010,6 +2045,12 @@ def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, prog
         - Keyword Mode (use_llm=False): Fast keyword-based scoring
         - Fallback: Automatically falls back to keyword if LLM fails
     """
+    if not jobs:
+        return []
+
+    # Department/category hard filter up front so every downstream stage (prefilter,
+    # LLM, keyword fallback) operates on the already-narrowed set (no-op if empty).
+    jobs = _filter_by_categories(jobs, categories, progress_callback)
     if not jobs:
         return []
 

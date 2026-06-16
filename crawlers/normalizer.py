@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urlparse
 
+from job_categories import categorize_job
+
 logger = logging.getLogger(__name__)
 
 # Word-boundary matching is essential: plain substring "intern" matches "Internal"
@@ -378,6 +380,8 @@ def normalize_job(raw: dict, ats_type: str, company) -> dict:
     posted_date = _extract_posted_date(raw, ats_type)
     days_since = _calculate_days(posted_date)
     apply_link = _extract_apply_link(raw, ats_type, company)
+    department = _extract_department(raw, ats_type)
+    category = categorize_job(department, title, f"ats_{ats_type}")
 
     return {
         "company": company.display_name,
@@ -402,7 +406,8 @@ def normalize_job(raw: dict, ats_type: str, company) -> dict:
             "ats_type": ats_type,
             "ats_job_id": _extract_ats_job_id(raw, ats_type),
             "ats_board_id": company.ats_board_id,
-            "department": _extract_department(raw, ats_type),
+            "department": department,
+            "category": category,
             "employment_type": _extract_employment_type(raw, ats_type),
             "compensation": _extract_compensation(raw, ats_type),
             "remote_type": _extract_remote_type(raw, ats_type),

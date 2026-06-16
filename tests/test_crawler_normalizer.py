@@ -95,6 +95,18 @@ def test_ashby_null_workplace_type_does_not_crash():
     assert "Python" in job["job_requirements"]
 
 
+def test_normalize_job_stamps_category():
+    # normalize_job now emits metadata['category'] for the upload-page filter.
+    raw = {"title": "Software Engineer Intern", "content": "<p>build stuff</p>",
+           "departments": [{"name": "Engineering"}]}
+    job = normalize_job(raw, "greenhouse", _company())
+    assert job["metadata"]["category"] == "software"
+
+    biz = normalize_job({"title": "Finance Intern", "content": "",
+                         "departments": [{"name": "Finance"}]}, "greenhouse", _company())
+    assert biz["metadata"]["category"] == "business"
+
+
 def test_no_requirements_section_returns_empty_not_error():
     # A JD with no recognizable requirements block yields "" (not a crash) —
     # mirrors the github scraper's "not available" behavior.
