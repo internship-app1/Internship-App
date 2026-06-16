@@ -1663,7 +1663,181 @@ async def get_usage(request: Request, user_id: str = Depends(require_user)):
     })
 
 
-# Catch-all: serve React app for any non-API route
+# ---------------------------------------------------------------------------
+# Universal ATS Crawler endpoints  (admin-gated via require_api_key)
+#
+# NOTE: registered BEFORE the React catch-all (moved to the very end of this
+# file). Starlette matches routes in registration order, so the GET
+# /api/crawl/status route must precede the GET /{full_path} catch-all or it is
+# shadowed and returns index.html instead of the status payload.
+# ---------------------------------------------------------------------------
+
+# Per-type in-process locks prevent overlapping crawls: the GitHub Actions cron
+# can fire a new run while a previous (delayed or long-running) crawl of the same
+# type is still executing on this server. The non-blocking .locked() pre-check is
+# atomic on the event loop (no await between check and acquire), so a duplicate
+# request is rejected immediately instead of starting a second concurrent crawl.
+# Locks are created lazily inside the request so asyncio.Lock() binds to the
+# running loop (required on Python <3.10). Single-process scope suffices —
+# Railway runs one instance.
+_CRAWL_LOCKS: dict = {}
+
+
+def _crawl_lock(name: str) -> asyncio.Lock:
+    lock = _CRAWL_LOCKS.get(name)
+    if lock is None:
+        lock = asyncio.Lock()
+        _CRAWL_LOCKS[name] = lock
+    return lock
+
+@app.post("/api/crawl/incremental")
+async def crawl_incremental(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger an incremental ATS crawl (jobs updated in last N hours).
+    Designed to run every 15 minutes via GitHub Actions.
+
+    Body (JSON, optional):
+      max_age_hours: int = 1
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    max_age_hours = int(body.get("max_age_hours", 1))
+    ats_types = body.get("ats_types") or []
+
+    lock = _crawl_lock("incremental")
+    if lock.locked():
+        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "incremental"})
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    from job_database import record_cache_operation
+    async with lock:
+        orchestrator = CrawlOrchestrator()
+        result = await orchestrator.run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
+        record_cache_operation("ats_incremental", result.get("jobs_found", 0), result.get("new_jobs", 0))
+    return JSONResponse({"success": True, **result})
+
+
+@app.post("/api/crawl/full")
+async def crawl_full(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger a full ATS crawl (all companies, no time filter).
+    Designed to run nightly via GitHub Actions.
+
+    Body (JSON, optional):
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    ats_types = body.get("ats_types") or []
+
+    lock = _crawl_lock("full")
+    if lock.locked():
+        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "full"})
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    from job_database import record_cache_operation
+    async with lock:
+        orchestrator = CrawlOrchestrator()
+        result = await orchestrator.run_full(ats_types=ats_types)
+        record_cache_operation("ats_full", result.get("jobs_found", 0), result.get("new_jobs", 0))
+    return JSONResponse({"success": True, **result})
+
+
+@app.post("/api/crawl/discover-companies")
+async def crawl_discover_companies(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Probe community datasets (Greenhouse tokens, Lever slugs, Ashby sitemap)
+    and upsert newly discovered companies into the company_registry.
+    Designed to run weekly via GitHub Actions.
+
+    By default (incremental) it skips slugs already registered as ACTIVE companies,
+    so it spends compute discovering net-new / not-yet-registered boards instead of
+    re-probing the thousands already known. Pass {"rescan_all": true} to force a
+    full re-probe of every slug in the datasets (occasional registry rebuild).
+
+    Body (JSON, optional):
+      rescan_all: bool = false
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    rescan_all = bool(body.get("rescan_all", False))
+
+    lock = _crawl_lock("discover")
+    if lock.locked():
+        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "discover"})
+
+    from crawlers.bootstrap import run_bootstrap
+    from crawlers.company_registry import CompanyRegistryStore
+    async with lock:
+        result = await run_bootstrap(
+            registry=CompanyRegistryStore(), incremental=not rescan_all
+        )
+    return JSONResponse({"success": True, **result})
+
+
+@app.get("/api/crawl/status")
+async def crawl_status(request: Request):
+    """
+    Return crawl health: last incremental/full timestamps, company counts by
+    ATS type, and jobs added in last 24h / 7d.
+
+    Public endpoint (no auth) — matches the pattern of /api/database-stats.
+    """
+    from job_database import get_db, close_db, Job, CacheMetadata
+    from crawlers.company_registry import CompanyRegistryStore
+    from datetime import timedelta
+
+    db = get_db()
+    try:
+        now = datetime.utcnow()
+        jobs_24h = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(hours=24)
+        ).count()
+        jobs_7d = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(days=7)
+        ).count()
+
+        last_incremental = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_incremental"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+        last_full = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_full"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+    finally:
+        close_db(db)
+
+    registry_stats = CompanyRegistryStore().get_stats()
+
+    return JSONResponse({
+        "success": True,
+        "last_incremental": last_incremental.last_updated.isoformat() if last_incremental else None,
+        "last_full": last_full.last_updated.isoformat() if last_full else None,
+        "total_companies": registry_stats.get("total_active", 0),
+        "companies_by_ats": registry_stats.get("by_ats", {}),
+        "jobs_added_24h": jobs_24h,
+        "jobs_added_7d": jobs_7d,
+    })
+
+
+# Catch-all: serve React app for any non-API route. MUST stay the last route
+# registered — Starlette matches in registration order, so any route added below
+# this one is shadowed (it previously swallowed GET /api/crawl/status).
 @app.get("/{full_path:path}", include_in_schema=False)
 async def serve_react(full_path: str):
     index = FRONTEND_BUILD / "index.html"
