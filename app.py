@@ -60,6 +60,19 @@ BASE_DIR = Path(__file__).resolve().parent
 # Old entries become misses automatically — no manual purge needed.
 PROMPT_VERSION = "v2"
 
+
+def _resume_cache_key(resume_hash, use_llm, categories):
+    """Cache key for a resume's match results.
+
+    Includes the selected department categories so changing the department
+    filter is a DIFFERENT key -> cache miss -> a fresh search (instead of
+    serving the previous selection's cached results). Sorted so selection order
+    doesn't matter; 'all' when no filter is applied.
+    """
+    mode = 'deep' if use_llm else 'quick'
+    catsig = 'all' if not categories else 'cat-' + '-'.join(sorted(categories))
+    return f"{resume_hash}_{mode}_{catsig}_{PROMPT_VERSION}"
+
 # Load environment variables
 load_dotenv()
 
@@ -758,9 +771,9 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
 
 @app.get("/api/resume-cache/{resume_hash}")
 @limiter.limit("20/minute")
-async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true")):
+async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true"), categories: str = Query("")):
     use_llm = think_deeper.lower() == "true"
-    cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}_{PROMPT_VERSION}"
+    cache_key = _resume_cache_key(resume_hash, use_llm, _parse_categories(categories))
     cached = get_resume_cache(user_id, cache_key)
     if cached:
         return JSONResponse({"hit": True, "results": cached["results"], "skills": cached["skills"]})
@@ -832,7 +845,7 @@ async def stream_match_resume(
         if user_id and resume_hash:
             try:
                 use_llm_early = think_deeper.lower() == "true"
-                cache_key_early = f"{resume_hash}_{'deep' if use_llm_early else 'quick'}_{PROMPT_VERSION}"
+                cache_key_early = _resume_cache_key(resume_hash, use_llm_early, selected_categories)
                 cached_early = get_resume_cache(user_id, cache_key_early)
                 if cached_early:
                     logger.info(f"Cache hit before S3 upload for user {user_id}, returning early")
@@ -1151,7 +1164,7 @@ async def stream_match_resume(
                 # Save to resume cache if user is authenticated
                 if user_id and resume_hash:
                     try:
-                        save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}_{PROMPT_VERSION}"
+                        save_cache_key = _resume_cache_key(resume_hash, use_llm, selected_categories)
                         set_resume_cache(user_id, save_cache_key, final_results, resume_skills)
                         logger.info(f"Saved results to resume cache for user {user_id}")
                     except Exception as cache_err:
