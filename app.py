@@ -36,6 +36,17 @@ from resume_parser.parse_resume import extract_text_only
 from job_scrapers.dispatcher import scrape_jobs
 from matching.matcher import match_resume_to_jobs, analyze_and_match_single_call
 from matching.metadata_matcher import extract_resume_metadata
+from job_categories import CATEGORY_IDS
+
+
+def _parse_categories(raw: str):
+    """Parse a comma-separated `categories` form value into a validated id list.
+
+    Unknown ids are dropped; empty result => no department filtering.
+    """
+    if not raw:
+        return []
+    return [c.strip() for c in raw.split(",") if c.strip() in CATEGORY_IDS]
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
@@ -553,8 +564,9 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
 @app.post("/api/match")
 @limiter.limit("3/10minutes")
-async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true")):
+async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true"), categories: str = Form(default="")):
     """API endpoint for React frontend - returns JSON instead of HTML"""
+    selected_categories = _parse_categories(categories)
     try:
         # Validate file
         if not resume:
@@ -660,7 +672,7 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
 
         # Match resume to jobs with intelligent prefiltering
         try:
-            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm)
+            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm, categories=selected_categories)
             logger.info(f"Matched {len(matched_jobs)} jobs from {len(jobs)} total")
 
             # Filter jobs with score > 0 for the final response
@@ -782,9 +794,12 @@ async def stream_match_resume(
     resume: UploadFile = File(...),
     think_deeper: str = Form("true"),
     resume_hash: str = Form(default=""),
+    categories: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
     """Streaming endpoint that provides real-time progress updates"""
+    # Department/category filter selected on the upload page (empty => all jobs).
+    selected_categories = _parse_categories(categories)
     
     # IMPORTANT: Read all file data BEFORE the generator function
     # to avoid "i/o operation on closed file" errors
@@ -1033,7 +1048,8 @@ async def stream_match_resume(
                             analyze_and_match_single_call,
                             resume_text,
                             jobs,
-                            progress_callback
+                            progress_callback,
+                            categories=selected_categories,
                         )
                     )
 
@@ -1072,7 +1088,8 @@ async def stream_match_resume(
                     }
                     
                     matched_jobs = await asyncio.to_thread(
-                        simple_keyword_match, resume_skills, jobs, resume_text, progress_callback
+                        simple_keyword_match, resume_skills, jobs, resume_text, progress_callback,
+                        categories=selected_categories,
                     )
 
                 if resume_skills:
@@ -1380,6 +1397,30 @@ async def refresh_cache_incremental(request: Request, max_days_old: int = 30,
     except Exception as e:
         logger.error(f"Error in incremental refresh: {e}")
         raise HTTPException(status_code=500, detail=f"Incremental refresh failed: {str(e)}")
+
+
+@app.get("/api/categories")
+@limiter.limit("30/minute")
+async def list_categories(request: Request):
+    """Canonical department categories + live active-job counts for each.
+
+    Powers the upload-page department filter (labels + counts). Public, cheap —
+    reuses the cached job list. Counts use metadata['category'] (stamped at insert
+    time; not-yet-backfilled rows fall into 'other')."""
+    from job_categories import CATEGORIES
+    from collections import Counter
+    try:
+        jobs = await get_jobs_with_cache() or []
+    except Exception:
+        jobs = []
+    counts = Counter((j.get('metadata') or {}).get('category') or 'other' for j in jobs)
+    return JSONResponse({
+        "categories": [
+            {"id": cid, "label": label, "count": counts.get(cid, 0)}
+            for cid, label in CATEGORIES
+        ],
+        "total": len(jobs),
+    })
 
 
 @app.get("/api/database-stats")

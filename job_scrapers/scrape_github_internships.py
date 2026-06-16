@@ -8,6 +8,8 @@ import re
 from bs4 import BeautifulSoup
 import time
 
+from job_categories import categorize_job
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -1071,6 +1073,11 @@ def extract_job_metadata(job_title, location, age, apply_link):
         "application_age": age
     }
     
+    # Canonical department bucket for the upload-page filter. github_internships
+    # is a curated SWE source, so categorize_job defaults unclassified titles to
+    # "software" (only title is available here — these rows carry no department).
+    metadata["category"] = categorize_job("", job_title, "github_internships")
+
     # Determine job type
     title_lower = job_title.lower()
     if "co-op" in title_lower or "coop" in title_lower:

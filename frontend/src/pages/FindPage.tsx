@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
 import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
+import { DepartmentMultiSelect } from '../components/ui/department-multi-select';
 import { Upload, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
@@ -58,6 +59,7 @@ const FindPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState('');
   const [useStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -191,6 +193,7 @@ const FindPage: React.FC = () => {
       formData.append('resume', file);
       formData.append('think_deeper', useThinkDeeper.toString());
       formData.append('resume_hash', resumeHash);
+      formData.append('categories', selectedCategories.join(','));
 
       const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
         method: 'POST',
@@ -479,6 +482,9 @@ const FindPage: React.FC = () => {
 
               {/* Think Deeper toggle */}
               <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
+
+              {/* Department / category filter */}
+              <DepartmentMultiSelect selected={selectedCategories} onChange={setSelectedCategories} />
 
               <button
                 type="submit"
