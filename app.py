@@ -1663,18 +1663,32 @@ async def get_usage(request: Request, user_id: str = Depends(require_user)):
     })
 
 
-# Catch-all: serve React app for any non-API route
-@app.get("/{full_path:path}", include_in_schema=False)
-async def serve_react(full_path: str):
-    index = FRONTEND_BUILD / "index.html"
-    if FRONTEND_BUILD.exists() and index.exists():
-        return FileResponse(str(index))
-    return JSONResponse({"error": "Frontend not built"}, status_code=404)
-
-
 # ---------------------------------------------------------------------------
 # Universal ATS Crawler endpoints  (admin-gated via require_api_key)
+#
+# NOTE: registered BEFORE the React catch-all (moved to the very end of this
+# file). Starlette matches routes in registration order, so the GET
+# /api/crawl/status route must precede the GET /{full_path} catch-all or it is
+# shadowed and returns index.html instead of the status payload.
 # ---------------------------------------------------------------------------
+
+# Per-type in-process locks prevent overlapping crawls: the GitHub Actions cron
+# can fire a new run while a previous (delayed or long-running) crawl of the same
+# type is still executing on this server. The non-blocking .locked() pre-check is
+# atomic on the event loop (no await between check and acquire), so a duplicate
+# request is rejected immediately instead of starting a second concurrent crawl.
+# Locks are created lazily inside the request so asyncio.Lock() binds to the
+# running loop (required on Python <3.10). Single-process scope suffices —
+# Railway runs one instance.
+_CRAWL_LOCKS: dict = {}
+
+
+def _crawl_lock(name: str) -> asyncio.Lock:
+    lock = _CRAWL_LOCKS.get(name)
+    if lock is None:
+        lock = asyncio.Lock()
+        _CRAWL_LOCKS[name] = lock
+    return lock
 
 @app.post("/api/crawl/incremental")
 async def crawl_incremental(
@@ -1696,11 +1710,16 @@ async def crawl_incremental(
     max_age_hours = int(body.get("max_age_hours", 1))
     ats_types = body.get("ats_types") or []
 
+    lock = _crawl_lock("incremental")
+    if lock.locked():
+        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "incremental"})
+
     from crawlers.orchestrator import CrawlOrchestrator
     from job_database import record_cache_operation
-    orchestrator = CrawlOrchestrator()
-    result = await orchestrator.run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
-    record_cache_operation("ats_incremental", result.get("jobs_found", 0), result.get("new_jobs", 0))
+    async with lock:
+        orchestrator = CrawlOrchestrator()
+        result = await orchestrator.run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
+        record_cache_operation("ats_incremental", result.get("jobs_found", 0), result.get("new_jobs", 0))
     return JSONResponse({"success": True, **result})
 
 
@@ -1722,11 +1741,16 @@ async def crawl_full(
         body = {}
     ats_types = body.get("ats_types") or []
 
+    lock = _crawl_lock("full")
+    if lock.locked():
+        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "full"})
+
     from crawlers.orchestrator import CrawlOrchestrator
     from job_database import record_cache_operation
-    orchestrator = CrawlOrchestrator()
-    result = await orchestrator.run_full(ats_types=ats_types)
-    record_cache_operation("ats_full", result.get("jobs_found", 0), result.get("new_jobs", 0))
+    async with lock:
+        orchestrator = CrawlOrchestrator()
+        result = await orchestrator.run_full(ats_types=ats_types)
+        record_cache_operation("ats_full", result.get("jobs_found", 0), result.get("new_jobs", 0))
     return JSONResponse({"success": True, **result})
 
 
@@ -1740,9 +1764,14 @@ async def crawl_discover_companies(
     and upsert newly discovered companies into the company_registry.
     Designed to run weekly via GitHub Actions.
     """
+    lock = _crawl_lock("discover")
+    if lock.locked():
+        return JSONResponse({"success": True, "skipped": "already_running", "crawl_type": "discover"})
+
     from crawlers.bootstrap import run_bootstrap
     from crawlers.company_registry import CompanyRegistryStore
-    result = await run_bootstrap(registry=CompanyRegistryStore(), incremental=False)
+    async with lock:
+        result = await run_bootstrap(registry=CompanyRegistryStore(), incremental=False)
     return JSONResponse({"success": True, **result})
 
 
@@ -1788,6 +1817,17 @@ async def crawl_status(request: Request):
         "jobs_added_24h": jobs_24h,
         "jobs_added_7d": jobs_7d,
     })
+
+
+# Catch-all: serve React app for any non-API route. MUST stay the last route
+# registered — Starlette matches in registration order, so any route added below
+# this one is shadowed (it previously swallowed GET /api/crawl/status).
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_react(full_path: str):
+    index = FRONTEND_BUILD / "index.html"
+    if FRONTEND_BUILD.exists() and index.exists():
+        return FileResponse(str(index))
+    return JSONResponse({"error": "Frontend not built"}, status_code=404)
 
 
 if __name__ == "__main__":
