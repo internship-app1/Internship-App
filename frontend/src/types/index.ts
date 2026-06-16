@@ -34,7 +34,7 @@ export interface Job {
   last_seen?: string;
 }
 
-export type SavedJobStatus = 'saved' | 'interested' | 'applied' | 'interviewing' | 'rejected' | 'offer';
+export type SavedJobStatus = 'saved' | 'interested' | 'applied' | 'interviewing' | 'rejected' | 'offer' | 'ghosted';
 
 export interface SavedJob {
   id: number;

@@ -109,7 +109,7 @@ class SavedJob(Base):
     )
 
 
-SAVED_JOB_STATUSES = {"saved", "interested", "applied", "interviewing", "rejected", "offer"}
+SAVED_JOB_STATUSES = {"saved", "interested", "applied", "interviewing", "rejected", "offer", "ghosted"}
 
 
 def _job_row_to_dict(job: Optional["Job"]) -> Optional[Dict]:
