@@ -9,7 +9,7 @@ from HTML headings (Greenhouse/Workday/iCIMS/Ashby), Lever's structured
 """
 from types import SimpleNamespace
 
-from crawlers.normalizer import normalize_job, _extract_requirements
+from crawlers.normalizer import normalize_job, _extract_requirements, _extract_remote_type
 
 
 def _company(slug="acme", ats="greenhouse"):
@@ -77,6 +77,22 @@ def test_smartrecruiters_uses_qualifications_section():
     }
     reqs = _extract_requirements(raw, "smartrecruiters")
     assert "PyTorch" in reqs
+
+
+def test_ashby_null_workplace_type_does_not_crash():
+    # Regression: Ashby sends workplaceType: null, so raw.get("workplaceType","")
+    # returned None and the eager dict.get default `wt.lower()` crashed the whole
+    # normalize for every Ashby posting ('NoneType' object has no attribute 'lower').
+    assert _extract_remote_type({"workplaceType": None}, "ashby") == ""
+    assert _extract_remote_type({"workplaceType": None}, "lever") == ""
+    # known values still map correctly
+    assert _extract_remote_type({"workplaceType": "Remote"}, "ashby") == "remote"
+    # and a full Ashby job normalizes without raising
+    raw = {"title": "ML Intern", "workplaceType": None,
+           "descriptionHtml": "<h3>Requirements</h3><ul><li>Knows Python</li></ul>"}
+    job = normalize_job(raw, "ashby", _company(ats="ashby"))
+    assert job["source"] == "ats_ashby"
+    assert "Python" in job["job_requirements"]
 
 
 def test_no_requirements_section_returns_empty_not_error():

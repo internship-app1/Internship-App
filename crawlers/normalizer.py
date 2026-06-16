@@ -225,10 +225,14 @@ def _extract_compensation(raw: dict, ats_type: str) -> str:
 
 def _extract_remote_type(raw: dict, ats_type: str) -> str:
     if ats_type == "lever":
-        wt = raw.get("workplaceType", "")
+        # `or ""` (not a .get default): Ashby/Lever can send workplaceType: null,
+        # so the key exists with a None value and the .get default never applies.
+        wt = raw.get("workplaceType") or ""
         return wt.lower().replace("on-site", "onsite")
     if ats_type == "ashby":
-        wt = raw.get("workplaceType", "")
+        wt = raw.get("workplaceType") or ""
+        # NB: dict.get evaluates its default eagerly, so wt.lower() must be safe
+        # for every wt — hence the None-coercion above (was crashing all of Ashby).
         return {"OnSite": "onsite", "Remote": "remote", "Hybrid": "hybrid"}.get(wt, wt.lower())
     if ats_type == "workday":
         return raw.get("remoteType", "")
