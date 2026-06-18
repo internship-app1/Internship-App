@@ -1625,7 +1625,7 @@ def fuzzy_skill_match(resume_skill, job_skill):
     return False
 
 
-def simple_keyword_scoring(job, resume_skills, resume_text=""):
+def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0.0):
     """
     Improved keyword-based scoring with fuzzy matching and stricter filtering.
 
@@ -1719,6 +1719,11 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
                 score += 5
                 break
 
+    # Semantic similarity bonus (up to 15 pts) from sentence-transformer embeddings.
+    # Only applied when an embedding was pre-computed for this job.
+    if embedding_score > 0.0:
+        score += min(int(embedding_score * 15), 15)
+
     # Deterministic ±5 jitter based on job_hash to visually spread scores
     # that land at the same integer. Same job always gets the same offset,
     # so cached results stay consistent across requests.
@@ -1782,6 +1787,7 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     Key improvements:
     - Analyzes ALL jobs (no pre-filtering) since regex is fast
     - Uses fuzzy skill matching for accuracy
+    - Blends sentence-embedding similarity when available
     - Generates helpful match descriptions
     - Returns top 100 results (increased from 50)
 
@@ -1798,8 +1804,28 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
 
     logger.info(f"Quick Mode: Analyzing {len(jobs)} jobs with keyword matching...")
 
+    # Load pre-computed job embeddings and embed the resume once.
+    # Both are best-effort: missing embeddings fall back to keyword-only scoring.
+    job_embeddings: dict = {}
+    resume_embedding: list = []
+    try:
+        from matching.embedder import compute_resume_embedding, cosine_similarity
+        from job_database import get_all_job_embeddings
+        job_embeddings = get_all_job_embeddings()
+        if resume_text:
+            resume_embedding = compute_resume_embedding(resume_text)
+    except Exception as _emb_err:
+        logger.warning("Embedding lookup skipped: %s", _emb_err)
+
     for job in jobs:
-        score = simple_keyword_scoring(job, resume_skills, resume_text)
+        emb_score = 0.0
+        if resume_embedding and job.get("job_hash") in job_embeddings:
+            try:
+                emb_score = cosine_similarity(resume_embedding, job_embeddings[job["job_hash"]])
+            except Exception:
+                pass
+
+        score = simple_keyword_scoring(job, resume_skills, resume_text, embedding_score=emb_score)
 
         # Only include jobs with some relevance (score > 0)
         if score > 0:
@@ -2142,6 +2168,20 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
         "citizenship": resume_profile.get("citizenship") or "unknown",
     }
 
+    # Load all job embeddings once and embed the resume profile text.
+    # Best-effort: if unavailable, fall back to keyword+metadata weights.
+    _job_embeddings: dict = {}
+    _resume_embedding: list = []
+    try:
+        from matching.embedder import embed_text, cosine_similarity
+        from job_database import get_all_job_embeddings
+        _job_embeddings = get_all_job_embeddings()
+        _resume_text = resume_profile.get("resume_text", "") or " ".join(resume_profile.get("skills", []))
+        if _resume_text:
+            _resume_embedding = embed_text(_resume_text[:8000])
+    except Exception as _emb_err:
+        logger.warning("prefilter_and_score: embedding skipped: %s", _emb_err)
+
     results = []
     for job in jobs:
         keyword_score = simple_keyword_scoring(job, skills)
@@ -2152,7 +2192,22 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
         if job.get("location"):
             job_metadata["location"] = job["location"]
         metadata_score, _desc = calculate_metadata_match_score(resume_metadata, job_metadata)
-        combined_score = round(keyword_score * 0.7 + metadata_score * 0.3)
+
+        # Semantic similarity signal (0–1). Only available after backfill runs.
+        embedding_sim = 0.0
+        if _resume_embedding and job.get("job_hash") in _job_embeddings:
+            try:
+                from matching.embedder import cosine_similarity
+                embedding_sim = cosine_similarity(_resume_embedding, _job_embeddings[job["job_hash"]])
+            except Exception:
+                pass
+
+        if embedding_sim > 0.0:
+            # Three-signal blend: keyword 45%, metadata 25%, embedding 30%
+            combined_score = round(keyword_score * 0.45 + metadata_score * 0.25 + embedding_sim * 100 * 0.30)
+        else:
+            # Fallback: original two-signal weights (no embedding available yet)
+            combined_score = round(keyword_score * 0.7 + metadata_score * 0.3)
 
         # Supplement DB required_skills with a deterministic vocabulary scan
         # of stored text. Real JD text (after lazy job_get fetch) gives precise
@@ -2188,6 +2243,7 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
             "apply_link": job.get("apply_link"),
             "keyword_score": keyword_score,
             "metadata_score": metadata_score,
+            "embedding_score": round(embedding_sim * 100) if embedding_sim > 0.0 else None,
             "combined_score": combined_score,
             "skill_matches": skill_matches,
             "skill_gaps": skill_gaps,
