@@ -726,11 +726,16 @@ def bulk_insert_jobs(jobs: List[Dict], db: Session = None) -> Dict:
         # ------------------------------------------------------------------
         # Step 5: Inactive sweeps — run AFTER upserts so refreshed last_seen
         # values are evaluated correctly.
+        # Scope to the sources present in this batch: a github_internships
+        # startup scrape must not deactivate ats_greenhouse / ats_lever jobs
+        # simply because those crawlers run on a different schedule.
         # ------------------------------------------------------------------
+        batch_sources = list({r['source'] for r in rows})
         cutoff_date = datetime.utcnow() - timedelta(days=3)
         inactive_count = db.query(Job).filter(
             Job.last_seen < cutoff_date,
             Job.is_active == True,
+            Job.source.in_(batch_sources),
         ).update({Job.is_active: False}, synchronize_session=False)
 
         date_based_inactive_count = mark_old_jobs_inactive(max_days_old=30, db=db)
