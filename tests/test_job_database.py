@@ -204,6 +204,33 @@ class TestBulkInsertJobs:
         finally:
             db.close()
 
+    def test_inactive_sweep_does_not_cross_sources(self):
+        """The last_seen sweep must only deactivate jobs from the same source.
+        A github_internships startup scrape must not kill ats_greenhouse jobs
+        that simply run on a different schedule."""
+        ats_job = {**_job(n=10), "source": "ats_greenhouse"}
+        github_job = _job(n=11)
+        bulk_insert_jobs([ats_job, github_job])
+
+        # Backdate both so the sweep would normally fire
+        db = SessionLocal()
+        try:
+            for row in db.query(Job).filter(Job.title.like("%1%")).all():
+                row.last_seen = datetime.utcnow() - timedelta(days=10)
+            db.commit()
+        finally:
+            db.close()
+
+        # Only github_internships refreshed — ATS job must survive
+        bulk_insert_jobs([github_job])
+
+        db = SessionLocal()
+        try:
+            ats_row = db.query(Job).filter(Job.source == "ats_greenhouse").first()
+            assert ats_row.is_active is True, "ATS job must not be swept by a github scrape"
+        finally:
+            db.close()
+
     def test_summary_has_expected_keys(self):
         stats = bulk_insert_jobs([_job(n=0)])
         for key in ("new_jobs", "updated_jobs", "duplicates_collapsed",
