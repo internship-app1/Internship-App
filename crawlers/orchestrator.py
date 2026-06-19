@@ -78,6 +78,15 @@ class CrawlOrchestrator:
         if companies:
             self.registry.update_last_crawled(companies)
 
+        # Generate sentence embeddings for crawled jobs in a background thread
+        # so the crawl return is not blocked by CPU-bound model inference.
+        if jobs_flat:
+            from matching.embedder import generate_job_embeddings_sync
+            loop = asyncio.get_running_loop()
+            self._embed_task = asyncio.create_task(
+                loop.run_in_executor(None, generate_job_embeddings_sync, jobs_flat)
+            )
+
         # Auto-discover new Greenhouse companies from apply_link referrals
         self._discovery_task = asyncio.create_task(self._discover_from_apply_links())
 
