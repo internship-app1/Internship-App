@@ -1724,10 +1724,12 @@ def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0
                 score += 5
                 break
 
-    # Semantic similarity bonus (up to 15 pts) from sentence-transformer embeddings.
-    # Only applied when an embedding was pre-computed for this job.
-    if embedding_score > 0.0:
-        score += min(int(embedding_score * 15), 15)
+    # Semantic similarity bonus — rescue-only: only activates when keyword signal is
+    # weak (< 55). Tapers linearly to 0 as keyword score approaches 55, so it never
+    # inflates jobs that already matched well on keywords. Max bonus = 15 pts.
+    if embedding_score > 0.0 and score < 55:
+        rescue_weight = (55 - score) / 55
+        score += min(int(embedding_score * 15 * rescue_weight), 15)
 
     # Deterministic ±5 jitter based on job_hash to visually spread scores
     # that land at the same integer. Same job always gets the same offset,
@@ -1737,8 +1739,9 @@ def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0
         offset = (int(job_hash[-2:], 16) % 11) - 5  # maps 0–10 → -5 to +5
         score = min(97, max(0, score + offset))
 
-    # Cap at 100
-    return min(int(score), 100)
+    # Quick Mode cap: 90s should be rare and reserved for near-perfect keyword
+    # matches. LLM analysis (Think Deeper) is the path to confident 90+ scores.
+    return min(int(score), 94)
 
 
 def create_keyword_match_description(job, score, matched_skills_count, total_required_skills):
