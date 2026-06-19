@@ -80,12 +80,12 @@ class CrawlOrchestrator:
 
         # Generate sentence embeddings for crawled jobs in a background thread
         # so the crawl return is not blocked by CPU-bound model inference.
+        # run_in_executor returns a Future (already scheduled) — do NOT wrap it
+        # in create_task, which expects a coroutine and raises TypeError on a Future.
         if jobs_flat:
             from matching.embedder import generate_job_embeddings_sync
             loop = asyncio.get_running_loop()
-            self._embed_task = asyncio.create_task(
-                loop.run_in_executor(None, generate_job_embeddings_sync, jobs_flat)
-            )
+            self._embed_task = loop.run_in_executor(None, generate_job_embeddings_sync, jobs_flat)
 
         # Auto-discover new Greenhouse companies from apply_link referrals
         self._discovery_task = asyncio.create_task(self._discover_from_apply_links())
