@@ -1651,7 +1651,9 @@ def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0
     job_title = job.get('title', '').lower()
     job_description = job.get('description', '').lower()
 
-    # 1. Required Skills Matching (85 points max) - PRIMARY SIGNAL
+    # 1. Required Skills Matching (60 points max) - PRIMARY SIGNAL
+    # Reduced from 90 to 60 to make room for the embedding signal (35 pts).
+    # Together they sum to 95 max before bonuses, preserving meaningful spread.
     if job_skills and resume_skills:
         for job_skill in job_skills:
             for resume_skill in resume_skills:
@@ -1663,19 +1665,13 @@ def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0
         # Calculate percentage of required skills matched
         if len(job_skills) > 0:
             skill_coverage = skill_match_count / len(job_skills)
-
-            # Linear mapping: 100% coverage → 90 pts, 0% → 0 pts.
-            # Capped at 90 so keyword-only matches never claim certainty that
-            # only LLM reasoning (Think Deeper) can provide. Title/role bonuses
-            # (up to 15 pts) can push the best matches toward 100.
-            score += int(skill_coverage * 90)
+            score += int(skill_coverage * 60)
 
     # CRITICAL: If zero required skills matched, return 0 immediately
     # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers).
     # Exception: if a semantic embedding signal is present, don't hard-zero — the
     # embedding can surface jobs whose vocabulary doesn't overlap the resume but are
     # genuinely relevant (e.g., "distributed systems" resume vs "C++/CUDA" job listing).
-    # Those jobs will score low (embedding bonus only, ≤15 pts) but remain visible.
     if skill_match_count == 0 and job_skills:
         if embedding_score <= 0.0:
             return 0
@@ -1724,10 +1720,11 @@ def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0
                 score += 5
                 break
 
-    # Semantic similarity bonus (up to 15 pts) from sentence-transformer embeddings.
-    # Only applied when an embedding was pre-computed for this job.
+    # Semantic similarity — applied throughout, not just as a rescue signal.
+    # Up to 35 pts (rebalanced from 15) so embeddings carry real weight alongside
+    # keyword matching rather than acting as a minor tiebreaker.
     if embedding_score > 0.0:
-        score += min(int(embedding_score * 15), 15)
+        score += min(int(embedding_score * 35), 35)
 
     # Deterministic ±5 jitter based on job_hash to visually spread scores
     # that land at the same integer. Same job always gets the same offset,
@@ -1737,8 +1734,9 @@ def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0
         offset = (int(job_hash[-2:], 16) % 11) - 5  # maps 0–10 → -5 to +5
         score = min(97, max(0, score + offset))
 
-    # Cap at 100
-    return min(int(score), 100)
+    # Quick Mode cap: 90s should be rare and reserved for near-perfect keyword
+    # matches. LLM analysis (Think Deeper) is the path to confident 90+ scores.
+    return min(int(score), 94)
 
 
 def create_keyword_match_description(job, score, matched_skills_count, total_required_skills):
