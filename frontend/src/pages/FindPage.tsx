@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import JobCard from '../components/JobCard';
 import { Job } from '../types';
 import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
+import { DepartmentMultiSelect } from '../components/ui/department-multi-select';
 import { Upload, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
@@ -58,6 +59,7 @@ const FindPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState('');
   const [useStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -88,10 +90,12 @@ const FindPage: React.FC = () => {
           lastModified: meta.lastModified || Date.now(),
         });
         const restoredThinkDeeper: boolean = meta.thinkDeeper ?? true;
+        const restoredCategories: string[] = Array.isArray(meta.categories) ? meta.categories : [];
 
         setSelectedFile(file);
         setThinkDeeper(restoredThinkDeeper);
-        handleFileUploadStreaming(file, restoredThinkDeeper);
+        setSelectedCategories(restoredCategories);
+        handleFileUploadStreaming(file, restoredThinkDeeper, restoredCategories);
       } catch (e) {
         sessionStorage.removeItem(PENDING_RESUME_DATA_KEY);
         sessionStorage.removeItem(PENDING_RESUME_META_KEY);
@@ -177,8 +181,11 @@ const FindPage: React.FC = () => {
     });
   };
 
-  const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean) => {
+  const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean, categoriesOverride?: string[]) => {
     const useThinkDeeper = thinkDeeperOverride ?? thinkDeeper;
+    // Department selection is part of the cache identity: a different selection
+    // must be a fresh search, not the previous selection's cached results.
+    const useCategories = categoriesOverride ?? selectedCategories;
     setFromCache(false);
     const resumeHash = await hashFile(file);
 
@@ -188,7 +195,8 @@ const FindPage: React.FC = () => {
 
     if (token) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?think_deeper=${useThinkDeeper}`, {
+        const catParam = `&categories=${encodeURIComponent(useCategories.join(','))}`;
+        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?think_deeper=${useThinkDeeper}${catParam}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -218,6 +226,7 @@ const FindPage: React.FC = () => {
       formData.append('resume', file);
       formData.append('think_deeper', useThinkDeeper.toString());
       formData.append('resume_hash', resumeHash);
+      formData.append('categories', useCategories.join(','));
 
       const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
         method: 'POST',
@@ -335,6 +344,7 @@ const FindPage: React.FC = () => {
             type: selectedFile.type,
             lastModified: selectedFile.lastModified,
             thinkDeeper,
+            categories: selectedCategories,
           }));
         } catch (e) {
           // sessionStorage quota exceeded — modal flow still works
@@ -506,6 +516,9 @@ const FindPage: React.FC = () => {
 
               {/* Think Deeper toggle */}
               <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
+
+              {/* Department / category filter */}
+              <DepartmentMultiSelect selected={selectedCategories} onChange={setSelectedCategories} />
 
               <button
                 type="submit"

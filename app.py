@@ -36,21 +36,32 @@ from resume_parser.parse_resume import extract_text_only
 from job_scrapers.dispatcher import scrape_jobs
 from matching.matcher import match_resume_to_jobs, analyze_and_match_single_call
 from matching.metadata_matcher import extract_resume_metadata
+from job_categories import CATEGORY_IDS
+
+
+def _parse_categories(raw: str):
+    """Parse a comma-separated `categories` form value into a validated id list.
+
+    Unknown ids are dropped; empty result => no department filtering.
+    """
+    if not raw:
+        return []
+    return [c.strip() for c in raw.split(",") if c.strip() in CATEGORY_IDS]
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
 from job_database import (
-    delete_saved_job,
     get_resume_cache,
-    get_saved_job_hashes,
-    get_user_resume_history,
-    list_saved_jobs,
     set_resume_cache,
-    save_user_attribution,
-    update_saved_job,
-    upsert_saved_job,
+    get_user_resume_history,
     get_db,
     close_db,
+    save_user_attribution,
+    list_saved_jobs,
+    get_saved_job_hashes,
+    upsert_saved_job,
+    update_saved_job,
+    delete_saved_job,
 )
 from auth import require_user
 
@@ -60,6 +71,19 @@ BASE_DIR = Path(__file__).resolve().parent
 # Bump whenever a scoring/prompt change makes cached results stale.
 # Old entries become misses automatically — no manual purge needed.
 PROMPT_VERSION = "v2"
+
+
+def _resume_cache_key(resume_hash, use_llm, categories):
+    """Cache key for a resume's match results.
+
+    Includes the selected department categories so changing the department
+    filter is a DIFFERENT key -> cache miss -> a fresh search (instead of
+    serving the previous selection's cached results). Sorted so selection order
+    doesn't matter; 'all' when no filter is applied.
+    """
+    mode = 'deep' if use_llm else 'quick'
+    catsig = 'all' if not categories else 'cat-' + '-'.join(sorted(categories))
+    return f"{resume_hash}_{mode}_{catsig}_{PROMPT_VERSION}"
 
 # Load environment variables
 load_dotenv()
@@ -565,8 +589,9 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
 @app.post("/api/match")
 @limiter.limit("3/10minutes")
-async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true")):
+async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true"), categories: str = Form(default="")):
     """API endpoint for React frontend - returns JSON instead of HTML"""
+    selected_categories = _parse_categories(categories)
     try:
         # Validate file
         if not resume:
@@ -672,7 +697,7 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
 
         # Match resume to jobs with intelligent prefiltering
         try:
-            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm)
+            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm, categories=selected_categories)
             logger.info(f"Matched {len(matched_jobs)} jobs from {len(jobs)} total")
 
             # Filter jobs with score > 0 for the final response
@@ -758,9 +783,9 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
 
 @app.get("/api/resume-cache/{resume_hash}")
 @limiter.limit("20/minute")
-async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true")):
+async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true"), categories: str = Query("")):
     use_llm = think_deeper.lower() == "true"
-    cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}_{PROMPT_VERSION}"
+    cache_key = _resume_cache_key(resume_hash, use_llm, _parse_categories(categories))
     cached = get_resume_cache(user_id, cache_key)
     if cached:
         return JSONResponse({"hit": True, "results": cached["results"], "skills": cached["skills"]})
@@ -857,9 +882,12 @@ async def stream_match_resume(
     resume: UploadFile = File(...),
     think_deeper: str = Form("true"),
     resume_hash: str = Form(default=""),
+    categories: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
     """Streaming endpoint that provides real-time progress updates"""
+    # Department/category filter selected on the upload page (empty => all jobs).
+    selected_categories = _parse_categories(categories)
     
     # IMPORTANT: Read all file data BEFORE the generator function
     # to avoid "i/o operation on closed file" errors
@@ -892,7 +920,7 @@ async def stream_match_resume(
         if user_id and resume_hash:
             try:
                 use_llm_early = think_deeper.lower() == "true"
-                cache_key_early = f"{resume_hash}_{'deep' if use_llm_early else 'quick'}_{PROMPT_VERSION}"
+                cache_key_early = _resume_cache_key(resume_hash, use_llm_early, selected_categories)
                 cached_early = get_resume_cache(user_id, cache_key_early)
                 if cached_early:
                     logger.info(f"Cache hit before S3 upload for user {user_id}, returning early")
@@ -1108,7 +1136,8 @@ async def stream_match_resume(
                             analyze_and_match_single_call,
                             resume_text,
                             jobs,
-                            progress_callback
+                            progress_callback,
+                            categories=selected_categories,
                         )
                     )
 
@@ -1147,7 +1176,8 @@ async def stream_match_resume(
                     }
                     
                     matched_jobs = await asyncio.to_thread(
-                        simple_keyword_match, resume_skills, jobs, resume_text, progress_callback
+                        simple_keyword_match, resume_skills, jobs, resume_text, progress_callback,
+                        categories=selected_categories,
                     )
 
                 if resume_skills:
@@ -1209,7 +1239,7 @@ async def stream_match_resume(
                 # Save to resume cache if user is authenticated
                 if user_id and resume_hash:
                     try:
-                        save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}_{PROMPT_VERSION}"
+                        save_cache_key = _resume_cache_key(resume_hash, use_llm, selected_categories)
                         set_resume_cache(user_id, save_cache_key, final_results, resume_skills)
                         logger.info(f"Saved results to resume cache for user {user_id}")
                     except Exception as cache_err:
@@ -1455,6 +1485,30 @@ async def refresh_cache_incremental(request: Request, max_days_old: int = 30,
     except Exception as e:
         logger.error(f"Error in incremental refresh: {e}")
         raise HTTPException(status_code=500, detail=f"Incremental refresh failed: {str(e)}")
+
+
+@app.get("/api/categories")
+@limiter.limit("30/minute")
+async def list_categories(request: Request):
+    """Canonical department categories + live active-job counts for each.
+
+    Powers the upload-page department filter (labels + counts). Public, cheap —
+    reuses the cached job list. Counts use metadata['category'] (stamped at insert
+    time; not-yet-backfilled rows fall into 'other')."""
+    from job_categories import CATEGORIES
+    from collections import Counter
+    try:
+        jobs = await get_jobs_with_cache() or []
+    except Exception:
+        jobs = []
+    counts = Counter((j.get('metadata') or {}).get('category') or 'other' for j in jobs)
+    return JSONResponse({
+        "categories": [
+            {"id": cid, "label": label, "count": counts.get(cid, 0)}
+            for cid, label in CATEGORIES
+        ],
+        "total": len(jobs),
+    })
 
 
 @app.get("/api/database-stats")
@@ -1738,7 +1792,217 @@ async def get_usage(request: Request, user_id: str = Depends(require_user)):
     })
 
 
-# Catch-all: serve React app for any non-API route
+# ---------------------------------------------------------------------------
+# Universal ATS Crawler endpoints  (admin-gated via require_api_key)
+#
+# NOTE: registered BEFORE the React catch-all (moved to the very end of this
+# file). Starlette matches routes in registration order, so the GET
+# /api/crawl/status route must precede the GET /{full_path} catch-all or it is
+# shadowed and returns index.html instead of the status payload.
+# ---------------------------------------------------------------------------
+
+# Crawls run FIRE-AND-FORGET, not inline. Railway's
+# edge proxy aborts any HTTP request at ~300s, but a full crawl / discover (which
+# probes ~15k boards) routinely runs longer. Awaiting inline returned a 502 to the
+# client at 5 min even though the work succeeded server-side, and made the GitHub
+# Actions step (curl --fail-with-body --retry) go red and retry. So each endpoint
+# schedules the crawl on the event loop and returns 202 immediately; progress is
+# polled via GET /api/crawl/status.
+_CRAWL_RUNNING: dict = {}          # crawl_type -> bool (a run is in flight)
+_CRAWL_LAST: dict = {}             # crawl_type -> summary of the last finished run
+_CRAWL_TASKS: set = set()          # strong refs so tasks aren't GC'd mid-flight
+
+
+async def _run_crawl_task(crawl_type, coro, cache_key=None):
+    """Await a crawl coroutine in the background, record the outcome, clear the flag."""
+    started = datetime.utcnow()
+    try:
+        result = await coro
+        if cache_key:
+            from job_database import record_cache_operation
+            record_cache_operation(cache_key, result.get("jobs_found", 0), result.get("new_jobs", 0))
+        _CRAWL_LAST[crawl_type] = {
+            "ok": True,
+            "started_at": started.isoformat(),
+            "finished_at": datetime.utcnow().isoformat(),
+            **result,
+        }
+        logger.info("[crawl:%s] complete: %s", crawl_type, result)
+    except Exception as exc:  # a background crash must never vanish silently
+        _CRAWL_LAST[crawl_type] = {
+            "ok": False,
+            "started_at": started.isoformat(),
+            "finished_at": datetime.utcnow().isoformat(),
+            "error": str(exc),
+        }
+        logger.exception("[crawl:%s] failed", crawl_type)
+    finally:
+        _CRAWL_RUNNING[crawl_type] = False
+
+
+def _start_crawl(crawl_type, coro, cache_key=None) -> bool:
+    """
+    Atomically claim the crawl slot and schedule the background task. Returns
+    False (and closes the un-awaited coroutine) if a crawl of this type is
+    already running. The flag is set BEFORE scheduling, with no await in between,
+    so the claim is atomic on the single event loop.
+    """
+    if _CRAWL_RUNNING.get(crawl_type):
+        coro.close()  # avoid 'coroutine was never awaited' warning
+        return False
+    _CRAWL_RUNNING[crawl_type] = True
+    task = asyncio.create_task(_run_crawl_task(crawl_type, coro, cache_key))
+    _CRAWL_TASKS.add(task)
+    task.add_done_callback(_CRAWL_TASKS.discard)
+    return True
+
+
+@app.post("/api/crawl/incremental")
+async def crawl_incremental(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger an incremental ATS crawl (jobs updated in last N hours).
+    Designed to run every 15 minutes via GitHub Actions.
+
+    Body (JSON, optional):
+      max_age_hours: int = 1
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    max_age_hours = int(body.get("max_age_hours", 1))
+    ats_types = body.get("ats_types") or []
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    coro = CrawlOrchestrator().run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
+    if not _start_crawl("incremental", coro, "ats_incremental"):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "incremental"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "incremental"},
+        status_code=202,
+    )
+
+
+@app.post("/api/crawl/full")
+async def crawl_full(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger a full ATS crawl (all companies, no time filter).
+    Designed to run nightly via GitHub Actions.
+
+    Body (JSON, optional):
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    ats_types = body.get("ats_types") or []
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    coro = CrawlOrchestrator().run_full(ats_types=ats_types)
+    if not _start_crawl("full", coro, "ats_full"):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "full"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "full"},
+        status_code=202,
+    )
+
+
+@app.post("/api/crawl/discover-companies")
+async def crawl_discover_companies(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Probe community datasets (Greenhouse tokens, Lever slugs, Ashby sitemap)
+    and upsert newly discovered companies into the company_registry.
+    Designed to run weekly via GitHub Actions.
+
+    By default (incremental) it skips slugs already registered as ACTIVE companies,
+    so it spends compute discovering net-new / not-yet-registered boards instead of
+    re-probing the thousands already known. Pass {"rescan_all": true} to force a
+    full re-probe of every slug in the datasets (occasional registry rebuild).
+
+    Body (JSON, optional):
+      rescan_all: bool = false
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    rescan_all = bool(body.get("rescan_all", False))
+
+    from crawlers.bootstrap import run_bootstrap
+    from crawlers.company_registry import CompanyRegistryStore
+    coro = run_bootstrap(registry=CompanyRegistryStore(), incremental=not rescan_all)
+    # discover seeds the company_registry, not the jobs cache -> no cache_key
+    if not _start_crawl("discover", coro):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "discover"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "discover"},
+        status_code=202,
+    )
+
+
+@app.get("/api/crawl/status")
+async def crawl_status(request: Request):
+    """
+    Return crawl health: last incremental/full timestamps, company counts by
+    ATS type, and jobs added in last 24h / 7d.
+
+    Public endpoint (no auth) — matches the pattern of /api/database-stats.
+    """
+    from job_database import get_db, close_db, Job, CacheMetadata
+    from crawlers.company_registry import CompanyRegistryStore
+    from datetime import timedelta
+
+    db = get_db()
+    try:
+        now = datetime.utcnow()
+        jobs_24h = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(hours=24)
+        ).count()
+        jobs_7d = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(days=7)
+        ).count()
+
+        last_incremental = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_incremental"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+        last_full = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_full"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+    finally:
+        close_db(db)
+
+    registry_stats = CompanyRegistryStore().get_stats()
+
+    return JSONResponse({
+        "success": True,
+        "last_incremental": last_incremental.last_updated.isoformat() if last_incremental else None,
+        "last_full": last_full.last_updated.isoformat() if last_full else None,
+        "total_companies": registry_stats.get("total_active", 0),
+        "companies_by_ats": registry_stats.get("by_ats", {}),
+        "jobs_added_24h": jobs_24h,
+        "jobs_added_7d": jobs_7d,
+        # Live state of the fire-and-forget background crawls (see _start_crawl):
+        # `running` shows what's in flight right now; `last_run` carries the
+        # summary/error of each type's most recent completed run this process.
+        "running": {k: bool(v) for k, v in _CRAWL_RUNNING.items()},
+        "last_run": _CRAWL_LAST,
+    })
+
+
+# Catch-all: serve React app for any non-API route. MUST stay the last route
+# registered — Starlette matches in registration order, so any route added below
+# this one is shadowed (it previously swallowed GET /api/crawl/status).
 @app.get("/{full_path:path}", include_in_schema=False)
 async def serve_react(full_path: str):
     index = FRONTEND_BUILD / "index.html"

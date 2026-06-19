@@ -6,6 +6,7 @@ import McpSetupDropdown from '../components/McpSetupDropdown';
 import { API_BASE_URL } from '../lib/api';
 import { useUsage } from '../hooks/useUsage';
 import { CLIENT_DROPDOWN_ITEMS, MODE_DROPDOWN_ITEMS } from '../lib/mcpDropdownItems';
+import { AGENT_WORKFLOW_EXAMPLES } from '../data/agentWorkflowExamples';
 import {
   getMcpClient,
   getMcpMode,
@@ -367,6 +368,36 @@ const DeveloperPage: React.FC = () => {
               key for testing and revoke it when done.
             </p>
           )}
+        </section>
+
+        {/* Workflow examples */}
+        <section className="mb-12">
+          <SectionHeading
+            title="Agent workflow examples"
+            blurb="After your client is connected, paste one of these prompts to make the MCP tools useful immediately."
+          />
+          <div className="grid gap-4">
+            {AGENT_WORKFLOW_EXAMPLES.map((workflow) => (
+              <div key={workflow.id} className="border border-lp-border bg-surface">
+                <div className="px-4 py-3 border-b border-lp-border">
+                  <div className="font-sans text-[14px] font-semibold text-text-primary">
+                    {workflow.title}
+                  </div>
+                  <div className="font-sans text-[13px] text-text-tertiary mt-0.5">
+                    {workflow.bestFor}
+                  </div>
+                </div>
+                <CodeSnippet
+                  title="Prompt"
+                  subtitle="Copy into your connected agent"
+                  code={workflow.prompt}
+                  language="plain"
+                  wrap
+                  className="rounded-none border-0"
+                />
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Disclaimer */}

@@ -55,7 +55,10 @@ class Job(Base):
     
     # Status
     is_active = Column(Boolean, default=True, nullable=False, index=True)
-    
+
+    # Sentence embedding for semantic matching (JSON-encoded float list, nullable)
+    embedding = Column(Text, nullable=True)
+
     # Add composite indexes for common queries
     __table_args__ = (
         Index('idx_company_title', 'company', 'title'),
@@ -182,6 +185,7 @@ def _ensure_saved_jobs_schema():
     except Exception as e:
         logger.warning(f"Could not verify saved_jobs schema compatibility: {e}")
 
+
 def _utcnow() -> datetime:
     """Naive UTC datetime — matches the DateTime column type used by both quota tables."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -231,6 +235,29 @@ class UserAttribution(Base):
     utm_term     = Column(String(255), nullable=True)
     first_seen_at = Column(DateTime, nullable=True)   # when the browser first landed
     attributed_at = Column(DateTime, default=_utcnow, nullable=False)  # when this row was written
+
+
+class CompanyRegistry(Base):
+    """Registry of companies and which ATS they use, for the universal crawler."""
+    __tablename__ = "company_registry"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(String(255), unique=True, nullable=False)
+    display_name = Column(String(500), nullable=False)
+    ats_type = Column(String(50), nullable=False)
+    ats_board_id = Column(String(500), nullable=False)
+    careers_url = Column(Text, nullable=True)
+    industry = Column(String(100), nullable=True)
+    company_size = Column(String(50), nullable=True)
+    last_crawled = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    crawl_priority = Column(Integer, default=2, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_ats_type', 'ats_type'),
+        Index('idx_active_priority', 'is_active', 'crawl_priority', 'last_crawled'),
+    )
 
 
 class ApiKey(Base):
@@ -358,11 +385,80 @@ def init_database():
     try:
         Base.metadata.create_all(bind=engine)
         _ensure_saved_jobs_schema()
+        _ensure_embedding_column()
         logger.info("Database initialized successfully")
         return True
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         return False
+
+
+def _ensure_embedding_column():
+    """Idempotent: add embedding column to existing jobs tables that predate it."""
+    try:
+        with engine.connect() as conn:
+            if is_postgres:
+                conn.execute("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS embedding TEXT")
+            else:
+                # SQLite does not support IF NOT EXISTS on ALTER TABLE
+                try:
+                    conn.execute("ALTER TABLE jobs ADD COLUMN embedding TEXT")
+                except Exception:
+                    pass  # column already exists
+    except Exception as exc:
+        logger.warning("Could not ensure embedding column: %s", exc)
+
+
+def save_job_embeddings(job_hashes: List[str], embeddings: List[list], db: Session = None) -> None:
+    """Batch-update embedding column for a list of job_hashes."""
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        for job_hash, vec in zip(job_hashes, embeddings):
+            if not vec:
+                continue
+            db.query(Job).filter(Job.job_hash == job_hash).update(
+                {"embedding": json.dumps(vec)},
+                synchronize_session=False,
+            )
+    finally:
+        if should_close:
+            db.commit()
+            close_db(db)
+
+
+def get_jobs_without_embeddings(db: Session = None) -> List:
+    """Return active jobs that have no embedding yet (for backfill)."""
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        return (
+            db.query(Job)
+            .filter(Job.is_active == True, Job.embedding == None)  # noqa: E711
+            .all()
+        )
+    finally:
+        if should_close:
+            close_db(db)
+
+
+def get_all_job_embeddings(db: Session = None) -> Dict[str, list]:
+    """Return {job_hash: vector} for all active jobs that have an embedding."""
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        rows = (
+            db.query(Job.job_hash, Job.embedding)
+            .filter(Job.is_active == True, Job.embedding != None)  # noqa: E711
+            .all()
+        )
+        return {job_hash: json.loads(emb) for job_hash, emb in rows}
+    finally:
+        if should_close:
+            close_db(db)
 
 def get_db() -> Session:
     """Get database session"""
@@ -630,11 +726,16 @@ def bulk_insert_jobs(jobs: List[Dict], db: Session = None) -> Dict:
         # ------------------------------------------------------------------
         # Step 5: Inactive sweeps — run AFTER upserts so refreshed last_seen
         # values are evaluated correctly.
+        # Scope to the sources present in this batch: a github_internships
+        # startup scrape must not deactivate ats_greenhouse / ats_lever jobs
+        # simply because those crawlers run on a different schedule.
         # ------------------------------------------------------------------
+        batch_sources = list({r['source'] for r in rows})
         cutoff_date = datetime.utcnow() - timedelta(days=3)
         inactive_count = db.query(Job).filter(
             Job.last_seen < cutoff_date,
             Job.is_active == True,
+            Job.source.in_(batch_sources),
         ).update({Job.is_active: False}, synchronize_session=False)
 
         date_based_inactive_count = mark_old_jobs_inactive(max_days_old=30, db=db)
@@ -1014,6 +1115,10 @@ def set_resume_cache(user_id: str, resume_hash: str, results: list, skills: list
     finally:
         db.close()
 
+
+# ---------------------------------------------------------------------------
+# Saved jobs / application tracker
+# ---------------------------------------------------------------------------
 
 def list_saved_jobs(user_id: str) -> List[Dict]:
     """Return a user's saved jobs newest first, including job details when present."""

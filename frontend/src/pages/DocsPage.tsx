@@ -6,6 +6,7 @@ import McpSetupDropdown from '../components/McpSetupDropdown';
 import OnThisPage, { TocItem } from '../components/docs/OnThisPage';
 import { useResolvedTheme } from '../components/theme-provider';
 import { CLIENT_DROPDOWN_ITEMS, MODE_DROPDOWN_ITEMS } from '../lib/mcpDropdownItems';
+import { AGENT_WORKFLOW_EXAMPLES } from '../data/agentWorkflowExamples';
 import {
   getMcpClient,
   getMcpMode,
@@ -475,6 +476,7 @@ const NAV: TocItem[] = [
     children: [
       { id: 'mcp-choose-path', label: 'Choose your path' },
       { id: 'mcp-setup', label: 'Set up your client' },
+      { id: 'mcp-workflows', label: 'Workflow examples' },
       { id: 'mcp-local-tex', label: 'Optional local TeX' },
       { id: 'mcp-which-path', label: 'Which path do I need?' },
     ],
@@ -788,6 +790,35 @@ const DocsPage: React.FC = () => {
                   )}
                 </div>
               </div>
+            </div>
+
+            <H3 id="mcp-workflows">Workflow examples</H3>
+            <Para>
+              Once the client can see the MCP tools, the fastest path is to give the
+              agent an explicit workflow. These prompts are designed to keep resume data
+              local, use deterministic prefiltering first, and ask the agent to inspect
+              full job descriptions before making recommendations.
+            </Para>
+            <div className="grid gap-4 mb-6 max-w-[680px]">
+              {AGENT_WORKFLOW_EXAMPLES.map((workflow) => (
+                <div key={workflow.id} className="rounded-lg border border-lp-border overflow-hidden">
+                  <div className="px-4 py-3 border-b border-lp-border bg-surface">
+                    <div className="font-sans text-[14px] font-semibold text-text-primary">
+                      {workflow.title}
+                    </div>
+                    <div className="font-sans text-[13px] text-text-tertiary mt-0.5">
+                      {workflow.bestFor}
+                    </div>
+                  </div>
+                  <CodeSnippet
+                    title="Agent prompt"
+                    code={workflow.prompt}
+                    language="plain"
+                    wrap
+                    className="rounded-none border-0"
+                  />
+                </div>
+              ))}
             </div>
 
             <H3 id="mcp-local-tex">Optional: local TeX for unlimited compiles</H3>

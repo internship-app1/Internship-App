@@ -871,6 +871,34 @@ def _passes_hard_filters(job, experience_level, years_experience) -> bool:
     return True
 
 
+def _passes_category_filter(job, selected_ids) -> bool:
+    """Hard filter: keep a job only if its canonical category is selected.
+
+    Empty/None selection => no filtering (all jobs pass). Jobs with no
+    category stamp (pre-backfill rows) pass through rather than being
+    dropped — they were ingested before category stamping was added and
+    should still be visible until the next scrape re-stamps them.
+    See job_categories.categorize_job — category is stamped at insert time.
+    """
+    if not selected_ids:
+        return True
+    cat = (job.get('metadata') or {}).get('category')
+    if not cat:
+        return True  # no category yet → don't hide the job
+    return cat in selected_ids
+
+
+def _filter_by_categories(jobs, categories, progress_callback=None):
+    """Apply the department/category hard filter up front (before any LLM work)."""
+    if not categories:
+        return jobs
+    selected = set(categories)
+    filtered = [j for j in jobs if _passes_category_filter(j, selected)]
+    if progress_callback and not filtered:
+        progress_callback("No jobs found in the selected departments.")
+    return filtered
+
+
 def batch_analyze_jobs_with_llm(filtered_jobs, resume_skills, resume_text, resume_metadata, max_jobs_per_batch=None, use_parallel=True, model="claude-sonnet-4-5-20250929", enable_caching=True, progress_callback=None):
     """
     Comprehensive batch LLM analysis of pre-filtered jobs.
@@ -1601,7 +1629,7 @@ def fuzzy_skill_match(resume_skill, job_skill):
     return False
 
 
-def simple_keyword_scoring(job, resume_skills, resume_text=""):
+def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0.0):
     """
     Improved keyword-based scoring with fuzzy matching and stricter filtering.
 
@@ -1627,7 +1655,9 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
     job_title = job.get('title', '').lower()
     job_description = job.get('description', '').lower()
 
-    # 1. Required Skills Matching (85 points max) - PRIMARY SIGNAL
+    # 1. Required Skills Matching (60 points max) - PRIMARY SIGNAL
+    # Reduced from 90 to 60 to make room for the embedding signal (35 pts).
+    # Together they sum to 95 max before bonuses, preserving meaningful spread.
     if job_skills and resume_skills:
         for job_skill in job_skills:
             for resume_skill in resume_skills:
@@ -1639,17 +1669,16 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
         # Calculate percentage of required skills matched
         if len(job_skills) > 0:
             skill_coverage = skill_match_count / len(job_skills)
-
-            # Linear mapping: 100% coverage → 90 pts, 0% → 0 pts.
-            # Capped at 90 so keyword-only matches never claim certainty that
-            # only LLM reasoning (Think Deeper) can provide. Title/role bonuses
-            # (up to 15 pts) can push the best matches toward 100.
-            score += int(skill_coverage * 90)
+            score += int(skill_coverage * 60)
 
     # CRITICAL: If zero required skills matched, return 0 immediately
-    # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers)
+    # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers).
+    # Exception: if a semantic embedding signal is present, don't hard-zero — the
+    # embedding can surface jobs whose vocabulary doesn't overlap the resume but are
+    # genuinely relevant (e.g., "distributed systems" resume vs "C++/CUDA" job listing).
     if skill_match_count == 0 and job_skills:
-        return 0
+        if embedding_score <= 0.0:
+            return 0
 
     # 1b. Description text scan — bonus for specialized user skills (RAG, Claude,
     # MCP, FastAPI, etc.) that rarely appear in structured required_skills but DO
@@ -1695,6 +1724,12 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
                 score += 5
                 break
 
+    # Semantic similarity — applied throughout, not just as a rescue signal.
+    # Up to 35 pts (rebalanced from 15) so embeddings carry real weight alongside
+    # keyword matching rather than acting as a minor tiebreaker.
+    if embedding_score > 0.0:
+        score += min(int(embedding_score * 35), 35)
+
     # Deterministic ±5 jitter based on job_hash to visually spread scores
     # that land at the same integer. Same job always gets the same offset,
     # so cached results stay consistent across requests.
@@ -1703,8 +1738,9 @@ def simple_keyword_scoring(job, resume_skills, resume_text=""):
         offset = (int(job_hash[-2:], 16) % 11) - 5  # maps 0–10 → -5 to +5
         score = min(97, max(0, score + offset))
 
-    # Cap at 100
-    return min(int(score), 100)
+    # Quick Mode cap: 90s should be rare and reserved for near-perfect keyword
+    # matches. LLM analysis (Think Deeper) is the path to confident 90+ scores.
+    return min(int(score), 94)
 
 
 def create_keyword_match_description(job, score, matched_skills_count, total_required_skills):
@@ -1750,7 +1786,7 @@ def create_keyword_match_description(job, score, matched_skills_count, total_req
     return opening + skill_info + location_section + score_section + note
 
 
-def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=None):
+def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=None, categories=None):
     """
     Improved fast keyword-based matching with better descriptions.
     Used when LLM is disabled or unavailable.
@@ -1758,6 +1794,7 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     Key improvements:
     - Analyzes ALL jobs (no pre-filtering) since regex is fast
     - Uses fuzzy skill matching for accuracy
+    - Blends sentence-embedding similarity when available
     - Generates helpful match descriptions
     - Returns top 100 results (increased from 50)
 
@@ -1765,14 +1802,37 @@ def simple_keyword_match(resume_skills, jobs, resume_text="", progress_callback=
     """
     matched_jobs = []
 
+    # Department/category hard filter (no-op when categories is empty/None).
+    jobs = _filter_by_categories(jobs, categories, progress_callback)
+
     # Send progress: Starting keyword matching
     if progress_callback:
         progress_callback("Matching jobs with keyword analysis...")
 
     logger.info(f"Quick Mode: Analyzing {len(jobs)} jobs with keyword matching...")
 
+    # Load pre-computed job embeddings and embed the resume once.
+    # Both are best-effort: missing embeddings fall back to keyword-only scoring.
+    job_embeddings: dict = {}
+    resume_embedding: list = []
+    try:
+        from matching.embedder import compute_resume_embedding, cosine_similarity
+        from job_database import get_all_job_embeddings
+        job_embeddings = get_all_job_embeddings()
+        if resume_text:
+            resume_embedding = compute_resume_embedding(resume_text)
+    except Exception as _emb_err:
+        logger.warning("Embedding lookup skipped: %s", _emb_err)
+
     for job in jobs:
-        score = simple_keyword_scoring(job, resume_skills, resume_text)
+        emb_score = 0.0
+        if resume_embedding and job.get("job_hash") in job_embeddings:
+            try:
+                emb_score = cosine_similarity(resume_embedding, job_embeddings[job["job_hash"]])
+            except Exception:
+                pass
+
+        score = simple_keyword_scoring(job, resume_skills, resume_text, embedding_score=emb_score)
 
         # Only include jobs with some relevance (score > 0)
         if score > 0:
@@ -1868,7 +1928,7 @@ def _prefilter_jobs_with_profile(profile: dict, jobs: List[Dict], target_count: 
     return [job for _, job in scored_jobs][:target_count]
 
 
-def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None, system_prompt=None, temperature=None):
+def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_callback=None, system_prompt=None, temperature=None, categories=None):
     """
     Combined resume analysis + job matching in a SINGLE Claude Sonnet call.
     Uses Haiku for pre-filtering and XML prompting to prevent attention dilution.
@@ -1879,6 +1939,12 @@ def analyze_and_match_single_call(resume_text: str, jobs: List[Dict], progress_c
       - enhanced_jobs: list of job dicts with match_score and ai_reasoning
     """
     if not resume_text.strip():
+        return [], {}, []
+
+    # Department/category hard filter BEFORE any LLM work so we never pay Haiku/
+    # Sonnet cost on filtered-out jobs (no-op when categories is empty/None).
+    jobs = _filter_by_categories(jobs, categories, progress_callback)
+    if not jobs:
         return [], {}, []
 
     if progress_callback:
@@ -1991,7 +2057,7 @@ def _score_jobs_with_prompt(resume_text: str, jobs_xml: str, system_prompt=None,
     return json.loads(raw)
 
 
-def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, progress_callback=None):
+def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, progress_callback=None, categories=None):
     """
     Intelligent job matching system with optional LLM analysis.
 
@@ -2001,6 +2067,8 @@ def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, prog
         resume_text: Full resume text for context
         use_llm: If True, uses AI analysis. If False, uses keyword matching.
         progress_callback: Optional callback function to report progress (takes message string)
+        categories: Optional list of canonical department-category ids to filter to
+                    (job_categories.CATEGORY_IDS); empty/None => no filtering.
 
     Returns:
         List of matched jobs with scores and descriptions
@@ -2010,6 +2078,12 @@ def match_resume_to_jobs(resume_skills, jobs, resume_text="", use_llm=True, prog
         - Keyword Mode (use_llm=False): Fast keyword-based scoring
         - Fallback: Automatically falls back to keyword if LLM fails
     """
+    if not jobs:
+        return []
+
+    # Department/category hard filter up front so every downstream stage (prefilter,
+    # LLM, keyword fallback) operates on the already-narrowed set (no-op if empty).
+    jobs = _filter_by_categories(jobs, categories, progress_callback)
     if not jobs:
         return []
 
@@ -2101,9 +2175,32 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
         "citizenship": resume_profile.get("citizenship") or "unknown",
     }
 
+    # Load all job embeddings once and embed the resume profile text.
+    # Best-effort: if unavailable, fall back to keyword+metadata weights.
+    _job_embeddings: dict = {}
+    _resume_embedding: list = []
+    try:
+        from matching.embedder import embed_text, cosine_similarity
+        from job_database import get_all_job_embeddings
+        _job_embeddings = get_all_job_embeddings()
+        _resume_text = resume_profile.get("resume_text", "") or " ".join(resume_profile.get("skills", []))
+        if _resume_text:
+            _resume_embedding = embed_text(_resume_text[:8000])
+    except Exception as _emb_err:
+        logger.warning("prefilter_and_score: embedding skipped: %s", _emb_err)
+
     results = []
     for job in jobs:
-        keyword_score = simple_keyword_scoring(job, skills)
+        # Compute embedding similarity first so it can be passed into keyword scoring,
+        # allowing the early-return guard to be bypassed for semantically relevant jobs.
+        embedding_sim = 0.0
+        if _resume_embedding and job.get("job_hash") in _job_embeddings:
+            try:
+                embedding_sim = cosine_similarity(_resume_embedding, _job_embeddings[job["job_hash"]])
+            except Exception:
+                pass
+
+        keyword_score = simple_keyword_scoring(job, skills, embedding_score=embedding_sim)
         job_metadata = extract_job_metadata(job)
         # extract_job_metadata parses location from description text via regex,
         # but scraped jobs store the authoritative location in the DB field.
@@ -2111,7 +2208,13 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
         if job.get("location"):
             job_metadata["location"] = job["location"]
         metadata_score, _desc = calculate_metadata_match_score(resume_metadata, job_metadata)
-        combined_score = round(keyword_score * 0.7 + metadata_score * 0.3)
+
+        if embedding_sim > 0.0:
+            # Three-signal blend: keyword 45%, metadata 25%, embedding 30%
+            combined_score = round(keyword_score * 0.45 + metadata_score * 0.25 + embedding_sim * 100 * 0.30)
+        else:
+            # Fallback: original two-signal weights (no embedding available yet)
+            combined_score = round(keyword_score * 0.7 + metadata_score * 0.3)
 
         # Supplement DB required_skills with a deterministic vocabulary scan
         # of stored text. Real JD text (after lazy job_get fetch) gives precise
@@ -2147,6 +2250,7 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
             "apply_link": job.get("apply_link"),
             "keyword_score": keyword_score,
             "metadata_score": metadata_score,
+            "embedding_score": round(embedding_sim * 100) if embedding_sim > 0.0 else None,
             "combined_score": combined_score,
             "skill_matches": skill_matches,
             "skill_gaps": skill_gaps,

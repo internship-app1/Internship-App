@@ -220,8 +220,22 @@ function TrackerCard({ row, token, onUpdate }: TrackerCardProps) {
   const [dlOpen, setDlOpen] = useState(false);
   const [emojiKey, setEmojiKey] = useState(0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Holds the latest value the user has typed while a save is in flight.
+  // null means "no local edit pending" → safe to adopt external changes.
+  const pendingNotes = useRef<string | null>(null);
 
-  useEffect(() => { setLocalNotes(row.notes || ''); }, [row.notes]);
+  // Sync the notes field from the row prop, but DON'T clobber in-progress
+  // typing with the async echo of our own PATCH. While a local edit is
+  // pending, ignore incoming values until the server reflects the latest
+  // value we sent (a slow response for an earlier keystroke must not win).
+  useEffect(() => {
+    const incoming = row.notes || '';
+    if (pendingNotes.current !== null) {
+      if (incoming === pendingNotes.current) pendingNotes.current = null;
+      return;
+    }
+    setLocalNotes(incoming);
+  }, [row.notes]);
 
   const sm = STATUSES.find(s => s.key === row.status) ?? STATUSES[0];
   const dl = normalizeDeadline(row.deadline);
@@ -272,6 +286,7 @@ function TrackerCard({ row, token, onUpdate }: TrackerCardProps) {
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
+    pendingNotes.current = v;
     setLocalNotes(v);
     scheduleNotesSave(v);
   };
@@ -280,6 +295,7 @@ function TrackerCard({ row, token, onUpdate }: TrackerCardProps) {
     const snippet = `${tag.emoji} ${tag.label}  ·  `;
     const cur = localNotes;
     const next = cur ? (cur.replace(/\s*$/, '') + '\n' + snippet) : snippet;
+    pendingNotes.current = next;
     setLocalNotes(next);
     scheduleNotesSave(next);
   };

@@ -35,6 +35,7 @@ jest.mock('react-router-dom', () => ({
 jest.mock('../pages/LandingPage', () => () => <div data-testid="landing-page">Landing</div>);
 jest.mock('../pages/FindPage', () => () => <div data-testid="find-page">Find</div>);
 jest.mock('../pages/HistoryPage', () => () => <div data-testid="history-page">History</div>);
+jest.mock('../pages/SavedJobsPage', () => () => <div data-testid="saved-page">Saved</div>);
 jest.mock('../pages/UsagePage', () => () => <div data-testid="usage-page">Usage</div>);
 jest.mock('../pages/DeveloperPage', () => () => <div data-testid="developer-page">Developer</div>);
 jest.mock('../pages/DocsPage', () => () => <div data-testid="docs-page">Docs</div>);
