@@ -186,6 +186,7 @@ class PrefilterCandidate(BaseModel):
     keyword_score: int
     metadata_score: int
     combined_score: int
+    embedding_score: Optional[int] = None
     skill_matches: List[str]
     skill_gaps: List[str]
     desc_skill_matches: List[str] = Field(default_factory=list)
