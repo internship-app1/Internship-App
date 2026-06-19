@@ -874,13 +874,17 @@ def _passes_hard_filters(job, experience_level, years_experience) -> bool:
 def _passes_category_filter(job, selected_ids) -> bool:
     """Hard filter: keep a job only if its canonical category is selected.
 
-    Empty/None selection => no filtering (all jobs pass). Jobs missing a
-    category (e.g. not-yet-backfilled rows) are treated as 'other'.
+    Empty/None selection => no filtering (all jobs pass). Jobs with no
+    category stamp (pre-backfill rows) pass through rather than being
+    dropped — they were ingested before category stamping was added and
+    should still be visible until the next scrape re-stamps them.
     See job_categories.categorize_job — category is stamped at insert time.
     """
     if not selected_ids:
         return True
-    cat = (job.get('metadata') or {}).get('category') or 'other'
+    cat = (job.get('metadata') or {}).get('category')
+    if not cat:
+        return True  # no category yet → don't hide the job
     return cat in selected_ids
 
 
