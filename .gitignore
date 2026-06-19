@@ -24,6 +24,10 @@ uploads/
 jobs.db
 *.db
 
+# Frontend build output — Railway rebuilds this per-environment via Docker ARG
+# so the committed build would always be stale/wrong for staging vs prod
+frontend/build/
+
 # Local changes / docs folder
 changes/
 
