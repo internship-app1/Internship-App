@@ -52,10 +52,12 @@ def test_passes_category_filter_membership():
     assert _passes_category_filter(_job("business"), sel) is False
 
 
-def test_passes_category_filter_missing_metadata_is_other():
-    # not-yet-backfilled rows have no category -> treated as 'other'
-    assert _passes_category_filter({"title": "X"}, {"other"}) is True
-    assert _passes_category_filter({"title": "X", "metadata": {}}, {"software"}) is False
+def test_passes_category_filter_missing_metadata_passes_through():
+    # Jobs with no category stamp (pre-backfill rows) pass through any filter
+    # so they remain visible until the next scrape re-stamps them.
+    assert _passes_category_filter({"title": "X"}, {"software"}) is True
+    assert _passes_category_filter({"title": "X", "metadata": {}}, {"software"}) is True
+    assert _passes_category_filter({"title": "X", "metadata": {}}, {"other"}) is True
 
 
 def test_filter_by_categories_noop_when_empty():
