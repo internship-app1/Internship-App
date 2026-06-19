@@ -6,19 +6,23 @@ Loaded lazily on first call so Railway startup time is unchanged.
 """
 import json
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
 _model = None
+_model_lock = threading.Lock()
 
 
 def _get_model():
     global _model
     if _model is None:
-        logger.info("Loading sentence-transformer model (first call only)...")
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
-        logger.info("Embedding model loaded.")
+        with _model_lock:
+            if _model is None:  # double-checked locking
+                logger.info("Loading sentence-transformer model (first call only)...")
+                from sentence_transformers import SentenceTransformer
+                _model = SentenceTransformer("all-MiniLM-L6-v2")
+                logger.info("Embedding model loaded.")
     return _model
 
 

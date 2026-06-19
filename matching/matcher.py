@@ -1671,9 +1671,14 @@ def simple_keyword_scoring(job, resume_skills, resume_text="", embedding_score=0
             score += int(skill_coverage * 90)
 
     # CRITICAL: If zero required skills matched, return 0 immediately
-    # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers)
+    # This prevents irrelevant jobs from appearing (e.g., C++ jobs for JS developers).
+    # Exception: if a semantic embedding signal is present, don't hard-zero — the
+    # embedding can surface jobs whose vocabulary doesn't overlap the resume but are
+    # genuinely relevant (e.g., "distributed systems" resume vs "C++/CUDA" job listing).
+    # Those jobs will score low (embedding bonus only, ≤15 pts) but remain visible.
     if skill_match_count == 0 and job_skills:
-        return 0
+        if embedding_score <= 0.0:
+            return 0
 
     # 1b. Description text scan — bonus for specialized user skills (RAG, Claude,
     # MCP, FastAPI, etc.) that rarely appear in structured required_skills but DO
@@ -2184,7 +2189,16 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
 
     results = []
     for job in jobs:
-        keyword_score = simple_keyword_scoring(job, skills)
+        # Compute embedding similarity first so it can be passed into keyword scoring,
+        # allowing the early-return guard to be bypassed for semantically relevant jobs.
+        embedding_sim = 0.0
+        if _resume_embedding and job.get("job_hash") in _job_embeddings:
+            try:
+                embedding_sim = cosine_similarity(_resume_embedding, _job_embeddings[job["job_hash"]])
+            except Exception:
+                pass
+
+        keyword_score = simple_keyword_scoring(job, skills, embedding_score=embedding_sim)
         job_metadata = extract_job_metadata(job)
         # extract_job_metadata parses location from description text via regex,
         # but scraped jobs store the authoritative location in the DB field.
@@ -2192,15 +2206,6 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
         if job.get("location"):
             job_metadata["location"] = job["location"]
         metadata_score, _desc = calculate_metadata_match_score(resume_metadata, job_metadata)
-
-        # Semantic similarity signal (0–1). Only available after backfill runs.
-        embedding_sim = 0.0
-        if _resume_embedding and job.get("job_hash") in _job_embeddings:
-            try:
-                from matching.embedder import cosine_similarity
-                embedding_sim = cosine_similarity(_resume_embedding, _job_embeddings[job["job_hash"]])
-            except Exception:
-                pass
 
         if embedding_sim > 0.0:
             # Three-signal blend: keyword 45%, metadata 25%, embedding 30%

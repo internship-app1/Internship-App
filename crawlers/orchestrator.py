@@ -82,7 +82,7 @@ class CrawlOrchestrator:
         # so the crawl return is not blocked by CPU-bound model inference.
         if jobs_flat:
             from matching.embedder import generate_job_embeddings_sync
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             self._embed_task = asyncio.create_task(
                 loop.run_in_executor(None, generate_job_embeddings_sync, jobs_flat)
             )
