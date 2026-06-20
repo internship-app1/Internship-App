@@ -56,6 +56,10 @@ class Job(Base):
     # Status
     is_active = Column(Boolean, default=True, nullable=False, index=True)
 
+    # Canonical industry bucket (see job_categories.CATEGORIES). Nullable for
+    # pre-backfill rows; stamped at insert time and via backfill_categories.py.
+    category = Column(String(50), nullable=True, index=True)
+
     # Sentence embedding for semantic matching (JSON-encoded float list, nullable)
     embedding = Column(Text, nullable=True)
 
@@ -129,6 +133,7 @@ def _job_row_to_dict(job: Optional["Job"]) -> Optional[Dict]:
         'required_skills': json.loads(job.required_skills) if job.required_skills else [],
         'job_requirements': job.job_requirements,
         'source': job.source,
+        'category': job.category,
         'metadata': json.loads(job.job_metadata) if job.job_metadata else {},
         'first_seen': job.first_seen.isoformat() if job.first_seen else None,
         'last_seen': job.last_seen.isoformat() if job.last_seen else None,
@@ -662,6 +667,7 @@ def bulk_insert_jobs(jobs: List[Dict], db: Session = None) -> Dict:
                 'job_requirements':job_data.get('job_requirements', ''),
                 'source':          job_data.get('source', 'github_internships'),
                 'job_metadata':    json.dumps(metadata),
+                'category':        metadata.get('category'),
                 'first_seen':      now,   # preserved on conflict (not in set_)
                 'last_seen':       now,
                 'created_at':      now,   # preserved on conflict (not in set_)
@@ -710,6 +716,7 @@ def bulk_insert_jobs(jobs: List[Dict], db: Session = None) -> Dict:
                             'updated_at':       stmt.excluded.updated_at,
                             'is_active':        True,   # reactivate jobs that reappear
                             'job_metadata':     stmt.excluded.job_metadata,
+                            'category':         stmt.excluded.category,
                             'description':      stmt.excluded.description,
                             'required_skills':  stmt.excluded.required_skills,
                             'job_requirements': stmt.excluded.job_requirements,
@@ -816,6 +823,7 @@ def get_active_jobs(limit: Optional[int] = None, offset: int = 0, max_days_old: 
                 'required_skills': json.loads(job.required_skills) if job.required_skills else [],
                 'job_requirements': job.job_requirements,
                 'source': job.source,
+                'category': job.category,
                 'metadata': metadata if 'metadata' in locals() else {},
                 'first_seen': job.first_seen,
                 'last_seen': job.last_seen
@@ -953,6 +961,7 @@ def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
                 'required_skills': json.loads(job.required_skills) if job.required_skills else [],
                 'job_requirements': job.job_requirements,
                 'source': job.source,
+                'category': job.category,
                 'metadata': metadata if 'metadata' in locals() else {},
                 'first_seen': job.first_seen,
                 'last_seen': job.last_seen

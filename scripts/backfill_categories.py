@@ -42,11 +42,12 @@ def main():
             department = (meta.get("department") or "")
             category = categorize_job(department, job.title or "", job.source or "")
             dist[category] += 1
-            if meta.get("category") != category:
+            if meta.get("category") != category or job.category != category:
                 changed += 1
                 if not DRY_RUN:
                     meta["category"] = category
                     job.job_metadata = json.dumps(meta)
+                    job.category = category
         if not DRY_RUN:
             db.commit()
         print(f"category distribution: {dict(dist)}")
