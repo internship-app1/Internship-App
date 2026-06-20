@@ -20,7 +20,11 @@ CATEGORIES = [
     ("security", "Security"),
     ("product", "Product"),
     ("design", "Design / UX"),
-    ("business", "Business & Other"),
+    ("business", "Business & Finance"),
+    ("healthcare", "Healthcare / Medical"),
+    ("legal", "Legal"),
+    ("policy", "Policy / Gov / Nonprofit"),
+    ("education", "Education"),
     ("other", "Other / Unclassified"),
 ]
 
@@ -48,14 +52,39 @@ _RULES = [
         "graphic design", "visual design", "ux/ui", "design system", "designer",
         "creative", "brand design",
     ]),
+    ("healthcare", [
+        "healthcare", "health care", "nursing", "nurse", " medical", "clinical",
+        "physician", "veterinar", " dvm", "pharmacy", "pharmac", "dental", "hospital",
+        "patient care", "therapist", "therapy", "rehabilitation", "mental health",
+        "public health", "biotech", "pre-med", "premed", "surgical", "diagnostic",
+        "radiology", "oncology", "pathology", "epidemiol", "life sciences",
+        "pharmaceutical", "med tech", "medtech",
+    ]),
+    ("legal", [
+        " legal", "attorney", "counsel", "paralegal", "litigation", "law clerk",
+        "judicial", "law intern", "summer associate", " law ", "regulatory affairs",
+        "damages", "compliance intern", "compliance analyst",
+    ]),
+    ("policy", [
+        "policy", "government", "nonprofit", "non-profit", "advocacy", "legislative",
+        "congressional", "public sector", "civic tech", "political science",
+        "diplomat", "social impact", " ngo", "public affairs", "public administration",
+        "foreign affairs", "international relations", "sustainability intern",
+    ]),
+    ("education", [
+        "teacher", "teaching", "tutor", "curriculum", "instructional design",
+        "classroom", "educator", "edtech", "ed tech", "academic advisor",
+        "student success", "student services", "school program", "higher education",
+    ]),
     ("business", [
         "marketing", "sales", "finance", "financ", "account", "recruit", "talent",
         "human resources", " hr ", "people ops", "people operations", "people team",
-        "operations", "legal", "supply chain", "business develop", "biz dev",
+        "operations", "supply chain", "business develop", "biz dev",
         "communication", "customer success", "customer support", "customer experience",
         "content", "partnership", "go to market", "go-to-market", "gtm",
         "administrat", "procurement", "consulting", "strategy", "community",
         "social media", "public relations", "growth marketing",
+        "private equity", "investment bank", "venture capital", "asset management",
     ]),
     ("software", [
         "software", "swe", "developer", "back end", "backend", "front end",

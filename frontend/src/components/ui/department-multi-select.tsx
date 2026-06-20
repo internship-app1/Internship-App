@@ -11,7 +11,11 @@ export const DEPARTMENT_CATEGORIES: { id: string; label: string }[] = [
   { id: 'security', label: 'Security' },
   { id: 'product', label: 'Product' },
   { id: 'design', label: 'Design / UX' },
-  { id: 'business', label: 'Business & Other' },
+  { id: 'business', label: 'Business & Finance' },
+  { id: 'healthcare', label: 'Healthcare / Medical' },
+  { id: 'legal', label: 'Legal' },
+  { id: 'policy', label: 'Policy / Gov / Nonprofit' },
+  { id: 'education', label: 'Education' },
   { id: 'other', label: 'Other / Unclassified' },
 ];
 
