@@ -271,15 +271,15 @@ def _extract_skills_from_text(text: str) -> list:
     Reuses the same approach as the existing scraper — returns a list of skill strings.
     For ATS jobs the MCP agent will do full extraction; this is a best-effort bootstrap.
     """
-    # NOTE: bare "r" (the language) is deliberately NOT in this list. Even with
-    # token-boundary matching it is hopelessly ambiguous — it matches "R&D",
-    # "R&B", bullet "R.", and "r=" URL params far more often than the R
-    # language. The sibling vocabulary `matcher.KNOWN_SKILLS_VOCAB` omits it for
-    # the same reason; deep R extraction is left to the agent/LLM. Keep these
-    # two lists aligned on single-letter skills.
+    # NOTE: bare "r" and bare "go" are deliberately NOT in this list. Even with
+    # token-boundary matching they are hopelessly ambiguous:
+    #   "r"  — fires on "R&D", "R&B", bullet "R.", URL "r=" params
+    #   "go" — fires on "go to market", "go-to-market", "go live", "go ahead"
+    # Both are excluded here and in `matcher.KNOWN_SKILLS_VOCAB`; use "golang"
+    # for the Go language instead. Deep R extraction is left to the LLM.
     COMMON_SKILLS = [
         "python", "java", "javascript", "typescript", "react", "node.js", "sql",
-        "c++", "c#", "go", "rust", "swift", "kotlin", "ruby", "php",
+        "c++", "c#", "golang", "rust", "swift", "kotlin", "ruby", "php",
         "machine learning", "deep learning", "tensorflow", "pytorch",
         "aws", "gcp", "azure", "docker", "kubernetes", "git",
         "data analysis", "pandas", "numpy", "spark", "hadoop",

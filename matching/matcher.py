@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 KNOWN_SKILLS_VOCAB = [
-    'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Rust',
+    'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Golang', 'Rust',
     'React', 'Next.js', 'Vue', 'Angular', 'Node.js',
     'FastAPI', 'Django', 'Flask', 'Spring',
     'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis',
