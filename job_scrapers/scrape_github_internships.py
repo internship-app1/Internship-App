@@ -558,8 +558,8 @@ def extract_skills_from_job_page(job_text):
     # Enhanced skill keywords for job page extraction
     skill_keywords = [
         # Programming Languages
-        "python", "java", "javascript", "typescript", "c++", "c#", "go", "rust", "kotlin", "swift",
-        "php", "ruby", "scala", "r", "matlab", "perl", "bash", "shell", "powershell",
+        "python", "java", "javascript", "typescript", "c++", "c#", "golang", "rust", "kotlin", "swift",
+        "php", "ruby", "scala", "matlab", "perl", "bash", "shell", "powershell",
         
         # Web Technologies
         "react", "angular", "vue", "node.js", "express", "django", "flask", "spring", "laravel",
