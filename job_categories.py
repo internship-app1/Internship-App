@@ -59,6 +59,9 @@ _RULES = [
         "graphic design", "visual design", "ux/ui", "design system", "designer",
         "creative", "brand design",
     ]),
+    # Checked before healthcare to prevent "therapy" (a company/product name) from
+    # firing when the title is clearly editorial/media.
+    ("business", ["editorial", "media relations", "content creator", "journalist"]),
     ("healthcare", [
         "healthcare", "health care", "nursing", "nurse", " medical", "clinical",
         "physician", "veterinar", " dvm", "pharmacy", "pharmac", "dental", "hospital",
@@ -66,6 +69,8 @@ _RULES = [
         "public health", "biotech", "pre-med", "premed", "surgical", "diagnostic",
         "radiology", "oncology", "pathology", "epidemiol", "life sciences",
         "pharmaceutical", "med tech", "medtech",
+        "health econom", "outcomes research", " heor", "pharmacoeconom",
+        "health outcomes", "real world evidence", " rwe ",
     ]),
     ("legal", [
         " legal", "attorney", "counsel", "paralegal", "litigation", "law clerk",

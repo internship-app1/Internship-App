@@ -57,8 +57,8 @@ const LandingPage: React.FC = () => {
         <Hero />
         <HonestStats activeJobs={activeJobs} />
         <HowItActuallyWorks activeJobs={activeJobs} />
-        <BuilderBlock />
-        <ClosingCTA />
+        <BuilderBlock activeJobs={activeJobs} />
+        <ClosingCTA activeJobs={activeJobs} />
       </main>
       <Footer />
     </div>

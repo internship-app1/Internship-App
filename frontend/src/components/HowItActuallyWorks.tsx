@@ -74,7 +74,7 @@ const steps = [
 ];
 
 export function HowItActuallyWorks({ activeJobs }: { activeJobs: number | null }) {
-  const jobCount = (activeJobs ?? 847).toLocaleString();
+  const jobCount = activeJobs != null ? activeJobs.toLocaleString() : '—';
   return (
     <section className="py-14 border-b border-lp-border" id="how-it-works">
       {/* Kicker */}
