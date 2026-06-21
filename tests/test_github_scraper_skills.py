@@ -8,6 +8,7 @@ mis-tagged titles: "go" fired on "Google"/"Category", and "java" fired inside
 token-bounded.
 """
 from job_scrapers.scrape_github_internships import infer_skills_from_title_aggressive as infer
+from job_categories import CATEGORY_IDS
 
 
 def test_go_not_inferred_from_substring_words():
@@ -33,3 +34,28 @@ def test_genuine_language_tokens_still_inferred():
     assert "C++" in infer("C++ Systems Intern")
     assert "C#" in infer("C# Engineer Intern")
     assert "Node.js" in infer("Node.js Developer Intern")
+
+
+def test_github_scraper_jobs_have_metadata_category(monkeypatch):
+    """Regression: GitHub scraper used to omit metadata entirely → category NULL in DB."""
+    # Stub network calls — we only care about the job dict shape, not real data.
+    import job_scrapers.scrape_github_internships as mod
+
+    fake_html = """<table>
+<tr><th>Company</th><th>Role</th><th>Location</th><th>Application/Link</th><th>Date Posted</th></tr>
+<tr><td>Acme Corp</td><td>Software Engineer Intern</td><td>Remote</td>
+<td><a href="https://example.com/apply">Apply</a></td><td>2 days ago</td></tr>
+</table>"""
+
+    monkeypatch.setattr(mod.requests, "get", lambda *a, **kw: type("R", (), {
+        "status_code": 200, "text": fake_html, "raise_for_status": lambda self: None,
+    })())
+
+    jobs = mod.scrape_github_internships()
+    assert jobs, "Expected at least one job from the fake HTML"
+    for job in jobs:
+        assert "metadata" in job, f"Job missing metadata key: {job.get('title')}"
+        assert "category" in job["metadata"], f"Job metadata missing category: {job.get('title')}"
+        assert job["metadata"]["category"] in CATEGORY_IDS, (
+            f"Job category {job['metadata']['category']!r} not a valid CATEGORY_ID"
+        )

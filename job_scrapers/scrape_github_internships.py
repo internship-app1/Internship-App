@@ -1377,7 +1377,10 @@ def parse_internship_table(content, max_results):
                     'required_skills': [],  # Will be populated by LLM extraction
                     'date_posted': date_posted,  # Raw date string
                     'date_posted_raw': date_posted_raw,  # Original date string from source
-                    'days_since_posted': days_since_posted  # Normalized to days for filtering
+                    'days_since_posted': days_since_posted,  # Normalized to days for filtering
+                    'metadata': {
+                        'category': categorize_job("", role, "github_internships"),
+                    },
                 }
                 
                 jobs.append(job)

@@ -1,15 +1,15 @@
 import React from 'react';
-import heroData from '../data/landing-hero.json';
 
-const STAMP = [
-  { k: 'stack',   v: 'python · fastapi · react' },
-  { k: 'index',   v: `${heroData.indexCount.toLocaleString()} postings` },
-  { k: 'users',   v: '~100 students' },
-  { k: 'cost',    v: '$0 · open source' },
-  { k: 'refresh', v: 'every 6h' },
-];
+export function BuilderBlock({ activeJobs }: { activeJobs: number | null }) {
+  const indexLabel = activeJobs != null ? `${activeJobs.toLocaleString()} postings` : '— postings';
+  const STAMP = [
+    { k: 'stack',   v: 'python · fastapi · react' },
+    { k: 'index',   v: indexLabel },
+    { k: 'users',   v: '~100 students' },
+    { k: 'cost',    v: '$0 · open source' },
+    { k: 'refresh', v: 'every 6h' },
+  ];
 
-export function BuilderBlock() {
   return (
     <section className="py-14 border-b border-lp-border">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px] gap-10 lg:gap-16 items-start">

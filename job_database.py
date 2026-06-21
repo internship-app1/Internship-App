@@ -391,6 +391,7 @@ def init_database():
         Base.metadata.create_all(bind=engine)
         _ensure_saved_jobs_schema()
         _ensure_embedding_column()
+        _ensure_category_column()
         logger.info("Database initialized successfully")
         return True
     except Exception as e:
@@ -412,6 +413,21 @@ def _ensure_embedding_column():
                     pass  # column already exists
     except Exception as exc:
         logger.warning("Could not ensure embedding column: %s", exc)
+
+
+def _ensure_category_column():
+    """Idempotent: add category column to existing jobs tables that predate it."""
+    try:
+        with engine.connect() as conn:
+            if is_postgres:
+                conn.execute("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS category VARCHAR(50)")
+            else:
+                try:
+                    conn.execute("ALTER TABLE jobs ADD COLUMN category VARCHAR(50)")
+                except Exception:
+                    pass  # column already exists
+    except Exception as exc:
+        logger.warning("Could not ensure category column: %s", exc)
 
 
 def save_job_embeddings(job_hashes: List[str], embeddings: List[list], db: Session = None) -> None:

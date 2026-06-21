@@ -1,7 +1,7 @@
 import React from 'react';
 
 export function HonestStats({ activeJobs }: { activeJobs: number | null }) {
-  const displayCount = (activeJobs ?? 847).toLocaleString();
+  const displayCount = activeJobs != null ? activeJobs.toLocaleString() : '—';
 
   return (
     <section className="py-12 border-b border-lp-border">

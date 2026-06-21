@@ -1519,11 +1519,14 @@ async def database_stats(request: Request):
         from job_database import get_database_stats
         stats = get_database_stats()
 
-        return JSONResponse({
-            "success": True,
-            "database_stats": stats,
-            "available": job_cache.is_database_available()
-        })
+        return JSONResponse(
+            {
+                "success": True,
+                "database_stats": stats,
+                "available": job_cache.is_database_available(),
+            },
+            headers={"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"},
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get database stats: {str(e)}")
 
