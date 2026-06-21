@@ -168,6 +168,7 @@ class PrefilterFilters(BaseModel):
     max_days_old: int = 30
     location: Optional[str] = None
     q: Optional[str] = None
+    categories: Optional[List[str]] = None  # canonical IDs e.g. ["software", "data_ml"]
 
 
 class PrefilterRequest(BaseModel):
@@ -224,11 +225,19 @@ def _job_days_since_posted(job: Dict) -> Optional[int]:
     return meta.get("days_since_posted")
 
 
+def _passes_category_filter_mcp(job: Dict, selected: set) -> bool:
+    """Return True if the job belongs to one of the selected categories.
+    Jobs with no category stamp pass through (pre-backfill rows must remain visible)."""
+    cat = job.get("category") or (job.get("metadata") or {}).get("category")
+    return not cat or cat in selected
+
+
 def _fetch_jobs(
     since_hours: Optional[int],
     max_days_old: int,
     location: Optional[str],
     q: Optional[str],
+    categories: Optional[List[str]] = None,
 ) -> List[Dict]:
     if since_hours:
         jobs = get_new_jobs_since(hours=since_hours, max_days_old=max_days_old)
@@ -245,6 +254,9 @@ def _fetch_jobs(
             or needle in (j.get("company") or "").lower()
             or needle in (j.get("description") or "").lower()
         ]
+    if categories:
+        selected = set(categories)
+        jobs = [j for j in jobs if _passes_category_filter_mcp(j, selected)]
     return jobs
 
 
@@ -349,7 +361,7 @@ async def v1_prefilter(
     think-deeper = the agent fetches full JDs for its shortlist and re-ranks itself."""
     f = body.filters or PrefilterFilters()
     jobs = await asyncio.to_thread(
-        _fetch_jobs, f.since_hours, f.max_days_old, f.location, f.q
+        _fetch_jobs, f.since_hours, f.max_days_old, f.location, f.q, f.categories
     )
     if body.exclude_hashes:
         excluded = set(body.exclude_hashes)
