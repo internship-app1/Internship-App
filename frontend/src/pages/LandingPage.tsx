@@ -23,7 +23,7 @@ function Footer() {
           </button>{' '}
           ·{' '}
           <a
-            href="https://github.com/Sujan30/jobbot"
+            href="https://github.com/internship-app1/Internship-App"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-text-secondary transition-colors"
