@@ -6,6 +6,7 @@ import JobCard from '../components/JobCard';
 import { Job } from '../types';
 import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
 import JobFilters, { JobFilterState, EMPTY_FILTERS, isFilterActive, filterSignature } from '../components/JobFilters';
+import { DepartmentMultiSelect } from '../components/ui/department-multi-select';
 import { Upload, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
@@ -77,12 +78,14 @@ const FindPage: React.FC = () => {
   const [useStreaming] = useState(true);
   const [thinkDeeper, setThinkDeeper] = useState(true);
   const [filters, setFilters] = useState<JobFilterState>(EMPTY_FILTERS);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [pendingAnalysis, setPendingAnalysis] = useState(false);
+  const [savedJobHashes, setSavedJobHashes] = useState<string[]>([]);
 
   // Auto-submit after sign-in — handles both paths:
   //   A) In-page modal (no redirect): isSignedIn flips true while pendingAnalysis is set
@@ -107,11 +110,13 @@ const FindPage: React.FC = () => {
         });
         const restoredThinkDeeper: boolean = meta.thinkDeeper ?? true;
         const restoredFilters: JobFilterState = meta.filters ?? EMPTY_FILTERS;
+        const restoredCategories: string[] = Array.isArray(meta.categories) ? meta.categories : [];
 
         setSelectedFile(file);
         setThinkDeeper(restoredThinkDeeper);
         setFilters(restoredFilters);
-        handleFileUploadStreaming(file, restoredThinkDeeper, restoredFilters);
+        setSelectedCategories(restoredCategories);
+        handleFileUploadStreaming(file, restoredThinkDeeper, restoredFilters, restoredCategories);
       } catch (e) {
         sessionStorage.removeItem(PENDING_RESUME_DATA_KEY);
         sessionStorage.removeItem(PENDING_RESUME_META_KEY);
@@ -150,6 +155,9 @@ const FindPage: React.FC = () => {
   const handleDragLeave = () => setIsDragging(false);
 
   const startCooldown = (seconds: number) => {
+    // Skip the per-upload waiting time when usage tracking is disabled (dev testing).
+    // Mirrors the backend TRACK_USAGE switch; default on unless explicitly "false".
+    if (process.env.REACT_APP_TRACK_USAGE === 'false') return;
     setCooldown(seconds);
     const timer = setInterval(() => {
       setCooldown(prev => {
@@ -169,10 +177,38 @@ const FindPage: React.FC = () => {
     return `${file.name}-${file.size}-${file.lastModified}`;
   };
 
-  const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean, filtersOverride?: JobFilterState) => {
+  const loadSavedJobHashes = async (token: string | null) => {
+    if (!token) {
+      setSavedJobHashes([]);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/saved-jobs?hashes_only=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSavedJobHashes(Array.isArray(data.job_hashes) ? data.job_hashes : []);
+    } catch {
+      // Saved-state failure should not block matching.
+    }
+  };
+
+  const handleSavedChange = (jobHash: string, saved: boolean) => {
+    setSavedJobHashes(prev => {
+      if (saved && !prev.includes(jobHash)) return [...prev, jobHash];
+      if (!saved) return prev.filter(h => h !== jobHash);
+      return prev;
+    });
+  };
+
+  const handleFileUploadStreaming = async (file: File, thinkDeeperOverride?: boolean, filtersOverride?: JobFilterState, categoriesOverride?: string[]) => {
     const useThinkDeeper = thinkDeeperOverride ?? thinkDeeper;
     const activeFilters = filtersOverride ?? filters;
     const filtersActive = isFilterActive(activeFilters);
+    // Department selection is part of the cache identity: a different selection
+    // must be a fresh search, not the previous selection's cached results.
+    const useCategories = categoriesOverride ?? selectedCategories;
     setFromCache(false);
     const baseHash = await hashFile(file);
     // Namespace the cache key by filter combination so a filtered search never
@@ -181,10 +217,12 @@ const FindPage: React.FC = () => {
 
     const token = await getToken();
     setAuthToken(token);
+    await loadSavedJobHashes(token);
 
     if (token) {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?think_deeper=${useThinkDeeper}`, {
+        const catParam = `&categories=${encodeURIComponent(useCategories.join(','))}`;
+        const res = await fetch(`${API_BASE_URL}/api/resume-cache/${resumeHash}?think_deeper=${useThinkDeeper}${catParam}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -217,6 +255,7 @@ const FindPage: React.FC = () => {
       if (filtersActive) {
         formData.append('filters', JSON.stringify(buildFiltersPayload(activeFilters)));
       }
+      formData.append('categories', useCategories.join(','));
 
       const response = await fetch(`${API_BASE_URL}/api/match-stream`, {
         method: 'POST',
@@ -335,6 +374,7 @@ const FindPage: React.FC = () => {
             lastModified: selectedFile.lastModified,
             thinkDeeper,
             filters,
+            categories: selectedCategories,
           }));
         } catch (e) {
           // sessionStorage quota exceeded — modal flow still works
@@ -508,6 +548,9 @@ const FindPage: React.FC = () => {
               {/* Think Deeper toggle */}
               <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
 
+              {/* Department / category filter */}
+              <DepartmentMultiSelect selected={selectedCategories} onChange={setSelectedCategories} />
+
               <button
                 type="submit"
                 className={`w-full md:w-auto px-8 py-2.5 bg-text-primary text-bg font-mono text-xs tracking-wide hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed ${focusRing}`}
@@ -523,7 +566,7 @@ const FindPage: React.FC = () => {
                 ) : selectedFile && !isSignedIn ? (
                   'Sign in to analyze →'
                 ) : (
-                  'Find Matches →'
+                  'See My Matches →'
                 )}
               </button>
             </form>
@@ -706,6 +749,8 @@ const FindPage: React.FC = () => {
                       resumeFile={selectedFile}
                       apiBaseUrl={API_BASE_URL}
                       authToken={authToken}
+                      isSaved={!!job.job_hash && savedJobHashes.includes(job.job_hash)}
+                      onSavedChange={handleSavedChange}
                     />
                   </div>
                 ))

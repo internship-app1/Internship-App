@@ -37,17 +37,74 @@ from job_scrapers.dispatcher import scrape_jobs
 from matching.matcher import match_resume_to_jobs, analyze_and_match_single_call
 from matching.metadata_matcher import extract_resume_metadata
 from matching.job_filters import apply_normalized_filters, has_active_filters, normalize_filters
+from job_categories import CATEGORY_IDS
+
+
+def _parse_categories(raw: str):
+    """Parse a comma-separated `categories` form value into a validated id list.
+
+    Unknown ids are dropped; empty result => no department filtering.
+    """
+    if not raw:
+        return []
+    return [c.strip() for c in raw.split(",") if c.strip() in CATEGORY_IDS]
 import job_cache
 from s3_service import upload_resume_to_s3, download_resume_from_s3, delete_resume_from_s3
 from resume_tailor.tailor_resume import tailor_resume as _tailor_resume
-from job_database import get_resume_cache, set_resume_cache, get_user_resume_history, get_db, close_db
+from job_database import (
+    get_resume_cache,
+    set_resume_cache,
+    get_user_resume_history,
+    get_db,
+    close_db,
+    save_user_attribution,
+    list_saved_jobs,
+    get_saved_job_hashes,
+    upsert_saved_job,
+    update_saved_job,
+    delete_saved_job,
+)
 from auth import require_user
 
 # Base directory of this file (used for templates/static/uploads paths)
 BASE_DIR = Path(__file__).resolve().parent
 
+# Bump whenever a scoring/prompt change makes cached results stale.
+# Old entries become misses automatically — no manual purge needed.
+PROMPT_VERSION = "v2"
+
+
+def _resume_cache_key(resume_hash, use_llm, categories):
+    """Cache key for a resume's match results.
+
+    Includes the selected department categories so changing the department
+    filter is a DIFFERENT key -> cache miss -> a fresh search (instead of
+    serving the previous selection's cached results). Sorted so selection order
+    doesn't matter; 'all' when no filter is applied.
+    """
+    mode = 'deep' if use_llm else 'quick'
+    catsig = 'all' if not categories else 'cat-' + '-'.join(sorted(categories))
+    return f"{resume_hash}_{mode}_{catsig}_{PROMPT_VERSION}"
+
 # Load environment variables
 load_dotenv()
+
+# Usage tracking master switch.
+# When TRACK_USAGE is "true" (the default), weekly per-user quotas, slowapi
+# rate limiting, and the per-upload cooldown are all enforced. Set it to
+# "false" in development to disable every limit for unrestricted testing.
+TRACK_USAGE = os.getenv("TRACK_USAGE", "true").strip().lower() == "true"
+logger.info(f"Usage tracking (quotas + rate limits): {'ENABLED' if TRACK_USAGE else 'DISABLED'}")
+
+# Hosted MCP endpoint (zero-install tier, /mcp). The mcp SDK needs Python
+# >= 3.10; the dev venv is 3.9, so the import is guarded — the app boots
+# without it and simply doesn't mount /mcp. Production (3.11) serves it.
+try:
+    import mcp_remote as _mcp_remote
+    logger.info("Hosted MCP endpoint available — will mount at /mcp")
+except ImportError as _mcp_err:
+    _mcp_remote = None
+    logger.warning(f"Hosted MCP endpoint disabled (mcp SDK unavailable): {_mcp_err}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -86,13 +143,13 @@ async def lifespan(app: FastAPI):
                 should_refresh = True
                 logger.info("No cached jobs found — initializing cache...")
         else:
-            # Production: always scrape on startup so every deploy gets fresh data.
-            # The scrape runs in the background — server is available immediately.
+            # production AND staging: always scrape on startup so every deploy gets
+            # fresh data. The scrape runs in the background — server available immediately.
             should_refresh = True
             if cached_jobs:
-                logger.info(f"Production startup: {len(cached_jobs)} cached jobs available, scraping for fresh data...")
+                logger.info(f"{environment.capitalize()} startup: {len(cached_jobs)} cached jobs available, scraping for fresh data...")
             else:
-                logger.info("Production startup: no cached jobs — initializing cache...")
+                logger.info(f"{environment.capitalize()} startup: no cached jobs — initializing cache...")
 
         if should_refresh and os.getenv("SKIP_STARTUP_SCRAPE", "").lower() in ("1", "true", "yes"):
             logger.info("SKIP_STARTUP_SCRAPE is set — skipping startup scrape")
@@ -134,7 +191,19 @@ async def lifespan(app: FastAPI):
     refresh_task = asyncio.create_task(daily_cache_refresh_task())
     logger.info("Daily cache refresh scheduler started")
 
-    yield  # server is running
+    if _mcp_remote is not None:
+        # FastAPI does not run a mounted sub-app's lifespan — the MCP
+        # session manager must be started from the parent lifespan.
+        # StreamableHTTPSessionManager has a one-shot _ran guard that raises
+        # if .run() is called twice on the same instance. Test fixtures cycle
+        # the lifespan multiple times per process, so reset _ran before each
+        # run. In production the lifespan only runs once — harmless there.
+        sm = _mcp_remote.remote_mcp.session_manager
+        sm._has_started = False  # allow re-run when lifespan cycles in tests
+        async with sm.run():
+            yield  # server is running
+    else:
+        yield  # server is running
 
     # ---- shutdown ----
     refresh_task.cancel()
@@ -170,7 +239,10 @@ def _get_rate_limit_key(request: Request) -> str:
 
 
 _REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-limiter = Limiter(key_func=_get_rate_limit_key, storage_uri=_REDIS_URL)
+_ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+# enabled=TRACK_USAGE — when usage tracking is off, every @limiter.limit(...)
+# decorator becomes a no-op, removing all rate limiting / waiting times.
+limiter = Limiter(key_func=_get_rate_limit_key, storage_uri=_REDIS_URL, enabled=TRACK_USAGE)
 
 # Global concurrency gate — prevents OOM from simultaneous LLM calls.
 # Railway hobby tier has ~512 MB RAM; each analysis can use 100–200 MB.
@@ -194,20 +266,23 @@ def _log_rate_limit_exceeded(request: Request, exc: RateLimitExceeded):
 app.add_exception_handler(RateLimitExceeded, _log_rate_limit_exceeded)
 
 # Add CORS middleware for React frontend
+_CORS_ORIGINS = [
+    "https://internship-app-production.up.railway.app",
+    "https://internshipmatcher.com",
+    "https://www.internshipmatcher.com",
+    "http://internshipmatcher.com",
+    "http://www.internshipmatcher.com",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+if _ENVIRONMENT == "staging":
+    _CORS_ORIGINS.append("https://internship-app-staging.up.railway.app")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://internship-app-production.up.railway.app",
-        "http://internshipmatcher.com",
-        "http://www.internshipmatcher.com",
-        "https://internshipmatcher.com",
-        "https://www.internshipmatcher.com",
-        "http://3.149.255.34",
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ],  # Domain, EC2, and local dev
+    allow_origins=_CORS_ORIGINS,
 
     allow_credentials=True,
     allow_methods=["*"],
@@ -238,6 +313,36 @@ else:
 # Create upload folder if it doesn't exist (absolute path)
 UPLOAD_FOLDER = BASE_DIR / "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# ---------------------------------------------------------------------------
+# MCP /api/v1 surface (per-user API keys) + /developer key CRUD (Clerk auth).
+# v1_app is a sub-app so its OpenAPI contract is published at
+# /api/v1/openapi.json even though the main app's docs are disabled.
+# NO Claude calls live behind these routes — see mcp_api.py.
+# ---------------------------------------------------------------------------
+from mcp_api import v1_app as _mcp_v1_app, developer_router as _developer_router
+app.mount("/api/v1", _mcp_v1_app)
+app.include_router(_developer_router)
+
+# Hosted MCP (zero-install tier): /mcp — guarded above for Python < 3.10
+if _mcp_remote is not None:
+    app.mount("/mcp", _mcp_remote.streamable_app())
+
+    class _McpSlashRewrite:
+        """Map /mcp -> /mcp/ at the ASGI layer. Starlette's Mount answers the
+        bare path with a 307, but MCP clients POST and won't follow it —
+        users paste '/mcp' without a trailing slash."""
+        def __init__(self, app):
+            self.app = app
+
+        async def __call__(self, scope, receive, send):
+            if scope.get("type") == "http" and scope.get("path") == "/mcp":
+                scope = dict(scope)
+                scope["path"] = "/mcp/"
+                scope["raw_path"] = b"/mcp/"
+            await self.app(scope, receive, send)
+
+    app.add_middleware(_McpSlashRewrite)
 
 
 
@@ -503,8 +608,9 @@ async def match_resume(request: Request, resume: UploadFile = File(...)):
 
 @app.post("/api/match")
 @limiter.limit("3/10minutes")
-async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true"), filters: str = Form(default="")):
+async def api_match_resume(request: Request, resume: UploadFile = File(...), think_deeper: str = Form("true"), filters: str = Form(default=""), categories: str = Form(default="")):
     """API endpoint for React frontend - returns JSON instead of HTML"""
+    selected_categories = _parse_categories(categories)
     try:
         # Validate file
         if not resume:
@@ -557,24 +663,25 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
             # Think Deeper requires authentication — propagate 401 for unauthenticated callers
             if use_llm:
                 _req_user_id = await require_user(request)
-                from quota import get_think_deeper_quota_status, WEEKLY_THINK_DEEPER_LIMIT
-                _qdb = get_db()
-                try:
-                    _qstatus = get_think_deeper_quota_status(_qdb, _req_user_id)
-                    if _qstatus["remaining"] <= 0:
-                        raise HTTPException(
-                            status_code=429,
-                            detail={
-                                "error": "weekly_quota_exceeded",
-                                "message": f"You've used all {WEEKLY_THINK_DEEPER_LIMIT} Think Deeper analyses this week.",
-                                "limit": _qstatus["limit"],
-                                "used": _qstatus["used"],
-                                "remaining": 0,
-                                "reset_at": _qstatus["reset_at"].isoformat() if _qstatus["reset_at"] else None,
-                            },
-                        )
-                finally:
-                    close_db(_qdb)
+                if TRACK_USAGE:
+                    from quota import get_think_deeper_quota_status, WEEKLY_THINK_DEEPER_LIMIT
+                    _qdb = get_db()
+                    try:
+                        _qstatus = get_think_deeper_quota_status(_qdb, _req_user_id)
+                        if _qstatus["remaining"] <= 0:
+                            raise HTTPException(
+                                status_code=429,
+                                detail={
+                                    "error": "weekly_quota_exceeded",
+                                    "message": f"You've used all {WEEKLY_THINK_DEEPER_LIMIT} Think Deeper analyses this week.",
+                                    "limit": _qstatus["limit"],
+                                    "used": _qstatus["used"],
+                                    "remaining": 0,
+                                    "reset_at": _qstatus["reset_at"].isoformat() if _qstatus["reset_at"] else None,
+                                },
+                            )
+                    finally:
+                        close_db(_qdb)
 
             resume_skills, resume_text, resume_metadata = parse_resume(downloaded_content, original_filename, use_llm)
             if not resume_skills:
@@ -621,7 +728,7 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
 
         # Match resume to jobs with intelligent prefiltering
         try:
-            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm)
+            matched_jobs = match_resume_to_jobs(resume_skills, jobs, resume_text, use_llm=use_llm, categories=selected_categories)
             logger.info(f"Matched {len(matched_jobs)} jobs from {len(jobs)} total")
 
             # Filter jobs with score > 0 for the final response
@@ -648,7 +755,7 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
             matched_jobs = jobs_with_matches
 
             # Record Think Deeper usage after a successful deep match
-            if use_llm and _req_user_id:
+            if TRACK_USAGE and use_llm and _req_user_id:
                 try:
                     from quota import record_think_deeper_request
                     _rdb = get_db()
@@ -707,9 +814,9 @@ async def api_match_resume(request: Request, resume: UploadFile = File(...), thi
 
 @app.get("/api/resume-cache/{resume_hash}")
 @limiter.limit("20/minute")
-async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true")):
+async def check_resume_cache(request: Request, resume_hash: str, user_id: str = Depends(require_user), think_deeper: str = Query("true"), categories: str = Query("")):
     use_llm = think_deeper.lower() == "true"
-    cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
+    cache_key = _resume_cache_key(resume_hash, use_llm, _parse_categories(categories))
     cached = get_resume_cache(user_id, cache_key)
     if cached:
         return JSONResponse({"hit": True, "results": cached["results"], "skills": cached["skills"]})
@@ -723,6 +830,82 @@ async def get_user_history(request: Request, user_id: str = Depends(require_user
     return JSONResponse(entries)
 
 
+@app.get("/api/saved-jobs")
+@limiter.limit("60/minute")
+async def api_list_saved_jobs(request: Request, hashes_only: bool = Query(False), user_id: str = Depends(require_user)):
+    if hashes_only:
+        return JSONResponse({"job_hashes": get_saved_job_hashes(user_id)})
+    return JSONResponse(list_saved_jobs(user_id))
+
+
+@app.post("/api/saved-jobs")
+@limiter.limit("60/minute")
+async def api_save_job(request: Request, user_id: str = Depends(require_user)):
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    job_hash = (body.get("job_hash") or "").strip()
+    if not job_hash:
+        raise HTTPException(status_code=400, detail="job_hash is required")
+    try:
+        saved = upsert_saved_job(
+            user_id=user_id,
+            job_hash=job_hash,
+            status=body.get("status") or "saved",
+            notes=body.get("notes") or "",
+            deadline=body.get("deadline") or None,
+            job_snapshot=body.get("job_snapshot") or body.get("job") or None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return JSONResponse(saved, status_code=201)
+
+
+@app.patch("/api/saved-jobs/{job_hash}")
+@limiter.limit("60/minute")
+async def api_update_saved_job(job_hash: str, request: Request, user_id: str = Depends(require_user)):
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    try:
+        saved = update_saved_job(
+            user_id=user_id,
+            job_hash=job_hash,
+            status=body.get("status"),
+            notes=body.get("notes"),
+            deadline=body.get("deadline"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not saved:
+        raise HTTPException(status_code=404, detail="Saved job not found")
+    return JSONResponse(saved)
+
+
+@app.delete("/api/saved-jobs/{job_hash}")
+@limiter.limit("60/minute")
+async def api_delete_saved_job(job_hash: str, request: Request, user_id: str = Depends(require_user)):
+    deleted = delete_saved_job(user_id, job_hash)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Saved job not found")
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/track-attribution")
+async def track_attribution(request: Request, user_id: str = Depends(require_user)):
+    """Record first-touch UTM attribution for a signed-in user. Idempotent."""
+    try:
+        body = await request.json()
+    except Exception as e:
+        logger.warning(f"Attribution: could not parse request body for user={user_id} — {e}")
+        body = {}
+    saved = save_user_attribution(user_id, body)
+    logger.info(f"Attribution: track-attribution user={user_id} saved={saved}")
+    return JSONResponse({"ok": True})
+
+
 @app.post("/api/match-stream")
 @limiter.limit("3/10minutes")
 async def stream_match_resume(
@@ -731,9 +914,12 @@ async def stream_match_resume(
     think_deeper: str = Form("true"),
     resume_hash: str = Form(default=""),
     filters: str = Form(default=""),
+    categories: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
     """Streaming endpoint that provides real-time progress updates"""
+    # Department/category filter selected on the upload page (empty => all jobs).
+    selected_categories = _parse_categories(categories)
     
     # IMPORTANT: Read all file data BEFORE the generator function
     # to avoid "i/o operation on closed file" errors
@@ -766,7 +952,7 @@ async def stream_match_resume(
         if user_id and resume_hash:
             try:
                 use_llm_early = think_deeper.lower() == "true"
-                cache_key_early = f"{resume_hash}_{'deep' if use_llm_early else 'quick'}"
+                cache_key_early = _resume_cache_key(resume_hash, use_llm_early, selected_categories)
                 cached_early = get_resume_cache(user_id, cache_key_early)
                 if cached_early:
                     logger.info(f"Cache hit before S3 upload for user {user_id}, returning early")
@@ -781,7 +967,7 @@ async def stream_match_resume(
                 logger.warning(f"Pre-S3 cache check failed, proceeding normally: {cache_err}")
 
         # Enforce Think Deeper weekly quota (only when no cache hit + user authenticated)
-        if user_id and think_deeper.lower() == "true":
+        if TRACK_USAGE and user_id and think_deeper.lower() == "true":
             from quota import get_think_deeper_quota_status, WEEKLY_THINK_DEEPER_LIMIT
             _qdb = get_db()
             try:
@@ -1001,7 +1187,8 @@ async def stream_match_resume(
                             analyze_and_match_single_call,
                             resume_text,
                             jobs,
-                            progress_callback
+                            progress_callback,
+                            categories=selected_categories,
                         )
                     )
 
@@ -1040,7 +1227,8 @@ async def stream_match_resume(
                     }
                     
                     matched_jobs = await asyncio.to_thread(
-                        simple_keyword_match, resume_skills, jobs, resume_text, progress_callback
+                        simple_keyword_match, resume_skills, jobs, resume_text, progress_callback,
+                        categories=selected_categories,
                     )
 
                 if resume_skills:
@@ -1071,6 +1259,7 @@ async def stream_match_resume(
                     last_seen = _to_utc_iso(last_seen)
 
                     formatted_jobs.append({
+                        'job_hash': job.get('job_hash'),
                         'company': job.get('company', 'Unknown'),
                         'title': job.get('title', 'Unknown'),
                         'location': job.get('location', 'Unknown'),
@@ -1101,14 +1290,14 @@ async def stream_match_resume(
                 # Save to resume cache if user is authenticated
                 if user_id and resume_hash:
                     try:
-                        save_cache_key = f"{resume_hash}_{'deep' if use_llm else 'quick'}"
+                        save_cache_key = _resume_cache_key(resume_hash, use_llm, selected_categories)
                         set_resume_cache(user_id, save_cache_key, final_results, resume_skills, applied_filters_payload)
                         logger.info(f"Saved results to resume cache for user {user_id}")
                     except Exception as cache_err:
                         logger.warning(f"Failed to save resume cache: {cache_err}")
 
                 # Record Think Deeper usage after a successful deep match (never on cache hits)
-                if user_id and use_llm:
+                if TRACK_USAGE and user_id and use_llm:
                     try:
                         from quota import record_think_deeper_request
                         _rdb = get_db()
@@ -1349,10 +1538,34 @@ async def refresh_cache_incremental(request: Request, max_days_old: int = 30,
         raise HTTPException(status_code=500, detail=f"Incremental refresh failed: {str(e)}")
 
 
+@app.get("/api/categories")
+@limiter.limit("30/minute")
+async def list_categories(request: Request):
+    """Canonical department categories + live active-job counts for each.
+
+    Powers the upload-page department filter (labels + counts). Public, cheap —
+    reuses the cached job list. Counts use metadata['category'] (stamped at insert
+    time; not-yet-backfilled rows fall into 'other')."""
+    from job_categories import CATEGORIES
+    from collections import Counter
+    try:
+        jobs = await get_jobs_with_cache() or []
+    except Exception:
+        jobs = []
+    counts = Counter((j.get('metadata') or {}).get('category') or 'other' for j in jobs)
+    return JSONResponse({
+        "categories": [
+            {"id": cid, "label": label, "count": counts.get(cid, 0)}
+            for cid, label in CATEGORIES
+        ],
+        "total": len(jobs),
+    })
+
+
 @app.get("/api/database-stats")
 @limiter.limit("10/minute")
-async def database_stats(request: Request, _: None = Depends(require_api_key)):
-    """Get detailed database statistics"""
+async def database_stats(request: Request):
+    """Get database statistics — public endpoint used by the landing page job counter."""
     try:
         from job_database import get_database_stats
         stats = get_database_stats()
@@ -1495,31 +1708,48 @@ async def tailor_resume_endpoint(
     job_title: str = Form(...),
     company: str = Form(...),
     job_description: str = Form(default=""),
+    job_hash: str = Form(default=""),
     user_id: str = Depends(require_user),
 ):
     from quota import get_tailor_quota_status, record_tailor_request, WEEKLY_TAILOR_LIMIT
+    from job_database import get_job_by_hash
 
     # Check Postgres-backed weekly quota before doing any work
-    db = get_db()
-    try:
-        status = get_tailor_quota_status(db, user_id)
-        if status["remaining"] <= 0:
-            reset_at = status["reset_at"]
-            raise HTTPException(
-                status_code=429,
-                detail={
-                    "error": "weekly_quota_exceeded",
-                    "message": f"You've used all {WEEKLY_TAILOR_LIMIT} tailored resumes this week.",
-                    "limit": status["limit"],
-                    "used": status["used"],
-                    "remaining": 0,
-                    "reset_at": reset_at.isoformat() if reset_at else None,
-                },
-            )
-    finally:
-        close_db(db)
+    if TRACK_USAGE:
+        db = get_db()
+        try:
+            status = get_tailor_quota_status(db, user_id)
+            if status["remaining"] <= 0:
+                reset_at = status["reset_at"]
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "error": "weekly_quota_exceeded",
+                        "message": f"You've used all {WEEKLY_TAILOR_LIMIT} tailored resumes this week.",
+                        "limit": status["limit"],
+                        "used": status["used"],
+                        "remaining": 0,
+                        "reset_at": reset_at.isoformat() if reset_at else None,
+                    },
+                )
+        finally:
+            close_db(db)
 
-    logger.info(f"Tailor request: user={user_id} job='{job_title}' at '{company}' file={resume.filename}")
+    # Resolve the job description: prefer the FULL description looked up by job_hash
+    # from the DB, falling back to the posted form field (covers stale caches that
+    # predate job_hash, and direct API callers that don't send one).
+    resolved_jd = job_description
+    jd_source = "form"
+    if job_hash:
+        looked_up = get_job_by_hash(job_hash)
+        if looked_up and looked_up.get("description"):
+            resolved_jd = looked_up["description"]
+            jd_source = "job_hash"
+
+    logger.info(
+        f"Tailor request: user={user_id} job='{job_title}' at '{company}' "
+        f"file={resume.filename} jd_source={jd_source} jd_len={len(resolved_jd or '')}"
+    )
 
     if not resume.filename or not resume.filename.lower().endswith(".pdf"):
         logger.error(f"Tailor error (user={user_id}): unsupported format — {resume.filename}")
@@ -1534,7 +1764,7 @@ async def tailor_resume_endpoint(
     start_time = time.time()
 
     try:
-        pdf_bytes = _tailor_resume(file_content, job_title, company, job_description)
+        pdf_bytes = _tailor_resume(file_content, job_title, company, resolved_jd)
     except ValueError as e:
         logger.error(f"Tailor error (user={user_id}): {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -1559,15 +1789,16 @@ async def tailor_resume_endpoint(
     filename = f"resume_tailored_{safe_company}_{safe_title}.pdf"
 
     # Record usage AFTER successful generation — failed attempts don't count against quota
-    db = get_db()
-    try:
-        record_tailor_request(db, user_id, job_title, company)
-        db.commit()
-    except Exception as e:
-        logger.warning(f"Failed to record tailor quota entry for user={user_id}: {e}")
-        db.rollback()
-    finally:
-        close_db(db)
+    if TRACK_USAGE:
+        db = get_db()
+        try:
+            record_tailor_request(db, user_id, job_title, company)
+            db.commit()
+        except Exception as e:
+            logger.warning(f"Failed to record tailor quota entry for user={user_id}: {e}")
+            db.rollback()
+        finally:
+            close_db(db)
 
     logger.info(f"Tailor complete: user={user_id} time={execution_time}s size={len(pdf_bytes)} bytes")
 
@@ -1581,11 +1812,16 @@ async def tailor_resume_endpoint(
 @app.get("/api/usage")
 @limiter.limit("20/minute")
 async def get_usage(request: Request, user_id: str = Depends(require_user)):
-    from quota import get_tailor_quota_status, get_think_deeper_quota_status
+    from quota import (
+        get_remote_compile_quota_status,
+        get_tailor_quota_status,
+        get_think_deeper_quota_status,
+    )
     db = get_db()
     try:
         tailor = get_tailor_quota_status(db, user_id)
         deep = get_think_deeper_quota_status(db, user_id)
+        remote_compile = get_remote_compile_quota_status(db, user_id)
     finally:
         db.close()
 
@@ -1601,10 +1837,223 @@ async def get_usage(request: Request, user_id: str = Depends(require_user)):
     return JSONResponse({
         "tailor_resume": _shape(tailor),
         "think_deeper": _shape(deep),
+        # Consumed by API-key remote compiles (MCP /api/v1), NOT by the in-app
+        # tailor feature — the frontend surfaces that distinction.
+        "remote_compile": _shape(remote_compile),
     })
 
 
-# Catch-all: serve React app for any non-API route
+# ---------------------------------------------------------------------------
+# Universal ATS Crawler endpoints  (admin-gated via require_api_key)
+#
+# NOTE: registered BEFORE the React catch-all (moved to the very end of this
+# file). Starlette matches routes in registration order, so the GET
+# /api/crawl/status route must precede the GET /{full_path} catch-all or it is
+# shadowed and returns index.html instead of the status payload.
+# ---------------------------------------------------------------------------
+
+# Crawls run FIRE-AND-FORGET, not inline. Railway's
+# edge proxy aborts any HTTP request at ~300s, but a full crawl / discover (which
+# probes ~15k boards) routinely runs longer. Awaiting inline returned a 502 to the
+# client at 5 min even though the work succeeded server-side, and made the GitHub
+# Actions step (curl --fail-with-body --retry) go red and retry. So each endpoint
+# schedules the crawl on the event loop and returns 202 immediately; progress is
+# polled via GET /api/crawl/status.
+_CRAWL_RUNNING: dict = {}          # crawl_type -> bool (a run is in flight)
+_CRAWL_LAST: dict = {}             # crawl_type -> summary of the last finished run
+_CRAWL_TASKS: set = set()          # strong refs so tasks aren't GC'd mid-flight
+
+
+async def _run_crawl_task(crawl_type, coro, cache_key=None):
+    """Await a crawl coroutine in the background, record the outcome, clear the flag."""
+    started = datetime.utcnow()
+    try:
+        result = await coro
+        if cache_key:
+            from job_database import record_cache_operation
+            record_cache_operation(cache_key, result.get("jobs_found", 0), result.get("new_jobs", 0))
+        _CRAWL_LAST[crawl_type] = {
+            "ok": True,
+            "started_at": started.isoformat(),
+            "finished_at": datetime.utcnow().isoformat(),
+            **result,
+        }
+        logger.info("[crawl:%s] complete: %s", crawl_type, result)
+    except Exception as exc:  # a background crash must never vanish silently
+        _CRAWL_LAST[crawl_type] = {
+            "ok": False,
+            "started_at": started.isoformat(),
+            "finished_at": datetime.utcnow().isoformat(),
+            "error": str(exc),
+        }
+        logger.exception("[crawl:%s] failed", crawl_type)
+    finally:
+        _CRAWL_RUNNING[crawl_type] = False
+
+
+def _start_crawl(crawl_type, coro, cache_key=None) -> bool:
+    """
+    Atomically claim the crawl slot and schedule the background task. Returns
+    False (and closes the un-awaited coroutine) if a crawl of this type is
+    already running. The flag is set BEFORE scheduling, with no await in between,
+    so the claim is atomic on the single event loop.
+    """
+    if _CRAWL_RUNNING.get(crawl_type):
+        coro.close()  # avoid 'coroutine was never awaited' warning
+        return False
+    _CRAWL_RUNNING[crawl_type] = True
+    task = asyncio.create_task(_run_crawl_task(crawl_type, coro, cache_key))
+    _CRAWL_TASKS.add(task)
+    task.add_done_callback(_CRAWL_TASKS.discard)
+    return True
+
+
+@app.post("/api/crawl/incremental")
+async def crawl_incremental(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger an incremental ATS crawl (jobs updated in last N hours).
+    Designed to run every 15 minutes via GitHub Actions.
+
+    Body (JSON, optional):
+      max_age_hours: int = 1
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    max_age_hours = int(body.get("max_age_hours", 1))
+    ats_types = body.get("ats_types") or []
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    coro = CrawlOrchestrator().run_incremental(max_age_hours=max_age_hours, ats_types=ats_types)
+    if not _start_crawl("incremental", coro, "ats_incremental"):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "incremental"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "incremental"},
+        status_code=202,
+    )
+
+
+@app.post("/api/crawl/full")
+async def crawl_full(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Trigger a full ATS crawl (all companies, no time filter).
+    Designed to run nightly via GitHub Actions.
+
+    Body (JSON, optional):
+      ats_types: list[str] = []  # empty = all
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    ats_types = body.get("ats_types") or []
+
+    from crawlers.orchestrator import CrawlOrchestrator
+    coro = CrawlOrchestrator().run_full(ats_types=ats_types)
+    if not _start_crawl("full", coro, "ats_full"):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "full"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "full"},
+        status_code=202,
+    )
+
+
+@app.post("/api/crawl/discover-companies")
+async def crawl_discover_companies(
+    request: Request,
+    _: None = Depends(require_api_key),
+):
+    """
+    Probe community datasets (Greenhouse tokens, Lever slugs, Ashby sitemap)
+    and upsert newly discovered companies into the company_registry.
+    Designed to run weekly via GitHub Actions.
+
+    By default (incremental) it skips slugs already registered as ACTIVE companies,
+    so it spends compute discovering net-new / not-yet-registered boards instead of
+    re-probing the thousands already known. Pass {"rescan_all": true} to force a
+    full re-probe of every slug in the datasets (occasional registry rebuild).
+
+    Body (JSON, optional):
+      rescan_all: bool = false
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    rescan_all = bool(body.get("rescan_all", False))
+
+    from crawlers.bootstrap import run_bootstrap
+    from crawlers.company_registry import CompanyRegistryStore
+    coro = run_bootstrap(registry=CompanyRegistryStore(), incremental=not rescan_all)
+    # discover seeds the company_registry, not the jobs cache -> no cache_key
+    if not _start_crawl("discover", coro):
+        return JSONResponse({"success": True, "status": "already_running", "crawl_type": "discover"})
+    return JSONResponse(
+        {"success": True, "status": "started", "crawl_type": "discover"},
+        status_code=202,
+    )
+
+
+@app.get("/api/crawl/status")
+async def crawl_status(request: Request):
+    """
+    Return crawl health: last incremental/full timestamps, company counts by
+    ATS type, and jobs added in last 24h / 7d.
+
+    Public endpoint (no auth) — matches the pattern of /api/database-stats.
+    """
+    from job_database import get_db, close_db, Job, CacheMetadata
+    from crawlers.company_registry import CompanyRegistryStore
+    from datetime import timedelta
+
+    db = get_db()
+    try:
+        now = datetime.utcnow()
+        jobs_24h = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(hours=24)
+        ).count()
+        jobs_7d = db.query(Job).filter(
+            Job.first_seen >= now - timedelta(days=7)
+        ).count()
+
+        last_incremental = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_incremental"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+        last_full = db.query(CacheMetadata).filter(
+            CacheMetadata.cache_type == "ats_full"
+        ).order_by(CacheMetadata.last_updated.desc()).first()
+    finally:
+        close_db(db)
+
+    registry_stats = CompanyRegistryStore().get_stats()
+
+    return JSONResponse({
+        "success": True,
+        "last_incremental": last_incremental.last_updated.isoformat() if last_incremental else None,
+        "last_full": last_full.last_updated.isoformat() if last_full else None,
+        "total_companies": registry_stats.get("total_active", 0),
+        "companies_by_ats": registry_stats.get("by_ats", {}),
+        "jobs_added_24h": jobs_24h,
+        "jobs_added_7d": jobs_7d,
+        # Live state of the fire-and-forget background crawls (see _start_crawl):
+        # `running` shows what's in flight right now; `last_run` carries the
+        # summary/error of each type's most recent completed run this process.
+        "running": {k: bool(v) for k, v in _CRAWL_RUNNING.items()},
+        "last_run": _CRAWL_LAST,
+    })
+
+
+# Catch-all: serve React app for any non-API route. MUST stay the last route
+# registered — Starlette matches in registration order, so any route added below
+# this one is shadowed (it previously swallowed GET /api/crawl/status).
 @app.get("/{full_path:path}", include_in_schema=False)
 async def serve_react(full_path: str):
     index = FRONTEND_BUILD / "index.html"

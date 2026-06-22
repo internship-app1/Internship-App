@@ -28,6 +28,11 @@ const Header: React.FC = () => {
         Find
       </Link>
       {isSignedIn && (
+        <Link to="/saved" onClick={closeMenu} className="font-mono text-xs text-text-secondary hover:text-text-primary transition-colors">
+          Saved
+        </Link>
+      )}
+      {isSignedIn && (
         <Link to="/history" onClick={closeMenu} className="font-mono text-xs text-text-secondary hover:text-text-primary transition-colors">
           History
         </Link>
@@ -37,6 +42,14 @@ const Header: React.FC = () => {
           Usage
         </Link>
       )}
+      {isSignedIn && (
+        <Link to="/developer" onClick={closeMenu} className="font-mono text-xs text-text-secondary hover:text-text-primary transition-colors">
+          Developer
+        </Link>
+      )}
+      <Link to="/docs" onClick={closeMenu} className="font-mono text-xs text-text-secondary hover:text-text-primary transition-colors">
+        Docs
+      </Link>
     </>
   );
 

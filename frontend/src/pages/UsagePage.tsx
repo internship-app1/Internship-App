@@ -19,9 +19,10 @@ function formatReset(resetAt: string | null): string {
 interface QuotaCardProps {
   label: string;
   metric: QuotaMetric;
+  note?: React.ReactNode;
 }
 
-function QuotaCard({ label, metric }: QuotaCardProps) {
+function QuotaCard({ label, metric, note }: QuotaCardProps) {
   const pct = Math.min((metric.used / metric.limit) * 100, 100);
   const atLimit = metric.remaining === 0;
 
@@ -66,6 +67,12 @@ function QuotaCard({ label, metric }: QuotaCardProps) {
           </div>
         </div>
       </div>
+
+      {note && (
+        <div className="mt-5 pt-4 border-t border-lp-border">
+          <p className="font-mono text-[11px] leading-relaxed text-text-tertiary">{note}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -149,6 +156,19 @@ const UsagePage: React.FC = () => {
           <div className="flex flex-col gap-4">
             <QuotaCard label="Tailored resumes" metric={data.tailor_resume} />
             <QuotaCard label="Think Deeper matches" metric={data.think_deeper} />
+            <QuotaCard
+              label="Remote compiles — API key"
+              metric={data.remote_compile}
+              note={
+                <>
+                  Consumed by your <span className="text-text-secondary">API key</span> when
+                  the full MCP agent falls back to server-side resume compilation — separate
+                  from the in-app Tailored Resumes quota above. Installing TeX locally, or
+                  using Docker, keeps compiles off this quota. Manage keys on the{' '}
+                  <a href="/developer" className="underline hover:text-text-primary">Developer page</a>.
+                </>
+              }
+            />
 
             {/* Explainer */}
             <div className="border border-lp-border bg-surface p-6">
@@ -160,7 +180,9 @@ const UsagePage: React.FC = () => {
                 <span className="font-medium text-text-primary">5/week</span> and Think
                 Deeper matches at{' '}
                 <span className="font-medium text-text-primary">20/week</span> per account.
-                Quick matches remain{' '}
+                Remote compiles via your API key are capped at{' '}
+                <span className="font-medium text-text-primary">15/week</span> — local
+                (Docker) compiles are unlimited. Quick matches remain{' '}
                 <span className="font-medium text-text-primary">unlimited</span>. Counters
                 reset 7 days after each individual use.
               </p>

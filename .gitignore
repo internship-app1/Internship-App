@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 
+# Eval harness outputs (raw extractions + reports)
+evals/results/
+
 # Virtual environment
 venv/
 
@@ -11,7 +14,7 @@ venv/
 # Sensitive/resume files
 data/resume.pdf
 *.pdf
-
+extract_prompt.py
 .env
 .env.production
 backend.log
@@ -21,6 +24,10 @@ uploads/
 jobs.db
 *.db
 
+# Frontend build output — Railway rebuilds this per-environment via Docker ARG
+# so the committed build would always be stale/wrong for staging vs prod
+frontend/build/
+
 # Local changes / docs folder
 changes/
 
@@ -28,7 +35,8 @@ changes/
 /favicons/
 
 .agents/
-.claude/
+.claude/settings.local.json
+.claude/memory/
 .mcp.json
 skills-lock.json
 GEMINI.md

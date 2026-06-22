@@ -7,10 +7,11 @@ def _utcnow() -> datetime:
     """Return the current UTC time as a naive datetime (matches DB column type)."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 from sqlalchemy.orm import Session
-from job_database import TailorRequestLog, ThinkDeeperRequestLog
+from job_database import RemoteCompileLog, TailorRequestLog, ThinkDeeperRequestLog
 
 WEEKLY_TAILOR_LIMIT = 5
 WEEKLY_THINK_DEEPER_LIMIT = 20
+WEEKLY_REMOTE_COMPILE_LIMIT = 15
 WEEKLY_WINDOW = timedelta(days=7)
 
 
@@ -77,6 +78,44 @@ def record_think_deeper_request(db: Session, user_id: str, resume_hash: Optional
     entry = ThinkDeeperRequestLog(
         user_id=user_id,
         resume_hash=resume_hash[:255] if resume_hash else None,
+    )
+    db.add(entry)
+
+
+def get_remote_compile_quota_status(db: Session, user_id: str) -> dict:
+    """Quota state for REMOTE resume compiles (the MCP /api/v1 fallback path).
+
+    Distinct from the tailor_resume quota: this one is consumed by API-key
+    traffic (uvx users with COMPILE=remote), not by the in-app tailor feature.
+    Docker users compiling locally never touch it.
+    """
+    window_start = _utcnow() - WEEKLY_WINDOW
+    rows = (
+        db.query(RemoteCompileLog)
+        .filter(
+            RemoteCompileLog.user_id == user_id,
+            RemoteCompileLog.requested_at > window_start,
+        )
+        .order_by(RemoteCompileLog.requested_at.asc())
+        .all()
+    )
+    used = len(rows)
+    remaining = max(0, WEEKLY_REMOTE_COMPILE_LIMIT - used)
+    oldest_in_window: Optional[datetime] = rows[0].requested_at if rows else None
+    reset_at: Optional[datetime] = (oldest_in_window + WEEKLY_WINDOW) if oldest_in_window else None
+    return {
+        "limit": WEEKLY_REMOTE_COMPILE_LIMIT,
+        "used": used,
+        "remaining": remaining,
+        "reset_at": reset_at,
+    }
+
+
+def record_remote_compile(db: Session, user_id: str, key_prefix: Optional[str] = None) -> None:
+    """Insert a remote-compile log row. Caller is responsible for db.commit()."""
+    entry = RemoteCompileLog(
+        user_id=user_id,
+        key_prefix=key_prefix[:16] if key_prefix else None,
     )
     db.add(entry)
 

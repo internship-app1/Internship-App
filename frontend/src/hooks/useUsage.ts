@@ -13,6 +13,8 @@ export interface QuotaMetric {
 export interface UsageData {
   tailor_resume: QuotaMetric;
   think_deeper: QuotaMetric;
+  /** Consumed by API-key remote compiles (MCP /api/v1), not the in-app tailor feature. */
+  remote_compile: QuotaMetric;
 }
 
 export function useUsage() {

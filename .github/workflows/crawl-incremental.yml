@@ -1,0 +1,33 @@
+name: Crawl Incremental
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target backend environment'
+        type: choice
+        options:
+          - production
+          - staging
+        default: production
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    # Scheduled runs carry no input -> default to production. Manual dispatch can
+    # target staging. The environment scopes which API_URL secret is injected.
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    timeout-minutes: 10
+    steps:
+      - name: Trigger incremental ATS crawl
+        # Async background task -> 202 immediately. See crawl-full.yml for why we
+        # no longer hold the connection. Progress: GET /api/crawl/status.
+        run: |
+          curl -sS -X POST "${{ secrets.API_URL }}/api/crawl/incremental" \
+            -H "X-Api-Key: ${{ secrets.INTERNSHIP_MATCHER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"max_age_hours": 1}' \
+            --max-time 120 --retry 3 --retry-delay 15 --retry-connrefused \
+            --fail-with-body

@@ -17,6 +17,10 @@ os.environ.setdefault("AWS_REGION", "us-east-1")
 # Use in-memory rate limit storage so tests never need a real Redis server
 os.environ.setdefault("REDIS_URL", "memory://")
 os.environ.setdefault("INTERNSHIP_MATCHER_API_KEY", "test-api-key")
+# Force usage tracking ON so rate-limit/quota tests are deterministic regardless
+# of the developer's local .env (which may set TRACK_USAGE=false). Set before app
+# import; load_dotenv() won't override an already-present env var.
+os.environ["TRACK_USAGE"] = "true"
 
 
 @pytest.fixture()

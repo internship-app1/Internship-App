@@ -19,6 +19,7 @@ from job_database import (
     engine,
     generate_job_hash,
     get_active_jobs,
+    get_job_by_hash,
     get_database_stats,
     get_resume_cache,
     mark_old_jobs_inactive,
@@ -203,12 +204,80 @@ class TestBulkInsertJobs:
         finally:
             db.close()
 
+    def test_inactive_sweep_does_not_cross_sources(self):
+        """The last_seen sweep must only deactivate jobs from the same source.
+        A github_internships startup scrape must not kill ats_greenhouse jobs
+        that simply run on a different schedule."""
+        ats_job = {**_job(n=10), "source": "ats_greenhouse"}
+        github_job = _job(n=11)
+        bulk_insert_jobs([ats_job, github_job])
+
+        # Backdate both so the sweep would normally fire
+        db = SessionLocal()
+        try:
+            for row in db.query(Job).filter(Job.title.like("%1%")).all():
+                row.last_seen = datetime.utcnow() - timedelta(days=10)
+            db.commit()
+        finally:
+            db.close()
+
+        # Only github_internships refreshed — ATS job must survive
+        bulk_insert_jobs([github_job])
+
+        db = SessionLocal()
+        try:
+            ats_row = db.query(Job).filter(Job.source == "ats_greenhouse").first()
+            assert ats_row.is_active is True, "ATS job must not be swept by a github scrape"
+        finally:
+            db.close()
+
     def test_summary_has_expected_keys(self):
         stats = bulk_insert_jobs([_job(n=0)])
         for key in ("new_jobs", "updated_jobs", "duplicates_collapsed",
                     "failed_rows", "inactive_jobs", "date_based_inactive_jobs",
                     "total_processed"):
             assert key in stats, f"Missing key: {key}"
+
+
+# ---------------------------------------------------------------------------
+# get_job_by_hash — full-description lookup for resume tailoring
+# ---------------------------------------------------------------------------
+
+class TestGetJobByHash:
+    """The tailoring endpoint relies on this to fetch the full, untruncated JD."""
+
+    def test_returns_full_description(self):
+        job = _job(company="Stripe", n=7)
+        job["description"] = "X" * 4000  # full description, far over the old 500 cap
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+
+        result = get_job_by_hash(h)
+        assert result is not None
+        assert result["job_hash"] == h
+        assert result["description"] == "X" * 4000
+
+    def test_unknown_hash_returns_none(self):
+        assert get_job_by_hash("0" * 64) is None
+
+    def test_empty_hash_returns_none(self):
+        assert get_job_by_hash("") is None
+
+    def test_finds_inactive_job(self):
+        """A soft-deactivated job must still be retrievable (it may be tailored later)."""
+        job = _job(company="Datadog", n=3)
+        bulk_insert_jobs([job])
+        h = generate_job_hash(job["company"], job["title"], job["location"], job["apply_link"])
+        db = SessionLocal()
+        try:
+            db.query(Job).filter_by(job_hash=h).update({"is_active": False})
+            db.commit()
+        finally:
+            db.close()
+
+        result = get_job_by_hash(h)
+        assert result is not None
+        assert result["company"] == "Datadog"
 
 
 # ---------------------------------------------------------------------------

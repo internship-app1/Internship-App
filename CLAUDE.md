@@ -30,10 +30,12 @@ A full-stack web app that matches students to software internships using AI. Use
 ```
 /
 ├── app.py                    # FastAPI app — all routes, startup/shutdown lifecycle
-├── job_database.py           # SQLAlchemy ORM models (jobs, cache_metadata, resume_cache)
+├── mcp_api.py                # MCP /api/v1 sub-app (X-API-Key auth, NO model calls) + /developer key CRUD
+├── job_database.py           # SQLAlchemy ORM models (jobs, cache_metadata, resume_cache, api_keys, quota logs)
 ├── job_cache.py              # Hybrid Redis + DB caching layer
 ├── s3_service.py             # AWS S3 resume upload/download
 ├── main.py                   # CLI entry point for local testing
+├── AGENTS.md                 # Agent onboarding guide (for Codex, Gemini, Cursor, etc.)
 ├── requirements.txt
 ├── Dockerfile                # Single-container build (backend + React build)
 ├── docker-compose.yml        # Full stack: Redis + Backend + Nginx
@@ -57,7 +59,15 @@ A full-stack web app that matches students to software internships using AI. Use
 │
 ├── resume_tailor/
 │   ├── tailor_resume.py      # Claude-powered resume rewrite + LaTeX PDF generation
-│   └── template.tex          # LaTeX template
+│   └── template.tex          # LaTeX template with parameterized font/spacing placeholders
+│
+├── evals/                    # Prompt eval harness (zero-API-cost, frozen baseline + LLM judge)
+│   ├── run.py                # Entry point: python -m evals.run
+│   ├── extract.py            # A/B extraction runner
+│   ├── judge.py              # Pairwise Sonnet judge
+│   ├── datasets/             # Frozen test cases
+│   ├── prompts/              # Candidate prompt variants
+│   └── results/              # Timestamped markdown reports
 │
 ├── email_sender/
 │   └── generate_email.py
@@ -71,6 +81,9 @@ A full-stack web app that matches students to software internships using AI. Use
     │   │   ├── LandingPage.tsx   # /  — marketing page
     │   │   ├── FindPage.tsx      # /find — main app (upload + results)
     │   │   ├── HistoryPage.tsx   # /history — past analyses
+    │   │   ├── UsagePage.tsx     # /usage — weekly quota cards (incl. remote_compile)
+    │   │   ├── DeveloperPage.tsx # /developer — API keys + MCP client config snippets
+    │   │   ├── DocsPage.tsx      # /docs — public API/MCP docs (sans-serif reading UI)
     │   │   ├── LoginPage.tsx     # /login
     │   │   └── HomePage.tsx
     │   ├── components/
@@ -96,10 +109,15 @@ uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 cd frontend && npm start
 
 # Both together
-./start.sh
+./start.sh --all
 
 # Tests
 pytest tests/
+
+# Prompt evals (no API cost — uses cached extractions + agent-as-judge)
+python -m evals.run
+python -m evals.run --cases negative_context   # single case
+python -m evals.run --no-cache                 # force re-extraction
 
 # Production build (Railway runs this)
 pip install -r requirements.txt
@@ -122,7 +140,21 @@ uvicorn app:app --host 0.0.0.0 --port $PORT
 | POST | `/api/refresh-cache` | Manually trigger full job scrape |
 | POST | `/api/refresh-cache-incremental` | Incremental scrape |
 | GET | `/api/database-stats` | DB statistics |
+| GET | `/api/usage` | Per-user quota status (tailor, think-deeper, remote_compile) |
+| GET/POST/DELETE | `/api/developer/keys` | API-key CRUD for the /developer page (Clerk auth) |
+| GET | `/api/v1/jobs` | MCP: list active jobs (X-API-Key, 120/h) |
+| GET | `/api/v1/jobs/{hash}` | MCP: full untruncated JD (X-API-Key, 120/h) |
+| POST | `/api/v1/jobs/prefilter` | MCP: deterministic keyword+metadata scoring (X-API-Key, 120/h) |
+| POST | `/api/v1/resume/compile` | MCP: fallback pdflatex compile (15/week, 3 concurrent) |
+| GET | `/api/v1/openapi.json` | Published MCP contract (sub-app OpenAPI; main-app docs stay disabled) |
+| POST | `/mcp` | Hosted MCP discovery tier (streamable HTTP, Python ≥3.10 only): jobs_list/job_get/jobs_prefilter |
 | GET | `/{full_path}` | Catch-all → serves React SPA `index.html` |
+
+**`/api/v1` is the MCP surface** (see `mcp_api.py` and the workspace CLAUDE.md one level
+up): a mounted FastAPI sub-app, per-user `api_keys` auth, **zero model calls** — all AI
+reasoning belongs to the calling agent. The deterministic cores it wraps are
+`matching/matcher.prefilter_and_score` and `resume_tailor/tailor_resume.compile_resume_json_to_pdf`
+(the latter is shared by value with internship-mcp — compile parity rule applies).
 
 ---
 
@@ -141,7 +173,75 @@ The main flow for `/api/match-stream`:
 
 **"Think Deeper" mode** — extended analysis with Claude extended thinking, triggered by `think_deeper=true`.
 
-**Resume tailoring** — Claude Sonnet 4.5 rewrites resume JSON for a target job, then pdflatex compiles LaTeX → PDF (tries font sizes 11→8 to fit one page).
+**Resume tailoring** — Claude Sonnet 4.5 rewrites resume JSON for a target job, then pdflatex compiles LaTeX → PDF. Font/spacing pipeline described below.
+
+---
+
+## Resume Tailoring Pipeline (`resume_tailor/tailor_resume.py`)
+
+A multi-stage pipeline that generates a single-page, page-filling PDF:
+
+1. **`tailor_resume_to_json`** — single Sonnet call; outputs structured resume JSON with tailored bullets. `max_tokens=6000`. JD capped at 6000 chars to bound cost.
+2. **`_repair_bullets`** — detects syntactically incomplete bullets (`_is_incomplete_bullet`: unmatched parens, trailing colons, dangling conjunctions) and batch-repairs them via a second Sonnet call.
+3. **Deduplication** — removes near-duplicate bullets within each entry.
+4. **`_lock_font` (page-fill stage)** — anchors at 11pt; if content overflows, steps DOWN `[11, 10, 9, 8]`; if content fits with slack, grows UP `[12, 14]`. Result: largest font that still fits.
+5. **`refine_to_no_widows`** — iterates up to 3 rounds; detects widow lines via pdfplumber, rewrites short orphan bullets via batched Haiku call (`_batch_widow_rewrite`).
+6. **Spacing stretch (stage 3)** — if page is still underfilled after widow resolution, walks `tight → normal → relaxed` spacing presets. Deterministic, no LLM call.
+
+**Font ladder:** `FONT_SIZES = [14, 12, 11, 10, 9, 8]`, anchor `_ANCHOR_FONT = 11`.
+
+**Spacing presets:** `tight` / `normal` / `relaxed` — defined in `_SPACING_PRESETS`, substituted into LaTeX template via `{{...}}` placeholders.
+
+**Prompt strategy (TAILOR_SYSTEM_PROMPT):**
+- Zone B bullets (≥215 chars, two full lines) are the default target — fills the page densely.
+- Zone A (≤115 chars) is acceptable only when no more truthful facts exist.
+- Dead zone (116–214 chars) is explicitly forbidden — creates a short orphan line.
+- Bullet count: 3–4 per experience role, 3 per project.
+- Truthfulness is non-negotiable: never invent facts to reach Zone B.
+
+---
+
+## Prompt Versioning & Usage Tracking (`app.py`)
+
+- **`PROMPT_VERSION = "v2"`** — appended to all resume cache keys so prompt changes invalidate stale cached results. Bump this constant whenever a prompt edit changes expected output shape.
+  - Cache key format: `{resume_hash}_{quick|deep}_{PROMPT_VERSION}`
+- **`TRACK_USAGE`** — env var toggle (`TRACK_USAGE=true` by default). When `false`, disables weekly per-user quotas, slowapi rate limiting, and usage counters. Useful in local dev to avoid hitting limits.
+  - Set `TRACK_USAGE=false` in `.env` for unrestricted local testing.
+
+---
+
+## Experience Level Enum
+
+Valid values for `experience_level` in all LLM outputs and DB fields: **`student`**, **`entry_level`**, **`experienced`**. The value `recent_graduate` was removed — do not use it. The skill extractor enforces this at the prompt level.
+
+---
+
+## Prompt Caching (`llm_skill_extractor.py`)
+
+`cache_control: {"type": "ephemeral"}` is set on system prompt blocks in:
+- `_score_jobs_with_prompt` — scoring criteria block
+- `analyze_and_match_single_call` — system instructions block
+- `extract_candidate_profile` — system instructions block
+
+This reduces Anthropic billing on repeated calls with stable system prompts.
+
+---
+
+## Eval Harness (`evals/`)
+
+Measures whether prompt edits to `RESUME_ANALYSIS_SYSTEM_PROMPT` improve or regress extraction quality.
+
+- **Zero API cost by default** — uses frozen cached extractions; only calls the API if `--no-cache` is passed.
+- **A/B extraction** — runs baseline + candidate prompts via real Haiku calls (temperature=0, results cached by prompt hash).
+- **Pairwise judge** — Sonnet grades both extractions with randomized A/B order to reduce position bias.
+- **Structural gate** — schema validation before expensive judge calls; fails fast on malformed JSON.
+- Reports written to `evals/results/report-<timestamp>.md`.
+
+```bash
+python -m evals.run                            # all 10 cases
+python -m evals.run --cases negative_context   # single case
+python -m evals.run --no-cache --no-judge-cache  # force full re-run
+```
 
 ---
 
@@ -158,6 +258,16 @@ The main flow for `/api/match-stream`:
 **`resume_cache`** — caches matching results per user
 - Keyed by `(user_id, resume_hash)` — suffix `_deep` for think-deeper mode
 - 30-day TTL via `expires_at`
+
+**`api_keys`** — per-user MCP keys (raw `im_live_<32 base62>` shown once, SHA-256 stored)
+- `verify_api_key` bumps `last_used`; `revoked` is a soft kill switch
+- Distinct from `INTERNSHIP_MATCHER_API_KEY` (shared admin gate) — never conflate them
+
+**`tailor_request_log` / `think_deeper_request_log` / `remote_compile_log`** — append-only
+weekly-quota ledgers (rolling 7-day window, helpers in `quota.py`). `remote_compile_log`
+(15/week) is consumed ONLY by API-key remote compiles on `/api/v1/resume/compile` and
+carries the triggering `key_prefix`; it is deliberately separate from the in-app tailor
+quota so users can tell agent usage from web-app usage.
 
 Schema auto-created via `Base.metadata.create_all()` — no Alembic migration files exist.
 
@@ -183,6 +293,9 @@ Resume results cached in `resume_cache` table (30 days). Background `asyncio` ta
 - **Supabase:** Frontend Supabase client optionally uses Clerk JWT for RLS, but it's not enforced
 - `CLERK_PUBLISHABLE_KEY` backend env var (same value as `REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY`) is required for JWKS URL derivation
 - Auth was migrated: Google OAuth → Stack Auth → Clerk (some legacy code remains)
+- **Third auth plane (MCP):** `require_api_key_user` in `auth.py` verifies per-user
+  `X-API-Key` keys from the `api_keys` table — used only by `/api/v1`. Rate-limit
+  bucket for these routes is `sha256(full key)` (never a raw prefix slice).
 
 ---
 
@@ -198,9 +311,11 @@ AWS_SECRET_ACCESS_KEY
 AWS_REGION              # default: us-east-1
 AWS_BUCKET_NAME         # S3 bucket for resumes
 SECRET_KEY              # Session middleware secret
-ENVIRONMENT             # "development" or "production"
+ENVIRONMENT             # "development" | "staging" | "production"
 PORT                    # Injected by Railway/Render
 CLERK_PUBLISHABLE_KEY   # Same as REACT_APP_CLERK_PUBLISHABLE_CLIENT_KEY — used to derive JWKS URL
+TRACK_USAGE             # "true" (default) | "false" — disables quotas/rate limits for local dev
+INTERNSHIP_MATCHER_API_KEY  # Required for /api/refresh-cache and GitHub Actions polling workflow
 ```
 
 **Frontend (React, baked in at build time):**
@@ -241,6 +356,7 @@ REACT_APP_API_URL       # Backend URL (dev only; prod uses relative URLs)
 - **API URL detection:** `FindPage.tsx` checks `NODE_ENV === 'development'` to pick base URL
 - **shadcn patterns:** Components use CVA + `cn()` util, HSL CSS variables for theming
 - **LaTeX PDF:** `pdflatex` must be installed in the container for resume tailoring to work
+- **Job description truncation:** JD fed to resume tailor is intentionally capped at 6000 chars — scraped JDs are well under this; the cap bounds input cost/latency.
 
 ---
 
@@ -251,3 +367,114 @@ REACT_APP_API_URL       # Backend URL (dev only; prod uses relative URLs)
 ## Job Data Source
 - GitHub: `SimplifyJobs/Summer2026-Internships` README.md (parsed via BeautifulSoup)
 - Other scrapers (Google, Meta, Microsoft, Salesforce) exist but are **disabled**
+
+---
+
+## Self Learning
+
+This section tracks architectural decisions and non-obvious changes made during active development. When you land on this branch and something in the code doesn't match an older mental model, check here first.
+
+**How this works:** After each meaningful PR or set of changes, append an entry below with: the branch/PR, what changed, and *why* (the constraint or problem that drove it). Entries are chronological newest-last so `git blame` and reading top-to-bottom both make sense.
+
+---
+
+### tweaking-prompts branch (PR #22)
+
+**Resume tailor: font-grow-to-fill (Jun 8–9 2026)**
+- Problem: sparse resumes were compiled at the minimum font that fits, leaving large bottom whitespace.
+- Fix: `_lock_font` now anchors at 11pt and grows UP (to 12pt, 14pt) when the page fits with slack. Shrinks only if 11pt overflows.
+- Font ladder expanded: `[14, 12, 11, 10, 9, 8]` (was `[11, 10, 9, 8]`).
+- `template.tex` spacing parameterized with `{{...}}` placeholders. Three presets: `tight`, `normal`, `relaxed`.
+- Stage 3 spacing stretch walks presets after widow resolution if page is still underfilled.
+
+**Resume tailor: density prompt overhaul (Jun 8–9 2026)**
+- `TAILOR_SYSTEM_PROMPT` now defaults to *expand* (Zone B ≥215 chars) instead of tighten. Previous default was concision-first.
+- DENSITY section renamed from CONCISION; bullet count guidance raised to 3–4 per role, 3 per project.
+- User message rewritten to match density-first framing. Explicit "dead zone" (116–214 chars) guidance added.
+
+**Resume tailor: incomplete bullet repair (Jun 9 2026)**
+- Added `_is_incomplete_bullet` validator (unmatched parens, trailing colon, dangling preposition/conjunction).
+- Added `_repair_bullets` — batches all flagged bullets in one Sonnet call, spliced back into the data dict.
+- Repair runs between initial JSON generation and deduplication in the pipeline.
+- `max_tokens` raised from 4000 → 6000 on `tailor_resume_to_json` to prevent truncation on dense resumes.
+
+**Resume tailor: section order matches industry standard (Jun 9 2026)**
+- Template section order changed: Education → Experience → Projects → Technical Skills (was Education → Technical Skills → Experience → Projects).
+
+**Prompt versioning: `PROMPT_VERSION = "v2"` (Jun 6 2026)**
+- All resume cache keys now include `PROMPT_VERSION` so prompt changes bust stale cache entries.
+- Bump this constant in `app.py` whenever a prompt edit would change expected output shape.
+- Bug fixed: early-exit cache key path in `app.py` was missing the version suffix (now included).
+
+**Experience level enum cleanup (Jun 6 2026)**
+- Removed `recent_graduate` from the valid set everywhere (prompt, ORM enum, metadata logic).
+- Valid values are now exactly: `student`, `entry_level`, `experienced`.
+- If you see `recent_graduate` anywhere it is a bug — remove it.
+
+**Prompt caching wired (`cache_control: ephemeral`) (Jun 6 2026)**
+- `analyze_and_match_single_call` and `_score_jobs_with_prompt` system prompts now carry `cache_control`.
+- Cuts Anthropic billing on repeated calls with stable system prompts.
+
+**`TRACK_USAGE` toggle added (Jun 2026)**
+- `TRACK_USAGE=false` in `.env` disables quotas, rate limits, and usage counters for local dev.
+- `tests/conftest.py` forces `TRACK_USAGE=true` so the test suite always exercises quota logic.
+
+**`INTERNSHIP_MATCHER_API_KEY` secret (Jun 6 2026)**
+- GitHub Actions "polling internships" workflow requires this secret set in the repo.
+- Was previously named `CACHE_REFRESH_API_KEY` — all references updated.
+
+**Eval harness (`evals/`) added (Jun 8–9 2026)**
+- Zero-API-cost by default: frozen cached extractions, no Anthropic spend unless `--no-cache`.
+- Agent-as-judge pattern: Claude Code acts as model+judge instead of calling real Sonnet.
+- Use this before merging any prompt edit to `RESUME_ANALYSIS_SYSTEM_PROMPT`.
+
+### developer-page / docs-page / compile-quota branches (PRs #25–#27, Jun 2026)
+
+**MCP apply-agent surface added (PR #25)**
+- New `/api/v1` mounted FastAPI sub-app (`mcp_api.py`) — the data plane for the public
+  `internship-mcp-server` repo (github.com/internship-app1/internship-mcp-server).
+  Prime Directive: NO model calls behind any `/api/v1` route; the calling agent does all
+  reasoning. A test monkeypatches `anthropic.Anthropic` to raise to enforce this.
+- Deterministic cores extracted ADDITIVELY (web behavior unchanged):
+  `compile_resume_json_to_pdf` in `tailor_resume.py` (font lock → widow backstop →
+  spacing stretch → widow diagnostics; shared by value with the MCP repo — parity rule)
+  and `prefilter_and_score` + `_passes_hard_filters` in `matcher.py`.
+- `/developer` page: key CRUD, per-client MCP config snippets (Codex tab renders real
+  TOML, not JSON), ToS disclaimer.
+- Review fixes worth remembering: rate-limit bucket = sha256(full key) — raw[:12] only
+  has 4 random chars past "im_live_" and collides; compile overload uses a bounded
+  admission COUNTER, not Semaphore.locked() (point-in-time check let requests queue
+  instead of 429ing).
+
+**Docs page (PR #26)**
+- Public `/docs` (DocsPage.tsx): sans-serif reading UI (the site's mono-everywhere style
+  was unreadable for long-form docs), sticky sidebar with IntersectionObserver highlight,
+  cURL/Python/JS request-sample selector (one shared preference), field-level schema
+  tables with type/required badges.
+
+**Remote-compile weekly quota (PR #27)**
+- 15/week per account for `/api/v1/resume/compile`, ledger `remote_compile_log`
+  (key_prefix-attributed). Checked BEFORE compiling; recorded only on success; cache
+  hits free. Surfaced on /usage (own card, labelled API-key) + /developer (usage strip).
+  Deliberately separate from the tailor quota so agent usage ≠ web-app usage.
+
+**Hosted MCP discovery tier (hosted-mcp branch)**
+- New `/mcp` mount (`mcp_remote.py`) serves streamable HTTP for zero-install clients.
+  It intentionally exposes only stateless discovery tools: `jobs_list`, `job_get`, and
+  `jobs_prefilter` plus a resource that points users to the full local agent.
+- No profile vault, resume parsing, remote compile, packets, tracker, or Playwright on
+  hosted MCP. This keeps PII and heavy work off our servers.
+- Auth accepts `X-API-Key` or `?key=` for claude.ai custom connector compatibility.
+  Header wins when both are present. OAuth is the v2 replacement.
+- The `mcp` SDK requires Python ≥3.10. `app.py` guards the import so the local 3.9 venv
+  still boots and skips `/mcp`; production 3.11 mounts it. Keep this guard unless local
+  dev/CI moves to 3.11.
+- Starlette redirects `/mcp` → `/mcp/` for mounted apps; MCP clients POST and may not
+  follow 307s. The `_McpSlashRewrite` middleware rewrites the bare path in-process.
+
+**Testing footguns (recurring)**
+- App.test.tsx's Route mock renders EVERY route's element — stub each new page in the
+  mock list or the suite fails on unmocked hooks (bit us twice: DeveloperPage, DocsPage).
+- conftest's `sqlite:///:memory:` DB is per-connection; tests that cross threads
+  (TestClient, asyncio.to_thread) need the file-backed-DB fixture in test_mcp_api.py.
+- tests/test_resume_parser.py mock failures pre-date this work (verified on clean HEAD).

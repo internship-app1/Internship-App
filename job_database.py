@@ -55,7 +55,10 @@ class Job(Base):
     
     # Status
     is_active = Column(Boolean, default=True, nullable=False, index=True)
-    
+
+    # Sentence embedding for semantic matching (JSON-encoded float list, nullable)
+    embedding = Column(Text, nullable=True)
+
     # Add composite indexes for common queries
     __table_args__ = (
         Index('idx_company_title', 'company', 'title'),
@@ -88,6 +91,102 @@ class ResumeCache(Base):
     expires_at = Column(DateTime, nullable=False)
     __table_args__ = (Index('idx_user_hash', 'user_id', 'resume_hash'),)
 
+
+class SavedJob(Base):
+    """Per-user saved job and application status tracker."""
+    __tablename__ = "saved_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    job_hash = Column(String(64), nullable=False, index=True)
+    status = Column(String(40), default="saved", nullable=False, index=True)
+    notes = Column(Text, default="", nullable=False)
+    deadline = Column(String(40), nullable=True)
+    job_snapshot = Column(Text, nullable=True)
+    applied_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_saved_user_job', 'user_id', 'job_hash', unique=True),
+        Index('idx_saved_user_status', 'user_id', 'status'),
+    )
+
+
+SAVED_JOB_STATUSES = {"saved", "interested", "applied", "interviewing", "rejected", "offer", "ghosted"}
+
+
+def _job_row_to_dict(job: Optional["Job"]) -> Optional[Dict]:
+    if not job:
+        return None
+    return {
+        'id': job.id,
+        'job_hash': job.job_hash,
+        'company': job.company,
+        'title': job.title,
+        'location': job.location,
+        'apply_link': job.apply_link,
+        'description': job.description,
+        'required_skills': json.loads(job.required_skills) if job.required_skills else [],
+        'job_requirements': job.job_requirements,
+        'source': job.source,
+        'metadata': json.loads(job.job_metadata) if job.job_metadata else {},
+        'first_seen': job.first_seen.isoformat() if job.first_seen else None,
+        'last_seen': job.last_seen.isoformat() if job.last_seen else None,
+        'is_active': bool(job.is_active),
+    }
+
+
+def _saved_job_to_dict(row: "SavedJob", job: Optional["Job"] = None) -> Dict:
+    snapshot = None
+    if row.job_snapshot:
+        try:
+            snapshot = json.loads(row.job_snapshot)
+        except (json.JSONDecodeError, TypeError):
+            snapshot = None
+    return {
+        "id": row.id,
+        "job_hash": row.job_hash,
+        "status": row.status,
+        "notes": row.notes or "",
+        "deadline": row.deadline,
+        "applied_at": row.applied_at.isoformat() if row.applied_at else None,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "job": _job_row_to_dict(job) or snapshot,
+    }
+
+
+def _normalize_job_snapshot(snapshot: Optional[Dict]) -> Optional[Dict]:
+    if not snapshot:
+        return None
+    allowed_keys = {
+        "job_hash", "company", "title", "location", "apply_link", "description",
+        "required_skills", "job_requirements", "source", "first_seen", "last_seen",
+        "match_score", "score", "match_description", "ai_reasoning",
+    }
+    normalized = {k: snapshot.get(k) for k in allowed_keys if snapshot.get(k) is not None}
+    if not normalized.get("job_hash"):
+        return None
+    return normalized
+
+
+def _ensure_saved_jobs_schema():
+    """Best-effort compatibility for create_all(), which does not add columns."""
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        if "saved_jobs" not in inspector.get_table_names():
+            return
+        columns = {c["name"] for c in inspector.get_columns("saved_jobs")}
+        if "job_snapshot" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE saved_jobs ADD COLUMN job_snapshot TEXT"))
+            logger.info("Added missing saved_jobs.job_snapshot column")
+    except Exception as e:
+        logger.warning(f"Could not verify saved_jobs schema compatibility: {e}")
+
+
 def _utcnow() -> datetime:
     """Naive UTC datetime — matches the DateTime column type used by both quota tables."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -112,6 +211,173 @@ class ThinkDeeperRequestLog(Base):
     requested_at = Column(DateTime, default=_utcnow, nullable=False, index=True)
     resume_hash = Column(String(255), nullable=True)
     __table_args__ = (Index('idx_think_deeper_user_time', 'user_id', 'requested_at'),)
+
+
+class RemoteCompileLog(Base):
+    """Append-only log of REMOTE resume compiles on the MCP /api/v1 path,
+    used for the weekly per-user quota. Local (Docker) compiles never hit
+    this — the quota exists because remote compiles burn our CPU."""
+    __tablename__ = "remote_compile_log"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    requested_at = Column(DateTime, default=_utcnow, nullable=False, index=True)
+    key_prefix = Column(String(16), nullable=True)   # which API key triggered it
+    __table_args__ = (Index('idx_remote_compile_user_time', 'user_id', 'requested_at'),)
+
+
+class UserAttribution(Base):
+    """First-touch UTM attribution per user. One row per Clerk user_id — never updated."""
+    __tablename__ = "user_attribution"
+    user_id      = Column(String(255), primary_key=True)
+    utm_source   = Column(String(255), nullable=True)
+    utm_medium   = Column(String(255), nullable=True)
+    utm_campaign = Column(String(255), nullable=True)
+    utm_content  = Column(String(255), nullable=True)
+    utm_term     = Column(String(255), nullable=True)
+    first_seen_at = Column(DateTime, nullable=True)   # when the browser first landed
+    attributed_at = Column(DateTime, default=_utcnow, nullable=False)  # when this row was written
+
+
+class CompanyRegistry(Base):
+    """Registry of companies and which ATS they use, for the universal crawler."""
+    __tablename__ = "company_registry"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(String(255), unique=True, nullable=False)
+    display_name = Column(String(500), nullable=False)
+    ats_type = Column(String(50), nullable=False)
+    ats_board_id = Column(String(500), nullable=False)
+    careers_url = Column(Text, nullable=True)
+    industry = Column(String(100), nullable=True)
+    company_size = Column(String(50), nullable=True)
+    last_crawled = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    crawl_priority = Column(Integer, default=2, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_ats_type', 'ats_type'),
+        Index('idx_active_priority', 'is_active', 'crawl_priority', 'last_crawled'),
+    )
+
+
+class ApiKey(Base):
+    """Per-user API keys for the MCP /api/v1 surface (issued from /developer).
+
+    Distinct from the shared INTERNSHIP_MATCHER_API_KEY admin gate — these are
+    per-Clerk-user keys, hashed at rest, revocable individually.
+    """
+    __tablename__ = "api_keys"
+    id         = Column(Integer, primary_key=True)
+    user_id    = Column(String(255), index=True, nullable=False)   # Clerk sub
+    key_hash   = Column(String(64), unique=True, index=True)        # sha256(raw)
+    key_prefix = Column(String(16))                                 # "im_live_ab12" display
+    name       = Column(String(120), nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    last_used  = Column(DateTime, nullable=True)
+    revoked    = Column(Boolean, default=False, index=True)
+
+
+_API_KEY_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+
+def create_api_key(user_id: str, name: Optional[str] = None) -> tuple:
+    """Generate a new raw key `im_live_<32 base62>`, store only its SHA-256.
+
+    Returns (raw_key, ApiKey row as dict). The raw key is shown to the user once
+    and never persisted.
+    """
+    import secrets
+    raw = "im_live_" + "".join(secrets.choice(_API_KEY_ALPHABET) for _ in range(32))
+    key_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    db = get_db()
+    try:
+        row = ApiKey(
+            user_id=user_id,
+            key_hash=key_hash,
+            key_prefix=raw[:12],  # "im_live_ab12"
+            name=name,
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        return raw, _api_key_to_dict(row)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
+
+
+def verify_api_key(raw: str) -> Optional[str]:
+    """Hash the raw key, look it up, check revocation, bump last_used.
+
+    Returns the owning user_id or None if invalid/revoked.
+    """
+    if not raw or not raw.startswith("im_live_"):
+        return None
+    key_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    db = get_db()
+    try:
+        row = db.query(ApiKey).filter(
+            ApiKey.key_hash == key_hash,
+            ApiKey.revoked == False,  # noqa: E712 — SQLAlchemy comparison
+        ).first()
+        if not row:
+            return None
+        row.last_used = _utcnow()
+        db.commit()
+        return row.user_id
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error verifying API key: {e}")
+        return None
+    finally:
+        close_db(db)
+
+
+def revoke_api_key(user_id: str, key_id: int) -> bool:
+    """Revoke a key the user owns. Returns True if a key was revoked."""
+    db = get_db()
+    try:
+        row = db.query(ApiKey).filter(
+            ApiKey.id == key_id, ApiKey.user_id == user_id
+        ).first()
+        if not row or row.revoked:
+            return False
+        row.revoked = True
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error revoking API key {key_id}: {e}")
+        return False
+    finally:
+        close_db(db)
+
+
+def list_api_keys(user_id: str) -> List[Dict]:
+    """All non-revoked keys for a user (metadata only, never hashes)."""
+    db = get_db()
+    try:
+        rows = db.query(ApiKey).filter(
+            ApiKey.user_id == user_id,
+            ApiKey.revoked == False,  # noqa: E712
+        ).order_by(ApiKey.created_at.desc()).all()
+        return [_api_key_to_dict(r) for r in rows]
+    finally:
+        close_db(db)
+
+
+def _api_key_to_dict(row: "ApiKey") -> Dict:
+    return {
+        "id": row.id,
+        "key_prefix": row.key_prefix,
+        "name": row.name,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "last_used": row.last_used.isoformat() if row.last_used else None,
+        "revoked": bool(row.revoked),
+    }
 
 
 # Database initialization
@@ -142,11 +408,81 @@ def init_database():
     try:
         Base.metadata.create_all(bind=engine)
         _run_lightweight_migrations()
+        _ensure_saved_jobs_schema()
+        _ensure_embedding_column()
         logger.info("Database initialized successfully")
         return True
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         return False
+
+
+def _ensure_embedding_column():
+    """Idempotent: add embedding column to existing jobs tables that predate it."""
+    try:
+        with engine.connect() as conn:
+            if is_postgres:
+                conn.execute("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS embedding TEXT")
+            else:
+                # SQLite does not support IF NOT EXISTS on ALTER TABLE
+                try:
+                    conn.execute("ALTER TABLE jobs ADD COLUMN embedding TEXT")
+                except Exception:
+                    pass  # column already exists
+    except Exception as exc:
+        logger.warning("Could not ensure embedding column: %s", exc)
+
+
+def save_job_embeddings(job_hashes: List[str], embeddings: List[list], db: Session = None) -> None:
+    """Batch-update embedding column for a list of job_hashes."""
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        for job_hash, vec in zip(job_hashes, embeddings):
+            if not vec:
+                continue
+            db.query(Job).filter(Job.job_hash == job_hash).update(
+                {"embedding": json.dumps(vec)},
+                synchronize_session=False,
+            )
+    finally:
+        if should_close:
+            db.commit()
+            close_db(db)
+
+
+def get_jobs_without_embeddings(db: Session = None) -> List:
+    """Return active jobs that have no embedding yet (for backfill)."""
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        return (
+            db.query(Job)
+            .filter(Job.is_active == True, Job.embedding == None)  # noqa: E711
+            .all()
+        )
+    finally:
+        if should_close:
+            close_db(db)
+
+
+def get_all_job_embeddings(db: Session = None) -> Dict[str, list]:
+    """Return {job_hash: vector} for all active jobs that have an embedding."""
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        rows = (
+            db.query(Job.job_hash, Job.embedding)
+            .filter(Job.is_active == True, Job.embedding != None)  # noqa: E711
+            .all()
+        )
+        return {job_hash: json.loads(emb) for job_hash, emb in rows}
+    finally:
+        if should_close:
+            close_db(db)
 
 def get_db() -> Session:
     """Get database session"""
@@ -159,6 +495,43 @@ def get_db() -> Session:
 def close_db(db: Session):
     """Close database session"""
     db.close()
+
+
+def save_user_attribution(user_id: str, utm_data: dict) -> bool:
+    """Record first-touch UTM attribution for a user. Idempotent — no-ops if already stored."""
+    logger.info(f"Attribution: recording for user={user_id} utm_data={utm_data}")
+    db = get_db()
+    try:
+        if db.query(UserAttribution).filter_by(user_id=user_id).first():
+            logger.info(f"Attribution: user={user_id} already attributed — skipping")
+            return False
+        first_seen = None
+        raw_ts = utm_data.get("first_seen_at")
+        if raw_ts:
+            try:
+                from datetime import timezone as _tz
+                first_seen = datetime.fromisoformat(raw_ts.replace("Z", "+00:00")).astimezone(_tz.utc).replace(tzinfo=None)
+            except Exception as ts_err:
+                logger.warning(f"Attribution: could not parse first_seen_at={raw_ts!r} — {ts_err}")
+        db.add(UserAttribution(
+            user_id=user_id,
+            utm_source=utm_data.get("utm_source"),
+            utm_medium=utm_data.get("utm_medium"),
+            utm_campaign=utm_data.get("utm_campaign"),
+            utm_content=utm_data.get("utm_content"),
+            utm_term=utm_data.get("utm_term"),
+            first_seen_at=first_seen,
+        ))
+        db.commit()
+        logger.info(f"Attribution: saved user={user_id} source={utm_data.get('utm_source')!r}")
+        return True
+    except Exception as e:
+        logger.error(f"Attribution: DB write failed for user={user_id} — {e}", exc_info=True)
+        db.rollback()
+        return False
+    finally:
+        close_db(db)
+
 
 def generate_job_hash(company: str, title: str, location: str, apply_link: str) -> str:
     """
@@ -377,11 +750,16 @@ def bulk_insert_jobs(jobs: List[Dict], db: Session = None) -> Dict:
         # ------------------------------------------------------------------
         # Step 5: Inactive sweeps — run AFTER upserts so refreshed last_seen
         # values are evaluated correctly.
+        # Scope to the sources present in this batch: a github_internships
+        # startup scrape must not deactivate ats_greenhouse / ats_lever jobs
+        # simply because those crawlers run on a different schedule.
         # ------------------------------------------------------------------
+        batch_sources = list({r['source'] for r in rows})
         cutoff_date = datetime.utcnow() - timedelta(days=3)
         inactive_count = db.query(Job).filter(
             Job.last_seen < cutoff_date,
             Job.is_active == True,
+            Job.source.in_(batch_sources),
         ).update({Job.is_active: False}, synchronize_session=False)
 
         date_based_inactive_count = mark_old_jobs_inactive(max_days_old=30, db=db)
@@ -453,6 +831,7 @@ def get_active_jobs(limit: Optional[int] = None, offset: int = 0, max_days_old: 
 
             job_dict = {
                 'id': job.id,
+                'job_hash': job.job_hash,
                 'company': job.company,
                 'title': job.title,
                 'location': job.location,
@@ -477,6 +856,78 @@ def get_active_jobs(limit: Optional[int] = None, offset: int = 0, max_days_old: 
         return []
     finally:
         close_db(db)
+
+
+def get_job_by_hash(job_hash: str, db: Optional[Session] = None) -> Optional[Dict]:
+    """
+    Fetch a single job (with its FULL, untruncated description) by job_hash.
+
+    Used by the resume-tailoring endpoint to feed the complete job description into
+    the prompt. Intentionally does NOT filter on is_active — a job shown in match
+    results may have been soft-deactivated (last_seen / days_since_posted) by the
+    time the user tailors against it, but the row still exists.
+
+    Args:
+        job_hash: SHA-256 dedup key from generate_job_hash().
+        db: Optional existing session; if omitted, one is opened and closed here.
+
+    Returns:
+        Job dict including the full 'description', or None if not found.
+    """
+    if not job_hash:
+        return None
+
+    should_close = db is None
+    if db is None:
+        db = get_db()
+    try:
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        if not job:
+            return None
+        return {
+            'id': job.id,
+            'job_hash': job.job_hash,
+            'company': job.company,
+            'title': job.title,
+            'location': job.location,
+            'apply_link': job.apply_link,
+            'description': job.description,
+            'required_skills': json.loads(job.required_skills) if job.required_skills else [],
+            'job_requirements': job.job_requirements,
+            'source': job.source,
+            'first_seen': job.first_seen,
+            'last_seen': job.last_seen,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching job by hash {job_hash[:12]}...: {e}")
+        return None
+    finally:
+        if should_close:
+            close_db(db)
+
+
+def update_job_jd(job_hash: str, description: str, job_requirements: str, required_skills: List[str]) -> bool:
+    """Persist real JD text and skills fetched lazily from the apply_link.
+    Called once on first job_get when the stored description is synthetic boilerplate.
+    """
+    db = get_db()
+    try:
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        if not job:
+            return False
+        job.description = description
+        job.job_requirements = job_requirements
+        if required_skills:
+            job.required_skills = json.dumps(required_skills)
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error("Error updating JD for %s: %s", job_hash[:12], e)
+        db.rollback()
+        return False
+    finally:
+        close_db(db)
+
 
 def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
     """
@@ -517,6 +968,7 @@ def get_new_jobs_since(hours: int = 24, max_days_old: int = 30) -> List[Dict]:
 
             job_dict = {
                 'id': job.id,
+                'job_hash': job.job_hash,
                 'company': job.company,
                 'title': job.title,
                 'location': job.location,
@@ -688,6 +1140,135 @@ def set_resume_cache(user_id: str, resume_hash: str, results: list, skills: list
         logger.warning(f"Failed to save resume cache: {e}")
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# Saved jobs / application tracker
+# ---------------------------------------------------------------------------
+
+def list_saved_jobs(user_id: str) -> List[Dict]:
+    """Return a user's saved jobs newest first, including job details when present."""
+    db = get_db()
+    try:
+        rows = db.query(SavedJob, Job).outerjoin(
+            Job, SavedJob.job_hash == Job.job_hash
+        ).filter(
+            SavedJob.user_id == user_id
+        ).order_by(SavedJob.updated_at.desc()).all()
+        return [_saved_job_to_dict(saved, job) for saved, job in rows]
+    finally:
+        close_db(db)
+
+
+def get_saved_job_hashes(user_id: str) -> List[str]:
+    """Return only the hashes a user has saved for lightweight UI state."""
+    db = get_db()
+    try:
+        return [
+            h for (h,) in db.query(SavedJob.job_hash)
+            .filter(SavedJob.user_id == user_id)
+            .order_by(SavedJob.updated_at.desc())
+            .all()
+        ]
+    finally:
+        close_db(db)
+
+
+def upsert_saved_job(
+    user_id: str,
+    job_hash: str,
+    status: str = "saved",
+    notes: str = "",
+    deadline: Optional[str] = None,
+    job_snapshot: Optional[Dict] = None,
+) -> Dict:
+    """Create or update a saved job row owned by user_id."""
+    if status not in SAVED_JOB_STATUSES:
+        raise ValueError(f"Invalid status: {status}")
+    normalized_snapshot = _normalize_job_snapshot(job_snapshot)
+    db = get_db()
+    try:
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        if not job and not normalized_snapshot:
+            normalized_snapshot = {"job_hash": job_hash}
+        row = db.query(SavedJob).filter(
+            SavedJob.user_id == user_id,
+            SavedJob.job_hash == job_hash,
+        ).first()
+        now = datetime.utcnow()
+        if not row:
+            row = SavedJob(user_id=user_id, job_hash=job_hash)
+            db.add(row)
+        row.status = status
+        row.notes = notes or ""
+        row.deadline = deadline or None
+        if normalized_snapshot:
+            row.job_snapshot = json.dumps(normalized_snapshot)
+        row.applied_at = now if status == "applied" and row.applied_at is None else row.applied_at
+        row.updated_at = now
+        db.commit()
+        db.refresh(row)
+        return _saved_job_to_dict(row, job)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
+
+
+def update_saved_job(
+    user_id: str,
+    job_hash: str,
+    status: Optional[str] = None,
+    notes: Optional[str] = None,
+    deadline: Optional[str] = None,
+) -> Optional[Dict]:
+    """Update an existing saved job. Returns None when it is not saved."""
+    if status is not None and status not in SAVED_JOB_STATUSES:
+        raise ValueError(f"Invalid status: {status}")
+    db = get_db()
+    try:
+        row = db.query(SavedJob).filter(
+            SavedJob.user_id == user_id,
+            SavedJob.job_hash == job_hash,
+        ).first()
+        if not row:
+            return None
+        if status is not None:
+            row.status = status
+            if status == "applied" and row.applied_at is None:
+                row.applied_at = datetime.utcnow()
+        if notes is not None:
+            row.notes = notes
+        if deadline is not None:
+            row.deadline = deadline or None
+        row.updated_at = datetime.utcnow()
+        job = db.query(Job).filter(Job.job_hash == job_hash).first()
+        db.commit()
+        db.refresh(row)
+        return _saved_job_to_dict(row, job)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
+
+
+def delete_saved_job(user_id: str, job_hash: str) -> bool:
+    """Remove a saved job owned by the user."""
+    db = get_db()
+    try:
+        deleted = db.query(SavedJob).filter(
+            SavedJob.user_id == user_id,
+            SavedJob.job_hash == job_hash,
+        ).delete()
+        db.commit()
+        return deleted > 0
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        close_db(db)
 
 # Initialize database on import
 if __name__ == "__main__":
