@@ -41,6 +41,7 @@ jest.mock('../pages/DeveloperPage', () => () => <div data-testid="developer-page
 jest.mock('../pages/DocsPage', () => () => <div data-testid="docs-page">Docs</div>);
 jest.mock('../pages/LoginPage', () => () => <div data-testid="login-page">Login</div>);
 jest.mock('../components/TestJobDisplay', () => () => <div data-testid="test-page">Test</div>);
+jest.mock('../pages/NotFoundPage', () => () => <div data-testid="not-found-page">Not Found</div>);
 
 // ThemeProvider — pass-through; useTheme must also be exported or ThemeToggle throws
 jest.mock('../components/theme-provider', () => ({

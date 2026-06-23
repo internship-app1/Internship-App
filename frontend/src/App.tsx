@@ -13,6 +13,7 @@ import DeveloperPage from './pages/DeveloperPage';
 import DocsPage from './pages/DocsPage';
 import LoginPage from './pages/LoginPage';
 import TestJobDisplay from './components/TestJobDisplay';
+import NotFoundPage from './pages/NotFoundPage';
 
 declare global {
   interface Window { dataLayer: Record<string, unknown>[]; }
@@ -92,6 +93,7 @@ function App() {
               <Route path="/docs" element={<DocsPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/test" element={<TestJobDisplay />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </ThemeProvider>
         </BrowserRouter>
