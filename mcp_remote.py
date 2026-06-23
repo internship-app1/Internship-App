@@ -144,7 +144,8 @@ def jobs_prefilter(
     resume_profile = {**resume_profile, "experience_level": normalized}
     f = filters or {}
     jobs = _fetch_jobs(
-        f.get("since_hours"), f.get("max_days_old", 30), f.get("location"), f.get("q")
+        f.get("since_hours"), f.get("max_days_old", 30), f.get("location"), f.get("q"),
+        f.get("categories"),
     )
     if exclude_hashes:
         excluded = set(exclude_hashes)
