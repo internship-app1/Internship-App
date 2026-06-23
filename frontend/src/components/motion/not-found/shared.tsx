@@ -1,9 +1,9 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { SPRING_PRESS } from "@/lib/ease";
-import { useHoverCapable } from "@/lib/hooks/use-hover-capable";
-import { cn } from "@/lib/utils";
+import { SPRING_PRESS } from "../../../lib/ease";
+import { useHoverCapable } from "../../../lib/hooks/use-hover-capable";
+import { cn } from "../../../lib/utils";
 
 export interface NotFoundProps {
   className?: string;
