@@ -6,8 +6,7 @@ import JobCard from '../components/JobCard';
 import { Job } from '../types';
 import { ThinkDeeperToggle } from '../components/ui/think-deeper-toggle';
 import { DepartmentMultiSelect } from '../components/ui/department-multi-select';
-import { Upload, AlertCircle, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
-import { FileUpload, type FileUploadItem } from '../components/motion/file-upload';
+import { Upload, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock, RefreshCcw } from 'lucide-react';
 
 // For SSE streaming, we need to bypass the CRA proxy in development
 // because it buffers responses. In production, use relative URLs.
@@ -62,8 +61,8 @@ const FindPage: React.FC = () => {
   const [thinkDeeper, setThinkDeeper] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileUploadItems, setFileUploadItems] = useState<FileUploadItem[]>([]);
   const [fromCache, setFromCache] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [pendingAnalysis, setPendingAnalysis] = useState(false);
@@ -115,11 +114,24 @@ const FindPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'recent'>('desc');
   const itemsPerPage = 10;
 
-  const handleFilesAdded = (added: FileUploadItem[], files: File[]) => {
-    const item = { ...added[0], status: 'success' as const, progress: 100 };
-    setFileUploadItems([item]);
-    setSelectedFile(files[0] ?? null);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setSelectedFile(file);
   };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) setSelectedFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
 
   const startCooldown = (seconds: number) => {
     // Skip the per-upload waiting time when usage tracking is disabled (dev testing).
@@ -358,7 +370,6 @@ const FindPage: React.FC = () => {
     setProgress(0);
     setCurrentStep('');
     setSelectedFile(null);
-    setFileUploadItems([]);
   };
 
   React.useEffect(() => {
@@ -459,21 +470,49 @@ const FindPage: React.FC = () => {
               </span>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <FileUpload
-                value={fileUploadItems}
-                onValueChange={(next) => {
-                  setFileUploadItems(next);
-                  if (next.length === 0) setSelectedFile(null);
-                }}
-                onFilesAdded={handleFilesAdded}
-                accept=".pdf,.png,.jpg,.jpeg"
-                multiple={false}
-                maxFiles={1}
-                disabled={isLoading}
-                title="Drop your resume here"
-                description="PDF, PNG or JPG — max 10 MB"
-                browseLabel="Browse files"
-              />
+              {/* Drop zone */}
+              <label
+                className={`flex flex-col items-center justify-center w-full h-32 border border-dashed cursor-pointer transition-colors ${
+                  isDragging
+                    ? 'border-text-primary bg-ia-subtle'
+                    : selectedFile
+                    ? 'border-text-primary bg-ia-subtle'
+                    : 'border-lp-border hover:border-text-secondary'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {selectedFile ? (
+                    <>
+                      <CheckCircle2 className="h-6 w-6 mb-2 text-text-primary" />
+                      <p className="text-sm text-text-primary">{selectedFile.name}</p>
+                      <p className="font-mono text-[10px] text-text-tertiary mt-0.5">Click to change file</p>
+                    </>
+                  ) : isDragging ? (
+                    <>
+                      <Upload className="h-6 w-6 mb-2 text-text-primary" />
+                      <p className="text-sm text-text-primary">Drop it here</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 mb-2 text-text-tertiary" />
+                      <p className="text-sm text-text-secondary">
+                        Tap to upload
+                        <span className="hidden sm:inline"> or drag and drop</span>
+                      </p>
+                      <p className="font-mono text-[10px] text-text-tertiary mt-0.5">PDF, PNG, JPG (MAX. 10MB)</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileChange}
+                />
+              </label>
 
               {/* Think Deeper toggle */}
               <ThinkDeeperToggle checked={thinkDeeper} onChange={setThinkDeeper} />
