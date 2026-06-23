@@ -1602,12 +1602,13 @@ _SKILL_VARIATIONS: dict = {
         'rag', 'ragas', 'trulens', 'langsmith',
     ],
 }
-# Inverted index: token → canonical group. Lets the variation check skip the
-# full dict scan and do two O(1) lookups instead of O(groups) iteration.
+# Inverted index: token → set of canonical groups. A token can belong to
+# multiple groups (e.g. "llm" is in both ai_ml and llm_applications), so we
+# store a set and check for non-empty intersection rather than equality.
 _SKILL_VARIATION_INDEX: dict = {}
 for _canonical, _variants in _SKILL_VARIATIONS.items():
     for _v in _variants:
-        _SKILL_VARIATION_INDEX[_v] = _canonical
+        _SKILL_VARIATION_INDEX.setdefault(_v, set()).add(_canonical)
 
 
 @lru_cache(maxsize=4096)
@@ -1634,9 +1635,10 @@ def fuzzy_skill_match(resume_skill, job_skill):
     if resume_lower in job_lower or job_lower in resume_lower:
         return True
 
-    # Check variation groups via inverted index (O(1) vs O(groups) scan)
-    resume_group = _SKILL_VARIATION_INDEX.get(resume_lower)
-    if resume_group and resume_group == _SKILL_VARIATION_INDEX.get(job_lower):
+    # Check variation groups via inverted index (O(1) vs O(groups) scan).
+    # A token can belong to multiple groups, so check for non-empty intersection.
+    resume_groups = _SKILL_VARIATION_INDEX.get(resume_lower)
+    if resume_groups and resume_groups & _SKILL_VARIATION_INDEX.get(job_lower, set()):
         return True
 
     return False
@@ -2206,7 +2208,7 @@ def prefilter_and_score(resume_profile: Dict, jobs: List[Dict]) -> List[Dict]:
             except Exception:
                 pass
 
-        keyword_score = simple_keyword_scoring(job, skills, embedding_score=embedding_sim)
+        keyword_score, _ = simple_keyword_scoring(job, skills, embedding_score=embedding_sim)
         job_metadata = extract_job_metadata(job)
         # extract_job_metadata parses location from description text via regex,
         # but scraped jobs store the authoritative location in the DB field.
