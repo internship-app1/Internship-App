@@ -2,7 +2,7 @@ import React from 'react';
 import { NotFoundGlitch } from '../components/motion/not-found/glitch';
 
 const NotFoundPage: React.FC = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
+  <div className="min-h-screen flex items-center justify-center bg-bg text-text-primary">
     <NotFoundGlitch
       homeHref="/"
       homeLabel="Back home"
