@@ -139,8 +139,8 @@ def test_skill_extraction_matches_genuine_token_mentions():
     # Real mentions still match, including short ones, regardless of
     # surrounding punctuation.
     assert "python" in _extract_skills_from_text("Proficiency in R or Python.")
-    assert set(_extract_skills_from_text("Experience with SQL and Go.")) == {
-        "sql", "go",
+    assert set(_extract_skills_from_text("Experience with SQL and Golang.")) == {
+        "sql", "golang",
     }
 
 
@@ -154,8 +154,22 @@ def test_bare_r_is_never_extracted():
     assert "r" not in _extract_skills_from_text("Skills: Python, R, and SQL.")
 
 
+def test_bare_go_is_never_extracted():
+    # Bare "go" is intentionally not in COMMON_SKILLS: token-bounded matching
+    # still fires on "go to market", "go-to-market", "go live", "go ahead",
+    # and similar business phrases common in non-SWE job descriptions.
+    # Use "golang" instead (same rationale as "r").
+    assert "go" not in _extract_skills_from_text("Our go-to-market strategy.")
+    assert "go" not in _extract_skills_from_text("We go live in Q3.")
+    assert "go" not in _extract_skills_from_text("Go ahead and apply!")
+    assert "go" not in _extract_skills_from_text("Experience with Go.")  # missed, but safe
+    # "golang" is the unambiguous token
+    assert "golang" in _extract_skills_from_text("Experience with Golang and Python.")
+    assert "golang" in _extract_skills_from_text("Skills: Python, Golang, Rust.")
+
+
 def test_skill_extraction_ignores_substrings_inside_other_words():
-    # "go" must not fire on "good"/"category"; "php" must not fire on "graph";
+    # "golang" must not fire on "good"/"category"; "php" must not fire on "graph";
     # "c"/"node" must not bleed from "c++"/"node.js".
     assert _extract_skills_from_text("A good candidate for this category.") == []
     assert _extract_skills_from_text("Knowledge of graphing tools.") == []

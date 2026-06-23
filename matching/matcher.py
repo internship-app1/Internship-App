@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 KNOWN_SKILLS_VOCAB = [
-    'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Rust',
+    'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Golang', 'Rust',
     'React', 'Next.js', 'Vue', 'Angular', 'Node.js',
     'FastAPI', 'Django', 'Flask', 'Spring',
     'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis',
@@ -882,9 +882,11 @@ def _passes_category_filter(job, selected_ids) -> bool:
     """
     if not selected_ids:
         return True
-    cat = (job.get('metadata') or {}).get('category')
+    # Prefer the first-class column; fall back to metadata blob for any rows
+    # that predate the column migration.
+    cat = job.get('category') or (job.get('metadata') or {}).get('category')
     if not cat:
-        return True  # no category yet → don't hide the job
+        return True  # unstamped row → don't hide it
     return cat in selected_ids
 
 

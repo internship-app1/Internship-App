@@ -1,7 +1,7 @@
 import React from 'react';
 
 export function HonestStats({ activeJobs }: { activeJobs: number | null }) {
-  const displayCount = (activeJobs ?? 847).toLocaleString();
+  const displayCount = activeJobs != null ? activeJobs.toLocaleString() : '—';
 
   return (
     <section className="py-12 border-b border-lp-border">
@@ -33,7 +33,7 @@ export function HonestStats({ activeJobs }: { activeJobs: number | null }) {
           <div className="text-xs text-text-secondary leading-snug mb-2">
             From résumé upload to your top ten ranked matches.
           </div>
-          <div className="font-mono text-[10px] text-text-tertiary">median across 100 users</div>
+          <div className="font-mono text-[10px] text-text-tertiary">median across 100 resumes</div>
         </div>
 
         {/* Stat 3 */}

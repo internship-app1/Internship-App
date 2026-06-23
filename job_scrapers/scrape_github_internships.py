@@ -558,8 +558,8 @@ def extract_skills_from_job_page(job_text):
     # Enhanced skill keywords for job page extraction
     skill_keywords = [
         # Programming Languages
-        "python", "java", "javascript", "typescript", "c++", "c#", "go", "rust", "kotlin", "swift",
-        "php", "ruby", "scala", "r", "matlab", "perl", "bash", "shell", "powershell",
+        "python", "java", "javascript", "typescript", "c++", "c#", "golang", "rust", "kotlin", "swift",
+        "php", "ruby", "scala", "matlab", "perl", "bash", "shell", "powershell",
         
         # Web Technologies
         "react", "angular", "vue", "node.js", "express", "django", "flask", "spring", "laravel",
@@ -1377,7 +1377,10 @@ def parse_internship_table(content, max_results):
                     'required_skills': [],  # Will be populated by LLM extraction
                     'date_posted': date_posted,  # Raw date string
                     'date_posted_raw': date_posted_raw,  # Original date string from source
-                    'days_since_posted': days_since_posted  # Normalized to days for filtering
+                    'days_since_posted': days_since_posted,  # Normalized to days for filtering
+                    'metadata': {
+                        'category': categorize_job("", role, "github_internships"),
+                    },
                 }
                 
                 jobs.append(job)

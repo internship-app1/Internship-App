@@ -11,7 +11,11 @@ export const DEPARTMENT_CATEGORIES: { id: string; label: string }[] = [
   { id: 'security', label: 'Security' },
   { id: 'product', label: 'Product' },
   { id: 'design', label: 'Design / UX' },
-  { id: 'business', label: 'Business & Other' },
+  { id: 'business', label: 'Business & Finance' },
+  { id: 'healthcare', label: 'Healthcare / Medical' },
+  { id: 'legal', label: 'Legal' },
+  { id: 'policy', label: 'Policy / Gov / Nonprofit' },
+  { id: 'education', label: 'Education' },
   { id: 'other', label: 'Other / Unclassified' },
 ];
 
@@ -51,7 +55,7 @@ export const DepartmentMultiSelect: React.FC<DepartmentMultiSelectProps> = ({ se
                 active ? 'text-text-primary' : 'text-text-secondary'
               )}
             >
-              Departments
+              Role Type
             </span>
             {active && (
               <button
@@ -66,7 +70,7 @@ export const DepartmentMultiSelect: React.FC<DepartmentMultiSelectProps> = ({ se
           <p className="text-xs mt-0.5 text-text-tertiary">
             {active
               ? `Showing ${selected.length} selected ${selected.length === 1 ? 'category' : 'categories'}.`
-              : 'All departments. Select to narrow to specific fields.'}
+              : 'Filter by what you\'d be doing — not the company\'s industry.'}
           </p>
         </div>
       </div>
