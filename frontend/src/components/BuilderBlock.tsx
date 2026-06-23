@@ -5,7 +5,7 @@ export function BuilderBlock({ activeJobs }: { activeJobs: number | null }) {
   const STAMP = [
     { k: 'stack',   v: 'python · fastapi · react' },
     { k: 'index',   v: indexLabel },
-    { k: 'users',   v: '~100 students' },
+    { k: 'resumes', v: '~100 resumes' },
     { k: 'cost',    v: '$0 · open source' },
     { k: 'refresh', v: 'every 6h' },
   ];
